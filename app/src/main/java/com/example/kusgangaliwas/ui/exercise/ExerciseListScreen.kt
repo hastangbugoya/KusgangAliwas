@@ -43,6 +43,7 @@ fun ExerciseListScreen(
 ) {
     var newExerciseName by remember { mutableStateOf("") }
 
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -153,6 +154,8 @@ fun ExerciseListScreen(
                                     text = exercise.name,
                                     style = MaterialTheme.typography.titleMedium,
                                 )
+
+                                Text(text = "1RM: —")
 
                                 if (!exercise.notes.isNullOrBlank()) {
                                     Text(

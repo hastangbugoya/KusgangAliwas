@@ -83,4 +83,16 @@ interface ActualExerciseLogDao {
         """
     )
     suspend fun deleteAllForSession(actualSessionId: Long)
+
+    @Query(
+        """
+    SELECT *
+    FROM actual_exercise_log
+    WHERE exerciseId = :exerciseId
+    ORDER BY id DESC
+    """
+    )
+    suspend fun getLogsForExercise(
+        exerciseId: Long,
+    ): List<ActualExerciseLogEntity>
 }

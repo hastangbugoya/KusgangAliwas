@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.calendar
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,12 +17,16 @@ import com.example.kusgangaliwas.ui.common.SharpCard
 @Composable
 fun DayCell(
     day: CalendarDayCellState,
+    onClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SharpCard(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(64.dp)
+            .clickable {
+                onClick(day.date.toEpochDay())
+            },
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),

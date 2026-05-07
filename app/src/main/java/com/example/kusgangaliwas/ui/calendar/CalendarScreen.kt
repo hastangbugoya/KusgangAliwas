@@ -24,6 +24,7 @@ fun CalendarScreen(
     month: YearMonth,
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
+    onDayClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val days = rememberCalendarMonthCells(month)
@@ -61,6 +62,7 @@ fun CalendarScreen(
                 items(days) { day ->
                     DayCell(
                         day = day,
+                        onClick = onDayClick,
                     )
                 }
             }

@@ -176,4 +176,8 @@ interface SessionRepository {
     suspend fun deleteSet(setId: Long)
 
     suspend fun deleteAllSetsForExercise(actualExerciseLogId: Long)
+
+    suspend fun getLogsForExercise(
+        exerciseId: Long,
+    ): List<ActualExerciseLogEntity>
 }

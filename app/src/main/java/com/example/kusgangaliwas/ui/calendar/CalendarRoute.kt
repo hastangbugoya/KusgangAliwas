@@ -8,6 +8,7 @@ import java.time.YearMonth
 fun CalendarRoute(
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
+    onDayClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     CalendarScreen(
@@ -15,5 +16,6 @@ fun CalendarRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         modifier = modifier,
+        onDayClick = onDayClick,
     )
 }

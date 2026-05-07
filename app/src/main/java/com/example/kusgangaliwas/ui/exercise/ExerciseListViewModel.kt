@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.example.kusgangaliwas.domain.usecase.exercise.GetEstimatedOneRepMaxUseCase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class ExerciseListUiState(
     val exercises: List<ExerciseEntity> = emptyList(),
@@ -22,7 +25,10 @@ data class ExerciseListUiState(
 class ExerciseListViewModel @Inject constructor(
     exerciseRepository: ExerciseRepository,
     private val createExerciseUseCase: CreateExerciseUseCase,
+    private val getEstimatedOneRepMaxUseCase: GetEstimatedOneRepMaxUseCase,
 ) : ViewModel() {
+
+    private val oneRepMaxMap = mutableMapOf<Long, Double?>()
 
     val uiState: StateFlow<ExerciseListUiState> =
         exerciseRepository
@@ -45,6 +51,21 @@ class ExerciseListViewModel @Inject constructor(
             }.onFailure {
                 // Basic for now. Later we can expose one-shot snackbar events.
             }
+        }
+    }
+
+    fun getOneRepMax(exerciseId: Long): Double? {
+        return oneRepMaxMap[exerciseId]
+    }
+
+    fun loadOneRepMax(exerciseId: Long) {
+        if (oneRepMaxMap.containsKey(exerciseId)) return
+
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                getEstimatedOneRepMaxUseCase(exerciseId)
+            }
+            oneRepMaxMap[exerciseId] = result
         }
     }
 }

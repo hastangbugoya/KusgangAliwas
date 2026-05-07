@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.kusgangaliwas.ui.calendar.CalendarRoute
 import com.example.kusgangaliwas.ui.exercise.ExerciseListRoute
+import com.example.kusgangaliwas.ui.session.SessionDayRoute
 import com.example.kusgangaliwas.ui.split.SplitListRoute
 import com.example.kusgangaliwas.ui.split.SplitRoadmapRoute
 
@@ -30,6 +31,9 @@ fun NavHost(
             CalendarRoute(
                 onBackClick = {},
                 onOverflowClick = {},
+                onDayClick = { epochDay ->
+                    navController.navigate(Destination.SessionDay.createRoute(epochDay))
+                },
             )
         }
 
@@ -58,13 +62,29 @@ fun NavHost(
             }
         )
         ) {
-        SplitRoadmapRoute(
-            onBackClick = {
-                navController.popBackStack()
-            },
-            onOverflowClick = {},
-        )
-    }
+            SplitRoadmapRoute(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onOverflowClick = {},
+            )
+        }
+
+        composable(
+            route = Destination.SessionDay.route,
+            arguments = listOf(
+                navArgument("epochDay") {
+                    type = NavType.LongType
+                }
+            )
+        ) {
+            SessionDayRoute(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onOverflowClick = {},
+            )
+        }
 
 
     }

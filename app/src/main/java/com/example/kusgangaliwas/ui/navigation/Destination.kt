@@ -1,6 +1,7 @@
 package com.example.kusgangaliwas.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
@@ -35,6 +36,14 @@ sealed class Destination(
         icon = Icons.Default.List,
     ) {
         fun createRoute(splitId: Long): String = "split_roadmap/$splitId"
+    }
+
+    data object SessionDay : Destination(
+        route = "session_day/{epochDay}",
+        label = "Session Day",
+        icon = Icons.Default.Build,
+    ) {
+        fun createRoute(epochDay: Long): String = "session_day/$epochDay"
     }
 }
 

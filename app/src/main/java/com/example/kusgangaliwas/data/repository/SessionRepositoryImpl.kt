@@ -278,4 +278,10 @@ class SessionRepositoryImpl @Inject constructor(
     override suspend fun deleteAllSetsForExercise(actualExerciseLogId: Long) {
         actualExerciseSetLogDao.deleteAllForExercise(actualExerciseLogId)
     }
+
+    override suspend fun getLogsForExercise(
+        exerciseId: Long,
+    ): List<ActualExerciseLogEntity> {
+        return actualExerciseLogDao.getLogsForExercise(exerciseId)
+    }
 }

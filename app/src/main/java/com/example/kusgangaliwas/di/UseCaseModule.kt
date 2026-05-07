@@ -1,8 +1,10 @@
 package com.example.kusgangaliwas.di
 
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
+import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import com.example.kusgangaliwas.domain.usecase.exercise.CreateExerciseUseCase
+import com.example.kusgangaliwas.domain.usecase.exercise.GetEstimatedOneRepMaxUseCase
 import com.example.kusgangaliwas.domain.usecase.split.AddExerciseToSplitUseCase
 import com.example.kusgangaliwas.domain.usecase.split.CreateSplitTemplateUseCase
 import com.example.kusgangaliwas.domain.usecase.split.GetSplitRoadmapUseCase
@@ -53,6 +55,15 @@ object UseCaseModule {
     ): GetSplitRoadmapUseCase {
         return GetSplitRoadmapUseCase(
             splitTemplateRepository = splitTemplateRepository,
+        )
+    }
+
+    @Provides
+    fun provideGetEstimatedOneRepMaxUseCase(
+        sessionRepository: SessionRepository,
+    ): GetEstimatedOneRepMaxUseCase {
+        return GetEstimatedOneRepMaxUseCase(
+            sessionRepository = sessionRepository,
         )
     }
 }
