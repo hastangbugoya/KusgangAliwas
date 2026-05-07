@@ -32,7 +32,8 @@ interface ActualSessionDao {
         """
         SELECT *
         FROM actual_session
-        WHERE performedDateEpochDay BETWEEN :startEpochDay AND :endEpochDay
+        WHERE performedDateEpochDay >= :startEpochDay
+            AND performedDateEpochDay < :endEpochDay
         ORDER BY performedDateEpochDay DESC, id DESC
         """
     )

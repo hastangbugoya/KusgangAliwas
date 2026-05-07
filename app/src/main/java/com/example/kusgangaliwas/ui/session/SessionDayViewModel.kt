@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import androidx.lifecycle.viewModelScope
+import com.example.kusgangaliwas.domain.usecase.session.CreateQuickSessionForDayUseCase
+import kotlinx.coroutines.launch
 
 data class SessionDayUiState(
     val epochDay: Long = 0L,
@@ -26,6 +28,7 @@ data class SessionDayUiState(
 class SessionDayViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     sessionRepository: SessionRepository,
+    private val createQuickSessionForDayUseCase: CreateQuickSessionForDayUseCase,
 ) : ViewModel() {
 
     private val epochDay: Long = checkNotNull(
@@ -41,7 +44,7 @@ class SessionDayViewModel @Inject constructor(
             sessionRepository.observeSessionsForDate(epochDay),
             sessionRepository.observeActualSessionsBetweenDates(
                 startEpochDay = epochDay,
-                endEpochDay = epochDay,
+                endEpochDay = epochDay + 1,
             ),
         ) { planned, actual ->
             SessionDayUiState(
@@ -58,4 +61,14 @@ class SessionDayViewModel @Inject constructor(
                 title = date.format(DateTimeFormatter.ofPattern("MMM d, yyyy")),
             ),
         )
+
+    fun startQuickSession() {
+        viewModelScope.launch {
+            runCatching {
+                createQuickSessionForDayUseCase(epochDay)
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
 }

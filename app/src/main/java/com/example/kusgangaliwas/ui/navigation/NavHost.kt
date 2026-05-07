@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import com.example.kusgangaliwas.ui.calendar.CalendarRoute
 import com.example.kusgangaliwas.ui.exercise.ExerciseListRoute
 import com.example.kusgangaliwas.ui.session.SessionDayRoute
+import com.example.kusgangaliwas.ui.session.SessionDetailRoute
 import com.example.kusgangaliwas.ui.split.SplitListRoute
 import com.example.kusgangaliwas.ui.split.SplitRoadmapRoute
 
@@ -83,8 +84,28 @@ fun NavHost(
                     navController.popBackStack()
                 },
                 onOverflowClick = {},
+                onActualSessionClick = { actualSessionId ->
+                    navController.navigate(Destination.SessionDetail.createRoute(actualSessionId))
+                },
             )
         }
+
+        composable(
+                route = Destination.SessionDetail.route,
+        arguments = listOf(
+            navArgument("actualSessionId") {
+                type = NavType.LongType
+            }
+        )
+        ) {
+        SessionDetailRoute(
+            onBackClick = {
+                navController.popBackStack()
+            },
+            onOverflowClick = {},
+        )
+    }
+
 
 
     }

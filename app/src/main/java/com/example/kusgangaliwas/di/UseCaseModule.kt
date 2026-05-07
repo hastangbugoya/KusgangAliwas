@@ -5,6 +5,7 @@ import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import com.example.kusgangaliwas.domain.usecase.exercise.CreateExerciseUseCase
 import com.example.kusgangaliwas.domain.usecase.exercise.GetEstimatedOneRepMaxUseCase
+import com.example.kusgangaliwas.domain.usecase.session.AddExerciseLogToSessionUseCase
 import com.example.kusgangaliwas.domain.usecase.split.AddExerciseToSplitUseCase
 import com.example.kusgangaliwas.domain.usecase.split.CreateSplitTemplateUseCase
 import com.example.kusgangaliwas.domain.usecase.split.GetSplitRoadmapUseCase
@@ -12,6 +13,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.example.kusgangaliwas.domain.usecase.session.CreateQuickSessionForDayUseCase
+
 
 /**
  * Provides use cases.
@@ -65,5 +68,19 @@ object UseCaseModule {
         return GetEstimatedOneRepMaxUseCase(
             sessionRepository = sessionRepository,
         )
+    }
+
+    @Provides
+    fun provideCreateQuickSessionForDayUseCase(
+        sessionRepository: SessionRepository,
+    ): CreateQuickSessionForDayUseCase {
+        return CreateQuickSessionForDayUseCase(sessionRepository)
+    }
+
+    @Provides
+    fun provideAddExerciseLogToSessionUseCase(
+        sessionRepository: SessionRepository,
+    ): AddExerciseLogToSessionUseCase {
+        return AddExerciseLogToSessionUseCase(sessionRepository)
     }
 }

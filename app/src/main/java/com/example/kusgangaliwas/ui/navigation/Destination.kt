@@ -3,6 +3,7 @@ package com.example.kusgangaliwas.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -45,6 +46,16 @@ sealed class Destination(
     ) {
         fun createRoute(epochDay: Long): String = "session_day/$epochDay"
     }
+
+    data object SessionDetail : Destination(
+        route = "session_detail/{actualSessionId}",
+        label = "Session Detail",
+        icon = Icons.Default.Face,
+    ) {
+        fun createRoute(actualSessionId: Long): String = "session_detail/$actualSessionId"
+    }
+
+
 }
 
 val bottomNavDestinations = listOf(

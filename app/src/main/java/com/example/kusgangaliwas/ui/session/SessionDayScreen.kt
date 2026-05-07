@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.session
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,28 +21,13 @@ import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
 
 @Composable
-fun SessionDayRoute(
-    onBackClick: () -> Unit,
-    onOverflowClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: SessionDayViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    SessionDayScreen(
-        uiState = uiState,
-        onBackClick = onBackClick,
-        onOverflowClick = onOverflowClick,
-        modifier = modifier,
-    )
-}
-
-@Composable
 fun SessionDayScreen(
     uiState: SessionDayUiState,
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onStartQuickSession: () -> Unit,
+    onActualSessionClick: (Long) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -86,7 +72,13 @@ fun SessionDayScreen(
                             Text("No sessions logged yet.")
                         } else {
                             uiState.actualSessions.forEach { session ->
-                                Text(session.title)
+                                SharpCard(
+                                    modifier = Modifier.clickable {
+                                        onActualSessionClick(session.id)
+                                    }
+                                ) {
+                                    Text(session.title)
+                                }
                             }
                         }
                     }
@@ -100,7 +92,7 @@ fun SessionDayScreen(
 
                         OutlinedButton(
                             onClick = {
-                                // Later: start quick session for this day.
+                                onStartQuickSession()
                             },
                         ) {
                             Text("Start quick session")

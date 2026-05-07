@@ -26,7 +26,7 @@ interface ActualExerciseSetLogDao {
         SELECT *
         FROM actual_exercise_set_log
         WHERE actualExerciseLogId = :actualExerciseLogId
-        ORDER BY setOrder ASC
+        ORDER BY setOrder ASC, id ASC
         """
     )
     fun observeSetsForExercise(
@@ -38,7 +38,7 @@ interface ActualExerciseSetLogDao {
         SELECT *
         FROM actual_exercise_set_log
         WHERE actualExerciseLogId = :actualExerciseLogId
-        ORDER BY setOrder ASC
+        ORDER BY setOrder ASC, id ASC
         """
     )
     suspend fun getSetsForExercise(
