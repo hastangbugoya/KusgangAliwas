@@ -28,6 +28,14 @@ sealed class Destination(
         label = "Exercises",
         icon = Icons.Default.Star,
     )
+
+    data object SplitRoadmap : Destination(
+        route = "split_roadmap/{splitId}",
+        label = "Split Roadmap",
+        icon = Icons.Default.List,
+    ) {
+        fun createRoute(splitId: Long): String = "split_roadmap/$splitId"
+    }
 }
 
 val bottomNavDestinations = listOf(

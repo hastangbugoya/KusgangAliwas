@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.split
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,6 +29,7 @@ import com.example.kusgangaliwas.ui.common.SharpCard
 fun SplitListRoute(
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
+    onSplitClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SplitListViewModel = hiltViewModel(),
 ) {
@@ -38,6 +40,7 @@ fun SplitListRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         onCreateSplit = viewModel::createSplit,
+        onSplitClick = onSplitClick,
         modifier = modifier,
     )
 }
@@ -49,6 +52,7 @@ fun SplitListScreen(
     onOverflowClick: () -> Unit,
     onCreateSplit: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onSplitClick: (Long) -> Unit,
 ) {
     var newSplitName by remember { mutableStateOf("") }
 
@@ -110,7 +114,11 @@ fun SplitListScreen(
                         items = uiState.splits,
                         key = { it.id },
                     ) { split ->
-                        SharpCard {
+                        SharpCard(
+                            modifier = Modifier.clickable {
+                                onSplitClick(split.id)
+                            },
+                        ) {
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(text = split.name)
 

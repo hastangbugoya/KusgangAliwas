@@ -6,10 +6,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.example.kusgangaliwas.ui.calendar.CalendarRoute
 import com.example.kusgangaliwas.ui.exercise.ExerciseListRoute
 import com.example.kusgangaliwas.ui.split.SplitListRoute
+import com.example.kusgangaliwas.ui.split.SplitRoadmapRoute
 
 @Composable
 fun NavHost(
@@ -23,13 +27,19 @@ fun NavHost(
         modifier = modifier.padding(contentPadding),
     ) {
         composable(Destination.Calendar.route) {
-            Text("Calendar placeholder")
+            CalendarRoute(
+                onBackClick = {},
+                onOverflowClick = {},
+            )
         }
 
         composable(Destination.Splits.route) {
             SplitListRoute(
                 onBackClick = {},
                 onOverflowClick = {},
+                onSplitClick = { splitId ->
+                    navController.navigate(Destination.SplitRoadmap.createRoute(splitId))
+                },
             )
         }
 
@@ -39,5 +49,23 @@ fun NavHost(
                 onOverflowClick = {},
             )
         }
+
+        composable(
+                route = Destination.SplitRoadmap.route,
+            arguments = listOf(
+            navArgument("splitId") {
+                type = NavType.LongType
+            }
+        )
+        ) {
+        SplitRoadmapRoute(
+            onBackClick = {
+                navController.popBackStack()
+            },
+            onOverflowClick = {},
+        )
+    }
+
+
     }
 }
