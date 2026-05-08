@@ -138,8 +138,10 @@ fun ExerciseListScreen(
                 } else {
                     items(
                         items = uiState.exercises,
-                        key = { exercise -> exercise.id },
-                    ) { exercise ->
+                        key = { item -> item.exercise.id },
+                    ) { item ->
+                        val exercise = item.exercise
+
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.extraSmall,
@@ -154,6 +156,14 @@ fun ExerciseListScreen(
                                     text = exercise.name,
                                     style = MaterialTheme.typography.titleMedium,
                                 )
+
+                                item.lastLogDateText?.let { text ->
+                                    Text(text = text)
+                                }
+
+                                item.lastSetSummaryText?.let { text ->
+                                    Text(text = text)
+                                }
 
                                 Text(text = "1RM: —")
 

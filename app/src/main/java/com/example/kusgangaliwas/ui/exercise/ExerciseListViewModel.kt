@@ -4,26 +4,37 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
+import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.usecase.exercise.CreateExerciseUseCase
+import com.example.kusgangaliwas.domain.usecase.exercise.GetEstimatedOneRepMaxUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.example.kusgangaliwas.domain.usecase.exercise.GetEstimatedOneRepMaxUseCase
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 data class ExerciseListUiState(
-    val exercises: List<ExerciseEntity> = emptyList(),
+    val exercises: List<ExerciseListItemUiState> = emptyList(),
     val errorMessage: String? = null,
+)
+
+data class ExerciseListItemUiState(
+    val exercise: ExerciseEntity,
+    val lastLogDateText: String? = null,
+    val lastSetSummaryText: String? = null,
 )
 
 @HiltViewModel
 class ExerciseListViewModel @Inject constructor(
     exerciseRepository: ExerciseRepository,
+    private val sessionRepository: SessionRepository,
     private val createExerciseUseCase: CreateExerciseUseCase,
     private val getEstimatedOneRepMaxUseCase: GetEstimatedOneRepMaxUseCase,
 ) : ViewModel() {
@@ -35,7 +46,9 @@ class ExerciseListViewModel @Inject constructor(
             .observeActiveExercises()
             .map { exercises ->
                 ExerciseListUiState(
-                    exercises = exercises,
+                    exercises = exercises.map { exercise ->
+                        buildExerciseListItem(exercise)
+                    },
                 )
             }
             .stateIn(
@@ -66,6 +79,65 @@ class ExerciseListViewModel @Inject constructor(
                 getEstimatedOneRepMaxUseCase(exerciseId)
             }
             oneRepMaxMap[exerciseId] = result
+        }
+    }
+
+    private suspend fun buildExerciseListItem(
+        exercise: ExerciseEntity,
+    ): ExerciseListItemUiState {
+        val latestLog = sessionRepository
+            .getLogsForExercise(exercise.id)
+            .firstOrNull()
+
+        if (latestLog == null) {
+            return ExerciseListItemUiState(
+                exercise = exercise,
+            )
+        }
+
+        val sets = sessionRepository.getSetsForExercise(latestLog.id)
+
+        return ExerciseListItemUiState(
+            exercise = exercise,
+            lastLogDateText = latestLog.performedAtEpochMillis?.let { epochMillis ->
+                "Last: ${formatDate(epochMillis)}"
+            } ?: "Last: logged",
+            lastSetSummaryText = buildSetSummary(sets),
+        )
+    }
+
+    private fun buildSetSummary(
+        sets: List<com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity>,
+    ): String {
+        if (sets.isEmpty()) {
+            return "Sets: 0"
+        }
+
+        val setTexts = sets.map { set ->
+            val weight = set.weight?.let(::formatWeight) ?: "-"
+            val reps = set.reps?.toString() ?: "-"
+            "${weight}x$reps"
+        }
+
+        return "Sets: ${sets.size} · ${setTexts.joinToString(" · ")}"
+    }
+
+    private fun formatDate(
+        epochMillis: Long,
+    ): String {
+        return Instant.ofEpochMilli(epochMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+    }
+
+    private fun formatWeight(
+        value: Double,
+    ): String {
+        return if (value % 1.0 == 0.0) {
+            value.toInt().toString()
+        } else {
+            value.toString()
         }
     }
 }
