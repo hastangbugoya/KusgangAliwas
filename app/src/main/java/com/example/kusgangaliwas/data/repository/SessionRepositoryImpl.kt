@@ -284,4 +284,10 @@ class SessionRepositoryImpl @Inject constructor(
     ): List<ActualExerciseLogEntity> {
         return actualExerciseLogDao.getLogsForExercise(exerciseId)
     }
+
+    override fun observeActualSessionById(
+        actualSessionId: Long,
+    ): Flow<ActualSessionEntity?> {
+        return actualSessionDao.observeById(actualSessionId)
+    }
 }

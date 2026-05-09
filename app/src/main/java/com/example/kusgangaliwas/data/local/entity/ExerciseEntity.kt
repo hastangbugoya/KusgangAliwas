@@ -30,6 +30,8 @@ data class ExerciseEntity(
 
     val notes: String? = null,
 
+    val referenceUrl: String? = null,
+
     val isActive: Boolean = true,
 
     val createdAtEpochMillis: Long,

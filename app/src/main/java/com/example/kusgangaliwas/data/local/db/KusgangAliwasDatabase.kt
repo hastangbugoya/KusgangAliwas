@@ -12,24 +12,28 @@ import com.example.kusgangaliwas.data.local.dao.ExerciseSubstitutionDao
 import com.example.kusgangaliwas.data.local.dao.MuscleGroupDao
 import com.example.kusgangaliwas.data.local.dao.PlannedSessionDao
 import com.example.kusgangaliwas.data.local.dao.PlannedSessionExerciseDao
+import com.example.kusgangaliwas.data.local.dao.ProgramDao
+import com.example.kusgangaliwas.data.local.dao.SplitScheduleDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
+import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
+import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
+import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
+import com.example.kusgangaliwas.data.local.entity.CycleCalendarAnchorEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleGroupCrossRef
 import com.example.kusgangaliwas.data.local.entity.ExerciseSubstitutionEntity
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
+import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
+import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ProgramEntity
+import com.example.kusgangaliwas.data.local.entity.SplitScheduleEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
-import com.example.kusgangaliwas.data.local.entity.CycleCalendarAnchorEntity
-import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
-import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
-import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
-import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
-import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 
 /**
  * Main Room database for Kusgang Aliwas.
@@ -42,8 +46,12 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
  * - split templates
  * - split template exercises
  *
- * Cycle, calendar, planned session, and actual logging tables will be added
+ * Cycle, calendar, planned session, and actual logging tables were added
  * in later DB milestones.
+ *
+ * DB-4 adds simple week-horizon split scheduling:
+ * - optional programs
+ * - split schedule rules
  */
 @Database(
     entities = [
@@ -61,11 +69,13 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
         ActualSessionEntity::class,
         ActualExerciseLogEntity::class,
         ActualExerciseSetLogEntity::class,
+        ProgramEntity::class,
+        SplitScheduleEntity::class,
     ],
-    version = 1,
+    version = 4,
     exportSchema = true,
 )
-abstract class KusgangAliwasDatabase : RoomDatabase(){
+abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun muscleGroupDao(): MuscleGroupDao
     abstract fun exerciseMuscleGroupDao(): ExerciseMuscleGroupDao
@@ -80,4 +90,6 @@ abstract class KusgangAliwasDatabase : RoomDatabase(){
     abstract fun actualSessionDao(): ActualSessionDao
     abstract fun actualExerciseLogDao(): ActualExerciseLogDao
     abstract fun actualExerciseSetLogDao(): ActualExerciseSetLogDao
+    abstract fun programDao(): ProgramDao
+    abstract fun splitScheduleDao(): SplitScheduleDao
 }

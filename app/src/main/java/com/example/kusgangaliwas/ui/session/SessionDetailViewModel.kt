@@ -76,10 +76,10 @@ class SessionDetailViewModel @Inject constructor(
 
     val uiState: StateFlow<SessionDetailUiState> =
         combine(
+            sessionRepository.observeActualSessionById(actualSessionId),
             exerciseLogsWithSets,
             exerciseRepository.observeActiveExercises(),
-        ) { logsWithSets, exercises ->
-            val session = sessionRepository.getActualSessionById(actualSessionId)
+        ) { session, logsWithSets, exercises ->
             val exerciseById = exercises.associateBy { it.id }
 
             SessionDetailUiState(
@@ -101,7 +101,6 @@ class SessionDetailViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = SessionDetailUiState(),
         )
-
     fun addSet(actualExerciseLogId: Long) {
         viewModelScope.launch {
             runCatching {
@@ -175,6 +174,40 @@ class SessionDetailViewModel @Inject constructor(
                     )
                 )
             }.onFailure { it.printStackTrace() }
+        }
+    }
+
+    fun updateSessionRating(rating: Int?) {
+        viewModelScope.launch {
+            runCatching {
+                val session = sessionRepository.getActualSessionById(actualSessionId)
+                    ?: return@runCatching
+
+                sessionRepository.updateActualSession(
+                    session.copy(
+                        rating = rating,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteExerciseLogIfEmpty(
+        actualExerciseLogId: Long,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                val sets = sessionRepository.getSetsForExercise(actualExerciseLogId)
+
+                if (sets.isEmpty()) {
+                    sessionRepository.deleteActualExerciseLog(actualExerciseLogId)
+                }
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
         }
     }
 }

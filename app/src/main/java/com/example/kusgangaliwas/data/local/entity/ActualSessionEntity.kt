@@ -70,6 +70,7 @@ data class ActualSessionEntity(
     val completedAtEpochMillis: Long? = null,
 
     val notes: String? = null,
+    val rating: Int? = null, // 1-5 stars
 
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,

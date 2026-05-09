@@ -20,6 +20,14 @@ fun SplitRoadmapRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         onAddExercise = viewModel::addExerciseToSplit,
+        onDeleteExercise = viewModel::deleteExerciseFromSplit,
+        onUpdateExerciseTargets = viewModel::updateExerciseTargets,
+        onScheduleEnabledChange = viewModel::setScheduleEnabled,
+        onToggleScheduleDay = viewModel::toggleScheduleDay,
+        onHorizonWeeksTextChange = viewModel::updateHorizonWeeksText,
+        onScheduleTitleChange = viewModel::updateScheduleTitle,
+        onSaveSchedule = viewModel::saveSchedule,
         modifier = modifier,
+
     )
 }

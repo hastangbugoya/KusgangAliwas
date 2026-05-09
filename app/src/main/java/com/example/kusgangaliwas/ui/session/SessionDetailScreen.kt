@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.session
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -31,28 +33,6 @@ import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
 
 @Composable
-fun SessionDetailRoute(
-    onBackClick: () -> Unit,
-    onOverflowClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: SessionDetailViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    SessionDetailScreen(
-        uiState = uiState,
-        onBackClick = onBackClick,
-        onOverflowClick = onOverflowClick,
-        onAddExercise = viewModel::addExercise,
-        onAddSet = viewModel::addSet,
-        onUpdateSet = viewModel::updateSet,
-        onDeleteSet = viewModel::deleteSet,
-        onDuplicateSet = viewModel::duplicateSet,
-        modifier = modifier,
-    )
-}
-
-@Composable
 fun SessionDetailScreen(
     uiState: SessionDetailUiState,
     onBackClick: () -> Unit,
@@ -63,6 +43,8 @@ fun SessionDetailScreen(
     onDeleteSet: (Long) -> Unit,
     onDuplicateSet: (ActualExerciseSetLogEntity) -> Unit,
     modifier: Modifier = Modifier,
+    onRatingChange: (Int?) -> Unit,
+    onDeleteExerciseLogIfEmpty: (Long) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -127,11 +109,34 @@ fun SessionDetailScreen(
                                             ) {
                                                 Text("Add set")
                                             }
+                                            if (item.sets.isEmpty()) {
+                                                TextButton(
+                                                    onClick = {
+                                                        onDeleteExerciseLogIfEmpty(item.log.id)
+                                                    },
+                                                ) {
+                                                    Text("Remove exercise")
+                                                }
+                                            }
+
                                         }
                                     }
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            item {
+                SharpCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionHeader("Session rating")
+
+                        StarRatingRow(
+                            rating = uiState.session?.rating,
+                            onRatingChange = onRatingChange,
+                        )
                     }
                 }
             }
@@ -155,6 +160,41 @@ fun SessionDetailScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun StarRatingRow(
+    rating: Int?,
+    onRatingChange: (Int?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        (1..5).forEach { star ->
+            val filled = (rating ?: 0) >= star
+
+            Text(
+                text = if (filled) "★" else "☆",
+                style = MaterialTheme.typography.headlineMedium, // BIGGER
+                color = if (filled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outline
+                },
+                modifier = Modifier
+                    .padding(4.dp)
+                    .clickable {
+                        if (rating == star) {
+                            onRatingChange(null)
+                        } else {
+                            onRatingChange(star)
+                        }
+                    },
+            )
         }
     }
 }

@@ -94,4 +94,16 @@ interface ActualSessionDao {
         """
     )
     suspend fun deleteActualSession(actualSessionId: Long)
+
+    @Query(
+        """
+    SELECT *
+    FROM actual_session
+    WHERE id = :actualSessionId
+    LIMIT 1
+    """
+    )
+    fun observeById(
+        actualSessionId: Long,
+    ): Flow<ActualSessionEntity?>
 }

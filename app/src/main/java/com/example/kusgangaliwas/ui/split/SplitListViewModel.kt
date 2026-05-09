@@ -42,6 +42,8 @@ class SplitListViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 createSplitTemplateUseCase(name = name)
+            }.onFailure { error ->
+                error.printStackTrace()
             }
         }
     }

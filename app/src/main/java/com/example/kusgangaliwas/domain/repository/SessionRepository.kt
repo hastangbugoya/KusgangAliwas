@@ -180,4 +180,6 @@ interface SessionRepository {
     suspend fun getLogsForExercise(
         exerciseId: Long,
     ): List<ActualExerciseLogEntity>
+
+    fun observeActualSessionById(actualSessionId: Long): Flow<ActualSessionEntity?>
 }

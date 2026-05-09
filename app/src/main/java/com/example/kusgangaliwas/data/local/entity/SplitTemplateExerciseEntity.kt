@@ -56,6 +56,11 @@ data class SplitTemplateExerciseEntity(
 
     val notes: String? = null,
 
+    val targetSets: Int? = null,
+
+    val targetRepsMin: Int? = null,
+    val targetRepsMax: Int? = null,
+
     /**
      * Allows marking optional exercises (e.g. accessories).
      */
