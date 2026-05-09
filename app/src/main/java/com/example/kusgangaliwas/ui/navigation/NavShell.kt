@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
@@ -43,7 +44,7 @@ fun NavShell(
                         },
                         icon = {
                             Icon(
-                                imageVector = destination.icon,
+                                painter = painterResource(destination.icon),
                                 contentDescription = destination.label,
                             )
                         },

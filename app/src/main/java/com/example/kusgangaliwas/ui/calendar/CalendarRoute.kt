@@ -1,8 +1,10 @@
 package com.example.kusgangaliwas.ui.calendar
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import java.time.YearMonth
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun CalendarRoute(
@@ -10,9 +12,12 @@ fun CalendarRoute(
     onOverflowClick: () -> Unit,
     onDayClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: CalendarViewModel = hiltViewModel(),
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     CalendarScreen(
-        month = YearMonth.now(),
+        uiState = uiState,
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         modifier = modifier,

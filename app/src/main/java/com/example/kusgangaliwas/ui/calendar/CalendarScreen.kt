@@ -21,13 +21,16 @@ import java.util.Locale
 
 @Composable
 fun CalendarScreen(
-    month: YearMonth,
+    uiState: CalendarUiState,
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
     onDayClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val days = rememberCalendarMonthCells(month)
+    val days = rememberCalendarMonthCells(
+        month = uiState.month,
+        dayStatusByEpochDay = uiState.dayStatusByEpochDay,
+    )
 
     Scaffold(
         modifier = modifier,
@@ -47,7 +50,7 @@ fun CalendarScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             MonthHeader(
-                month = month,
+                month = uiState.month,
             )
 
             WeekdayHeaderRow()
@@ -72,6 +75,7 @@ fun CalendarScreen(
 
 private fun rememberCalendarMonthCells(
     month: YearMonth,
+    dayStatusByEpochDay: Map<Long, CalendarDayStatus>,
 ): List<CalendarDayCellState> {
     val firstDay = month.atDay(1)
     val daysBeforeMonth = firstDay.dayOfWeek.value % 7
@@ -79,10 +83,12 @@ private fun rememberCalendarMonthCells(
 
     return List(42) { index ->
         val date = firstVisibleDate.plusDays(index.toLong())
+
         CalendarDayCellState(
             date = date,
             isInCurrentMonth = YearMonth.from(date) == month,
-            placeholderIcon = "🟡",
+            status = dayStatusByEpochDay[date.toEpochDay()]
+                ?: CalendarDayStatus.NEUTRAL,
         )
     }
 }
@@ -90,7 +96,7 @@ private fun rememberCalendarMonthCells(
 data class CalendarDayCellState(
     val date: LocalDate,
     val isInCurrentMonth: Boolean,
-    val placeholderIcon: String,
+    val status: CalendarDayStatus,
 )
 
 internal fun DayOfWeek.shortLabel(): String {

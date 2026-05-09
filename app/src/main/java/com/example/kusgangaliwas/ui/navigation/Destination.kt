@@ -1,40 +1,42 @@
 package com.example.kusgangaliwas.ui.navigation
 
+import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.DateRange
+import com.example.kusgangaliwas.R
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 
 sealed class Destination(
     val route: String,
     val label: String,
-    val icon: ImageVector,
+    @DrawableRes val icon: Int
 ) {
     data object Calendar : Destination(
         route = "calendar",
         label = "Calendar",
-        icon = Icons.Default.DateRange,
+        icon = R.drawable.calendar_day,
     )
 
     data object Splits : Destination(
         route = "splits",
         label = "Splits",
-        icon = Icons.Default.List,
+        icon = R.drawable.list_tree,
     )
 
     data object Exercises : Destination(
         route = "exercises",
         label = "Exercises",
-        icon = Icons.Default.Star,
+        icon = R.drawable.gym,
     )
 
     data object SplitRoadmap : Destination(
         route = "split_roadmap/{splitId}",
         label = "Split Roadmap",
-        icon = Icons.Default.List,
+        icon = R.drawable.list,
     ) {
         fun createRoute(splitId: Long): String = "split_roadmap/$splitId"
     }
@@ -42,7 +44,7 @@ sealed class Destination(
     data object SessionDay : Destination(
         route = "session_day/{epochDay}",
         label = "Session Day",
-        icon = Icons.Default.Build,
+        icon = R.drawable.calendar_day,
     ) {
         fun createRoute(epochDay: Long): String = "session_day/$epochDay"
     }
@@ -50,7 +52,7 @@ sealed class Destination(
     data object SessionDetail : Destination(
         route = "session_detail/{actualSessionId}",
         label = "Session Detail",
-        icon = Icons.Default.Face,
+        icon = R.drawable.list,
     ) {
         fun createRoute(actualSessionId: Long): String = "session_detail/$actualSessionId"
     }
