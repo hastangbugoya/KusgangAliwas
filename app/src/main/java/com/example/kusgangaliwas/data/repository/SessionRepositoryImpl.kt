@@ -10,6 +10,7 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
+import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -165,6 +166,40 @@ class SessionRepositoryImpl @Inject constructor(
         plannedSessionId: Long,
     ): ActualSessionEntity? {
         return actualSessionDao.getLatestForPlannedSession(plannedSessionId)
+    }
+
+    override suspend fun getLatestWeightSuggestionForExercise(
+        exerciseId: Long,
+    ): ExerciseWeightSuggestion? {
+        val logs = actualExerciseLogDao.getLogsForExercise(exerciseId)
+
+        logs.forEach { log ->
+            val sets = actualExerciseSetLogDao.getSetsForExercise(log.id)
+
+            val suggestedSet = sets
+                .filter { it.weight != null }
+                .maxWithOrNull(
+                    compareBy<ActualExerciseSetLogEntity> { it.weight ?: 0.0 }
+                        .thenBy { it.reps ?: 0 }
+                        .thenBy { it.setOrder }
+                )
+
+            if (suggestedSet != null) {
+                val session = actualSessionDao.getById(log.actualSessionId)
+                    ?: return@forEach
+
+                return ExerciseWeightSuggestion(
+                    exerciseId = exerciseId,
+                    exerciseName = null,
+                    sourceActualSessionId = session.id,
+                    sourcePerformedDateEpochDay = session.performedDateEpochDay,
+                    suggestedWeight = suggestedSet.weight ?: return@forEach,
+                    suggestedReps = suggestedSet.reps,
+                )
+            }
+        }
+
+        return null
     }
 
     override suspend fun insertActualSession(entity: ActualSessionEntity): Long {

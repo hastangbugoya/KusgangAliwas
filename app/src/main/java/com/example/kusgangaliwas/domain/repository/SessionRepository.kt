@@ -5,6 +5,7 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
+import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -182,4 +183,15 @@ interface SessionRepository {
     ): List<ActualExerciseLogEntity>
 
     fun observeActualSessionById(actualSessionId: Long): Flow<ActualSessionEntity?>
+
+    /**
+     * Returns a suggested starting weight for an exercise based on prior logs.
+     *
+     * V1 rule:
+     * - no previous logs -> null
+     * - previous logs exist -> latest session's max logged weight
+     */
+    suspend fun getLatestWeightSuggestionForExercise(
+        exerciseId: Long,
+    ): ExerciseWeightSuggestion?
 }

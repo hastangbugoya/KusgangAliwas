@@ -31,6 +31,19 @@ data class SessionExerciseLogUiState(
     val log: ActualExerciseLogEntity,
     val exerciseName: String,
     val sets: List<ActualExerciseSetLogEntity> = emptyList(),
+
+    /**
+     * Suggested starting weight derived from previous exercise history.
+     *
+     * V1:
+     * - latest session
+     * - maximum logged weight from that session
+     *
+     * Null means:
+     * - no prior history
+     * - or no logged weights yet
+     */
+    val suggestedWeight: Double? = null,
 )
 
 private data class ExerciseLogWithSets(
@@ -107,12 +120,44 @@ class SessionDetailViewModel @Inject constructor(
                 val existingSets = sessionRepository.getSetsForExercise(actualExerciseLogId)
                 val nextOrder = existingSets.size + 1
 
+                val exerciseLog = sessionRepository
+                    .getLogsForSession(actualSessionId)
+                    .firstOrNull { it.id == actualExerciseLogId }
+
+                val suggestion =
+                    if (nextOrder == 1) {
+                        exerciseLog?.exerciseId
+                            ?.let { exerciseId ->
+                                sessionRepository
+                                    .getLatestWeightSuggestionForExercise(exerciseId)
+                            }
+                    } else {
+                        null
+                    }
+
                 sessionRepository.insertSet(
                     ActualExerciseSetLogEntity(
                         actualExerciseLogId = actualExerciseLogId,
                         setOrder = nextOrder,
-                        reps = null,
-                        weight = null,
+                        reps = suggestion?.suggestedReps,
+                        weight = suggestion?.suggestedWeight,
+                        notes = suggestion?.let {
+                            buildString {
+                                append("From previous session max")
+
+                                it.suggestedWeight.let { weight ->
+                                    append(" (")
+                                    append(formatWeight(weight))
+
+                                    it.suggestedReps?.let { reps ->
+                                        append(" × ")
+                                        append(reps)
+                                    }
+
+                                    append(")")
+                                }
+                            }
+                        },
                     )
                 )
             }.onFailure { error ->
@@ -205,6 +250,16 @@ class SessionDetailViewModel @Inject constructor(
                 if (sets.isEmpty()) {
                     sessionRepository.deleteActualExerciseLog(actualExerciseLogId)
                 }
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteSession() {
+        viewModelScope.launch {
+            runCatching {
+                sessionRepository.deleteActualSession(actualSessionId)
             }.onFailure { error ->
                 error.printStackTrace()
             }

@@ -1,7 +1,6 @@
 package com.example.kusgangaliwas.domain.usecase.session
 
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
-import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import javax.inject.Inject
 
@@ -15,10 +14,11 @@ import javax.inject.Inject
  * The log is treated as impromptu for now because it is not linked to a
  * planned session exercise yet.
  *
- * When possible, this also seeds the new exercise log with the sets from the
- * most recent previous log for the same exercise. This gives the user a
- * practical starting point based on recent performance without making the plan
- * strict or punitive.
+ * This use case intentionally does not copy prior sets.
+ *
+ * Weight suggestions are applied later when the user adds the first set for
+ * the exercise. That keeps previous history as a hint instead of silently
+ * creating multiple copied sets.
  */
 class AddExerciseLogToSessionUseCase @Inject constructor(
     private val sessionRepository: SessionRepository,
@@ -56,42 +56,6 @@ class AddExerciseLogToSessionUseCase @Inject constructor(
             )
         )
 
-        seedSetsFromMostRecentPreviousLog(
-            exerciseId = exerciseId,
-            newLogId = newLogId,
-        )
-
         return newLogId
-    }
-
-    private suspend fun seedSetsFromMostRecentPreviousLog(
-        exerciseId: Long,
-        newLogId: Long,
-    ) {
-        val previousLog = sessionRepository
-            .getLogsForExercise(exerciseId)
-            .firstOrNull { log ->
-                log.id != newLogId
-            } ?: return
-
-        val previousSets = sessionRepository.getSetsForExercise(previousLog.id)
-
-        if (previousSets.isEmpty()) {
-            return
-        }
-
-        val copiedSets = previousSets.mapIndexed { index, set ->
-            ActualExerciseSetLogEntity(
-                actualExerciseLogId = newLogId,
-                setOrder = index + 1,
-                weight = set.weight,
-                reps = set.reps,
-                durationSeconds = set.durationSeconds,
-                distance = set.distance,
-                notes = null,
-            )
-        }
-
-        sessionRepository.insertSets(copiedSets)
     }
 }

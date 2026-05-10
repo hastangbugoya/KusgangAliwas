@@ -27,5 +27,9 @@ fun SessionDetailRoute(
         modifier = modifier,
         onRatingChange = viewModel::updateSessionRating,
         onDeleteExerciseLogIfEmpty = viewModel::deleteExerciseLogIfEmpty,
+        onDeleteSession = {
+            viewModel.deleteSession()
+            onBackClick()
+        },
     )
 }

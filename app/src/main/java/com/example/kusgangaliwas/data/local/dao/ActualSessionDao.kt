@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
+import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -55,6 +56,50 @@ interface ActualSessionDao {
         plannedSessionId: Long,
     ): ActualSessionEntity?
 
+    /**
+     * Returns the latest historical max weight suggestion for an exercise.
+     *
+     * V1 behavior:
+     * - looks at the most recent previous session containing the exercise
+     * - returns the maximum logged weight from that session
+     *
+     * This intentionally favors simplicity over advanced analytics.
+     */
+    @Query(
+        """
+    SELECT
+        ael.exerciseId AS exerciseId,
+        NULL AS exerciseName,
+        s.id AS sourceActualSessionId,
+        s.performedDateEpochDay AS sourcePerformedDateEpochDay,
+        sets.weight AS suggestedWeight
+    FROM actual_session s
+    INNER JOIN actual_exercise_log ael
+        ON ael.actualSessionId = s.id
+    INNER JOIN actual_exercise_set_log sets
+        ON sets.actualExerciseLogId = ael.id
+    WHERE ael.exerciseId = :exerciseId
+        AND sets.weight IS NOT NULL
+        AND s.id = (
+            SELECT s2.id
+            FROM actual_session s2
+            INNER JOIN actual_exercise_log ael2
+                ON ael2.actualSessionId = s2.id
+            INNER JOIN actual_exercise_set_log sets2
+                ON sets2.actualExerciseLogId = ael2.id
+            WHERE ael2.exerciseId = :exerciseId
+                AND sets2.weight IS NOT NULL
+            ORDER BY s2.performedDateEpochDay DESC, s2.id DESC
+            LIMIT 1
+        )
+    ORDER BY sets.weight DESC, sets.id DESC
+    LIMIT 1
+    """
+    )
+    suspend fun getLatestWeightSuggestionForExercise(
+        exerciseId: Long,
+    ): ExerciseWeightSuggestion?
+
     @Query(
         """
         SELECT *
@@ -97,11 +142,11 @@ interface ActualSessionDao {
 
     @Query(
         """
-    SELECT *
-    FROM actual_session
-    WHERE id = :actualSessionId
-    LIMIT 1
-    """
+        SELECT *
+        FROM actual_session
+        WHERE id = :actualSessionId
+        LIMIT 1
+        """
     )
     fun observeById(
         actualSessionId: Long,

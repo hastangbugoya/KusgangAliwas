@@ -45,6 +45,7 @@ fun SessionDetailScreen(
     modifier: Modifier = Modifier,
     onRatingChange: (Int?) -> Unit,
     onDeleteExerciseLogIfEmpty: (Long) -> Unit,
+    onDeleteSession: () -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -144,6 +145,25 @@ fun SessionDetailScreen(
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionHeader("Danger zone")
+
+                        Text(
+                            text = "Delete this workout session permanently.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+
+                        OutlinedButton(
+                            onClick = onDeleteSession,
+                        ) {
+                            Text("Delete session")
+                        }
+                    }
+                }
+            }
+
+            item {
+                SharpCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Add exercise")
 
                         if (uiState.availableExercises.isEmpty()) {
@@ -217,6 +237,16 @@ private fun SetEditorRow(
             set = set,
             onUpdateSet = onUpdateSet,
         )
+
+        set.notes
+            ?.takeIf { it.isNotBlank() }
+            ?.let { note ->
+                Text(
+                    text = note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -393,7 +423,7 @@ private fun buildSetSummary(
     return "Sets: ${sets.size} | Weight: $weightText"
 }
 
-private fun formatWeight(
+internal fun formatWeight(
     value: Double,
 ): String {
     return if (value % 1.0 == 0.0) {
