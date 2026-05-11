@@ -16,17 +16,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
@@ -110,6 +108,7 @@ fun SessionDetailScreen(
                                             ) {
                                                 Text("Add set")
                                             }
+
                                             if (item.sets.isEmpty()) {
                                                 TextButton(
                                                     onClick = {
@@ -119,7 +118,6 @@ fun SessionDetailScreen(
                                                     Text("Remove exercise")
                                                 }
                                             }
-
                                         }
                                     }
                                 }
@@ -199,7 +197,7 @@ private fun StarRatingRow(
 
             Text(
                 text = if (filled) "★" else "☆",
-                style = MaterialTheme.typography.headlineMedium, // BIGGER
+                style = MaterialTheme.typography.headlineMedium,
                 color = if (filled) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -272,11 +270,25 @@ private fun WeightRepsInputRow(
     onUpdateSet: (ActualExerciseSetLogEntity, Double?, Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var weightText by remember(set.id) {
-        mutableStateOf(set.weight?.toString() ?: "")
+    var weightText by rememberSaveable(set.id) {
+        mutableStateOf(set.weight?.let(::formatWeight) ?: "")
     }
-    var repsText by remember(set.id) {
+    var repsText by rememberSaveable(set.id) {
         mutableStateOf(set.reps?.toString() ?: "")
+    }
+
+    LaunchedEffect(set.id, set.weight) {
+        val entityWeightText = set.weight?.let(::formatWeight) ?: ""
+        if (weightText != entityWeightText) {
+            weightText = entityWeightText
+        }
+    }
+
+    LaunchedEffect(set.id, set.reps) {
+        val entityRepsText = set.reps?.toString() ?: ""
+        if (repsText != entityRepsText) {
+            repsText = entityRepsText
+        }
     }
 
     Row(
@@ -291,27 +303,27 @@ private fun WeightRepsInputRow(
                 weightText = value
                 onUpdateSet(
                     set,
-                    weightText.toDoubleOrNull(),
+                    value.toDoubleOrNull(),
                     repsText.toIntOrNull(),
                 )
             },
             onDecrement = {
-                val newWeight = ((weightText.toDoubleOrNull() ?: 0.0) - 2.5)
+                val newWeight = ((weightText.toDoubleOrNull() ?: set.weight ?: 0.0) - 2.5)
                     .coerceAtLeast(0.0)
                 weightText = formatWeight(newWeight)
                 onUpdateSet(
                     set,
                     newWeight,
-                    repsText.toIntOrNull(),
+                    repsText.toIntOrNull() ?: set.reps,
                 )
             },
             onIncrement = {
-                val newWeight = (weightText.toDoubleOrNull() ?: 0.0) + 2.5
+                val newWeight = (weightText.toDoubleOrNull() ?: set.weight ?: 0.0) + 2.5
                 weightText = formatWeight(newWeight)
                 onUpdateSet(
                     set,
                     newWeight,
-                    repsText.toIntOrNull(),
+                    repsText.toIntOrNull() ?: set.reps,
                 )
             },
             keyboardType = KeyboardType.Decimal,
@@ -325,26 +337,26 @@ private fun WeightRepsInputRow(
                 repsText = value
                 onUpdateSet(
                     set,
-                    weightText.toDoubleOrNull(),
-                    repsText.toIntOrNull(),
+                    weightText.toDoubleOrNull() ?: set.weight,
+                    value.toIntOrNull(),
                 )
             },
             onDecrement = {
-                val newReps = ((repsText.toIntOrNull() ?: 0) - 1)
+                val newReps = ((repsText.toIntOrNull() ?: set.reps ?: 0) - 1)
                     .coerceAtLeast(0)
                 repsText = newReps.toString()
                 onUpdateSet(
                     set,
-                    weightText.toDoubleOrNull(),
+                    weightText.toDoubleOrNull() ?: set.weight,
                     newReps,
                 )
             },
             onIncrement = {
-                val newReps = (repsText.toIntOrNull() ?: 0) + 1
+                val newReps = (repsText.toIntOrNull() ?: set.reps ?: 0) + 1
                 repsText = newReps.toString()
                 onUpdateSet(
                     set,
-                    weightText.toDoubleOrNull(),
+                    weightText.toDoubleOrNull() ?: set.weight,
                     newReps,
                 )
             },

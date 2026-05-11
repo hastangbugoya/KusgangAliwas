@@ -27,6 +27,7 @@ sealed interface GymRemoteEffect {
      * Persist updated weight value.
      */
     data class UpdateWeight(
+        val setIndex: Int,
         val weight: Double,
     ) : GymRemoteEffect
 
@@ -34,21 +35,28 @@ sealed interface GymRemoteEffect {
      * Persist updated reps value.
      */
     data class UpdateReps(
+        val setIndex: Int,
         val reps: Int,
     ) : GymRemoteEffect
 
     /**
-     * Mark current set as started/performed.
+     * Duplicate the currently focused set and append it as the next set.
      */
-    data object StartSet : GymRemoteEffect
+    data class DuplicateSet(
+        val sourceSetIndex: Int,
+    ) : GymRemoteEffect
 
     /**
-     * Mark current set as completed.
+     * Read current focus/state aloud.
      */
-    data object CompleteSet : GymRemoteEffect
+    data class AnnounceFocus(
+        val focus: GymRemoteFocus,
+    ) : GymRemoteEffect
 
     /**
-     * Automatically prepare the next set.
+     * Debug/logging effect for tracing reducer transitions.
      */
-    data object PrepareNextSet : GymRemoteEffect
+    data class DebugLog(
+        val message: String,
+    ) : GymRemoteEffect
 }

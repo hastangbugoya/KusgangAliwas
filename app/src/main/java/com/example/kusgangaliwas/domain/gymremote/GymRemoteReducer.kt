@@ -14,72 +14,129 @@ class GymRemoteReducer {
         state: GymRemoteState,
         input: GymRemoteInput,
     ): GymRemoteResult {
-        return when (input) {
+        val result = when (input) {
             GymRemoteInput.Confirm -> onConfirm(state)
             GymRemoteInput.Next -> onNext(state)
             GymRemoteInput.Previous -> onPrevious(state)
             GymRemoteInput.Increment -> onIncrement(state)
             GymRemoteInput.Decrement -> onDecrement(state)
         }
+
+        return result.copy(
+            effects = buildList {
+                add(
+                    GymRemoteEffect.DebugLog(
+                        buildString {
+                            append("INPUT=")
+                            append(input)
+                            append(" | BEFORE=")
+                            append(state.debugLabel())
+                            append(" | AFTER=")
+                            append(result.nextState.debugLabel())
+                        }
+                    )
+                )
+
+                addAll(result.effects)
+            }
+        )
     }
 
     private fun onConfirm(
         state: GymRemoteState,
     ): GymRemoteResult {
-        return when (state.phase) {
-            GymRemotePhase.IDLE -> {
+        return when (val focus = state.focus) {
+            GymRemoteFocus.None -> {
                 GymRemoteResult(
-                    nextState = state.copy(
-                        phase = GymRemotePhase.REVIEWING_SET,
-                    ),
+                    nextState = state,
                     effects = listOf(
-                        GymRemoteEffect.Speak(state.describeCurrentSet()),
-                        GymRemoteEffect.Speak("Adjust weight. Next for reps."),
+                        GymRemoteEffect.Speak("No set selected."),
                     ),
                 )
             }
 
-            GymRemotePhase.REVIEWING_SET,
-            GymRemotePhase.EDITING -> {
-                GymRemoteResult(
-                    nextState = state.copy(
-                        phase = GymRemotePhase.PERFORMING_SET,
-                    ),
-                    effects = listOf(
-                        GymRemoteEffect.StartSet,
-                        GymRemoteEffect.Speak("Start set ${state.setNumber}."),
-                    ),
+            is GymRemoteFocus.Weight -> {
+                completeFocusedSet(
+                    state = state,
+                    setIndex = focus.setIndex,
                 )
             }
 
-            GymRemotePhase.PERFORMING_SET -> {
-                GymRemoteResult(
-                    nextState = state.copy(
-                        phase = GymRemotePhase.REVIEWING_SET,
-                        setNumber = state.setNumber + 1,
-                    ),
-                    effects = listOf(
-                        GymRemoteEffect.CompleteSet,
-                        GymRemoteEffect.PrepareNextSet,
-                        GymRemoteEffect.Speak("Set ${state.setNumber} complete."),
-                    ),
+            is GymRemoteFocus.Reps -> {
+                completeFocusedSet(
+                    state = state,
+                    setIndex = focus.setIndex,
                 )
             }
         }
     }
 
-    private fun onNext(
+    private fun completeFocusedSet(
         state: GymRemoteState,
+        setIndex: Int,
     ): GymRemoteResult {
+        val currentSet = state.sets.getOrNull(setIndex)
+            ?: return GymRemoteResult(nextState = state)
+
+        val newSetIndex = state.sets.size
+
+        val duplicatedSet = currentSet.copy(
+            setIndex = newSetIndex,
+        )
+
+        val nextSets = state.sets + duplicatedSet
+
         val nextState = state.copy(
-            phase = GymRemotePhase.EDITING,
-            focusedField = GymRemoteFocusedField.REPS,
+            focus = GymRemoteFocus.Weight(newSetIndex),
+            sets = nextSets,
         )
 
         return GymRemoteResult(
             nextState = nextState,
             effects = listOf(
-                GymRemoteEffect.Speak("Adjust reps."),
+                GymRemoteEffect.DuplicateSet(setIndex),
+                GymRemoteEffect.Speak("Set ${setIndex + 1} complete."),
+                GymRemoteEffect.Speak("New set created as set ${newSetIndex + 1}."),
+                GymRemoteEffect.Speak(
+                    "Set ${newSetIndex + 1}, ${formatWeightForSpeech(duplicatedSet.weight)} pounds."
+                ),
+            ),
+        )
+    }
+
+    private fun onNext(
+        state: GymRemoteState,
+    ): GymRemoteResult {
+        val nextFocus = when (val focus = state.focus) {
+            GymRemoteFocus.None -> {
+                if (state.sets.isEmpty()) {
+                    GymRemoteFocus.None
+                } else {
+                    GymRemoteFocus.Weight(0)
+                }
+            }
+
+            is GymRemoteFocus.Weight -> {
+                GymRemoteFocus.Reps(focus.setIndex)
+            }
+
+            is GymRemoteFocus.Reps -> {
+                val nextIndex = focus.setIndex + 1
+
+                if (nextIndex >= state.sets.size) {
+                    GymRemoteFocus.None
+                } else {
+                    GymRemoteFocus.Weight(nextIndex)
+                }
+            }
+        }
+
+        return GymRemoteResult(
+            nextState = state.copy(
+                focus = nextFocus,
+            ),
+            effects = listOf(
+                GymRemoteEffect.AnnounceFocus(nextFocus),
             ),
         )
     }
@@ -87,15 +144,34 @@ class GymRemoteReducer {
     private fun onPrevious(
         state: GymRemoteState,
     ): GymRemoteResult {
-        val nextState = state.copy(
-            phase = GymRemotePhase.EDITING,
-            focusedField = GymRemoteFocusedField.WEIGHT,
-        )
+        val previousFocus = when (val focus = state.focus) {
+            GymRemoteFocus.None -> {
+                if (state.sets.isEmpty()) {
+                    GymRemoteFocus.None
+                } else {
+                    GymRemoteFocus.Reps(state.sets.lastIndex)
+                }
+            }
+
+            is GymRemoteFocus.Weight -> {
+                if (focus.setIndex == 0) {
+                    GymRemoteFocus.None
+                } else {
+                    GymRemoteFocus.Reps(focus.setIndex - 1)
+                }
+            }
+
+            is GymRemoteFocus.Reps -> {
+                GymRemoteFocus.Weight(focus.setIndex)
+            }
+        }
 
         return GymRemoteResult(
-            nextState = nextState,
+            nextState = state.copy(
+                focus = previousFocus,
+            ),
             effects = listOf(
-                GymRemoteEffect.Speak("Adjust weight."),
+                GymRemoteEffect.AnnounceFocus(previousFocus),
             ),
         )
     }
@@ -103,34 +179,58 @@ class GymRemoteReducer {
     private fun onIncrement(
         state: GymRemoteState,
     ): GymRemoteResult {
-        return when (state.focusedField) {
-            GymRemoteFocusedField.WEIGHT -> {
-                val newWeight = ((state.weight ?: 0.0) + WEIGHT_STEP)
-                    .coerceAtLeast(0.0)
+        return when (val focus = state.focus) {
+            GymRemoteFocus.None -> {
+                GymRemoteResult(nextState = state)
+            }
+
+            is GymRemoteFocus.Weight -> {
+                val updatedSets = state.sets.toMutableList()
+                val current = updatedSets[focus.setIndex]
+
+                val newWeight =
+                    ((current.weight ?: 0.0) + WEIGHT_STEP)
+                        .coerceAtLeast(0.0)
+
+                updatedSets[focus.setIndex] =
+                    current.copy(weight = newWeight)
 
                 GymRemoteResult(
                     nextState = state.copy(
-                        phase = GymRemotePhase.EDITING,
-                        weight = newWeight,
+                        sets = updatedSets,
                     ),
                     effects = listOf(
-                        GymRemoteEffect.UpdateWeight(newWeight),
-                        GymRemoteEffect.Speak("${formatNumber(newWeight)} pounds"),
+                        GymRemoteEffect.UpdateWeight(
+                            setIndex = focus.setIndex,
+                            weight = newWeight,
+                        ),
+                        GymRemoteEffect.Speak(
+                            "${formatNumber(newWeight)} pounds"
+                        ),
                     ),
                 )
             }
 
-            GymRemoteFocusedField.REPS -> {
-                val newReps = ((state.reps ?: 0) + 1)
-                    .coerceAtLeast(0)
+            is GymRemoteFocus.Reps -> {
+                val updatedSets = state.sets.toMutableList()
+                val current = updatedSets[focus.setIndex]
+
+                val newReps =
+                    ((current.reps ?: 0) + 1)
+                        .coerceAtLeast(0)
+
+                updatedSets[focus.setIndex] =
+                    current.copy(reps = newReps)
 
                 GymRemoteResult(
                     nextState = state.copy(
-                        phase = GymRemotePhase.EDITING,
-                        reps = newReps,
+                        sets = updatedSets,
                     ),
                     effects = listOf(
-                        GymRemoteEffect.UpdateReps(newReps),
+                        GymRemoteEffect.UpdateReps(
+                            setIndex = focus.setIndex,
+                            reps = newReps,
+                        ),
                         GymRemoteEffect.Speak("$newReps reps"),
                     ),
                 )
@@ -141,34 +241,58 @@ class GymRemoteReducer {
     private fun onDecrement(
         state: GymRemoteState,
     ): GymRemoteResult {
-        return when (state.focusedField) {
-            GymRemoteFocusedField.WEIGHT -> {
-                val newWeight = ((state.weight ?: 0.0) - WEIGHT_STEP)
-                    .coerceAtLeast(0.0)
+        return when (val focus = state.focus) {
+            GymRemoteFocus.None -> {
+                GymRemoteResult(nextState = state)
+            }
+
+            is GymRemoteFocus.Weight -> {
+                val updatedSets = state.sets.toMutableList()
+                val current = updatedSets[focus.setIndex]
+
+                val newWeight =
+                    ((current.weight ?: 0.0) - WEIGHT_STEP)
+                        .coerceAtLeast(0.0)
+
+                updatedSets[focus.setIndex] =
+                    current.copy(weight = newWeight)
 
                 GymRemoteResult(
                     nextState = state.copy(
-                        phase = GymRemotePhase.EDITING,
-                        weight = newWeight,
+                        sets = updatedSets,
                     ),
                     effects = listOf(
-                        GymRemoteEffect.UpdateWeight(newWeight),
-                        GymRemoteEffect.Speak("${formatNumber(newWeight)} pounds"),
+                        GymRemoteEffect.UpdateWeight(
+                            setIndex = focus.setIndex,
+                            weight = newWeight,
+                        ),
+                        GymRemoteEffect.Speak(
+                            "${formatNumber(newWeight)} pounds"
+                        ),
                     ),
                 )
             }
 
-            GymRemoteFocusedField.REPS -> {
-                val newReps = ((state.reps ?: 0) - 1)
-                    .coerceAtLeast(0)
+            is GymRemoteFocus.Reps -> {
+                val updatedSets = state.sets.toMutableList()
+                val current = updatedSets[focus.setIndex]
+
+                val newReps =
+                    ((current.reps ?: 0) - 1)
+                        .coerceAtLeast(0)
+
+                updatedSets[focus.setIndex] =
+                    current.copy(reps = newReps)
 
                 GymRemoteResult(
                     nextState = state.copy(
-                        phase = GymRemotePhase.EDITING,
-                        reps = newReps,
+                        sets = updatedSets,
                     ),
                     effects = listOf(
-                        GymRemoteEffect.UpdateReps(newReps),
+                        GymRemoteEffect.UpdateReps(
+                            setIndex = focus.setIndex,
+                            reps = newReps,
+                        ),
                         GymRemoteEffect.Speak("$newReps reps"),
                     ),
                 )
@@ -176,16 +300,10 @@ class GymRemoteReducer {
         }
     }
 
-    private fun GymRemoteState.describeCurrentSet(): String {
-        val weightText = weight?.let {
-            "${formatNumber(it)} pounds"
-        } ?: "no weight"
-
-        val repsText = reps?.let {
-            "$it reps"
-        } ?: "no reps"
-
-        return "${exerciseName.ifBlank { "Exercise" }}, set $setNumber, $weightText by $repsText."
+    private fun formatWeightForSpeech(
+        value: Double?,
+    ): String {
+        return value?.let(::formatNumber) ?: "no"
     }
 
     private fun formatNumber(value: Double): String {

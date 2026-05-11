@@ -13,6 +13,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteInput
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteInputBus
+import com.example.kusgangaliwas.domain.gymremote.GymVoiceBus
 import com.example.kusgangaliwas.domain.usecase.planning.RefreshPlannedSessionsUseCase
 import com.example.kusgangaliwas.ui.theme.KusgangAliwasTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,6 +28,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var refreshPlannedSessionsUseCase: RefreshPlannedSessionsUseCase
+
+    @Inject
+    lateinit var gymRemoteInputBus: GymRemoteInputBus
+
+    @Inject
+    lateinit var gymVoiceBus: GymVoiceBus
 
     private var remoteCaptureEnabled: Boolean = true
 
@@ -42,6 +51,7 @@ class MainActivity : ComponentActivity() {
         audioManager = getSystemService(AudioManager::class.java)
 
         initializeTextToSpeech()
+        collectGymVoice()
         refreshPlannedSessions()
 
         setContent {
@@ -57,6 +67,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        tts?.stop()
         tts?.shutdown()
         tts = null
 
@@ -67,39 +78,48 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_DOWN) {
-            logRemoteKeyEvent(event)
+        val input = event.toGymRemoteInput()
 
-            if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
-                speakForGym("Remote detected")
+        if (input != null && remoteCaptureEnabled) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                logRemoteKeyEvent(event)
+                Log.d(REMOTE_LOG_TAG, "Emitting gym remote input: $input")
+                gymRemoteInputBus.emit(input)
+            }
+
+            return true
+        }
+
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun collectGymVoice() {
+        lifecycleScope.launch {
+            gymVoiceBus.messages.collect { message ->
+                Log.d(TTS_LOG_TAG, "Speaking: $message")
+                speakForGym(message)
             }
         }
+    }
 
-        if (!remoteCaptureEnabled) {
-            return super.dispatchKeyEvent(event)
-        }
-
-        return when (event.keyCode) {
-            KeyEvent.KEYCODE_MEDIA_PREVIOUS,
-            KeyEvent.KEYCODE_MEDIA_NEXT,
+    private fun KeyEvent.toGymRemoteInput(): GymRemoteInput? {
+        return when (keyCode) {
             KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
-            KeyEvent.KEYCODE_VOLUME_UP,
-            KeyEvent.KEYCODE_VOLUME_DOWN,
-            KeyEvent.KEYCODE_DPAD_LEFT,
-            KeyEvent.KEYCODE_DPAD_RIGHT,
             KeyEvent.KEYCODE_DPAD_CENTER,
             KeyEvent.KEYCODE_ENTER,
-            KeyEvent.KEYCODE_SPACE -> {
-                if (event.action == KeyEvent.ACTION_DOWN) {
-                    Log.d(
-                        REMOTE_LOG_TAG,
-                        "Captured gym remote key: ${KeyEvent.keyCodeToString(event.keyCode)}",
-                    )
-                }
-                true
-            }
+            KeyEvent.KEYCODE_SPACE -> GymRemoteInput.Confirm
 
-            else -> super.dispatchKeyEvent(event)
+            KeyEvent.KEYCODE_MEDIA_NEXT,
+            KeyEvent.KEYCODE_DPAD_RIGHT -> GymRemoteInput.Next
+
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+            KeyEvent.KEYCODE_DPAD_LEFT -> GymRemoteInput.Previous
+
+            KeyEvent.KEYCODE_VOLUME_UP -> GymRemoteInput.Increment
+
+            KeyEvent.KEYCODE_VOLUME_DOWN -> GymRemoteInput.Decrement
+
+            else -> null
         }
     }
 
@@ -134,7 +154,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun speakForGym(text: String) {
-        if (!ttsReady) return
+        if (!ttsReady) {
+            Log.d(TTS_LOG_TAG, "TTS not ready. Dropping speech: $text")
+            return
+        }
 
         requestGymAudioFocus()
 
@@ -176,7 +199,8 @@ class MainActivity : ComponentActivity() {
             "keyCode=${event.keyCode}, " +
                     "keyName=${KeyEvent.keyCodeToString(event.keyCode)}, " +
                     "scanCode=${event.scanCode}, " +
-                    "deviceId=${event.deviceId}",
+                    "deviceId=${event.deviceId}, " +
+                    "repeatCount=${event.repeatCount}",
         )
     }
 

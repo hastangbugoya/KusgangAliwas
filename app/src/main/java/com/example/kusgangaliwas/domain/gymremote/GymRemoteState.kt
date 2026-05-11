@@ -13,28 +13,60 @@ package com.example.kusgangaliwas.domain.gymremote
  * state + input -> next state + effects.
  */
 data class GymRemoteState(
-    val phase: GymRemotePhase = GymRemotePhase.IDLE,
-    val focusedField: GymRemoteFocusedField = GymRemoteFocusedField.WEIGHT,
     val exerciseName: String = "",
-    val setNumber: Int = 1,
+    val focus: GymRemoteFocus = GymRemoteFocus.None,
+    val sets: List<GymRemoteSetState> = emptyList(),
+)
+
+/**
+ * Focus target for the remote.
+ *
+ * V1 intentionally skips a set-summary focus.
+ *
+ * Traversal:
+ * None <-> Set 1 weight <-> Set 1 reps <-> Set 2 weight <-> Set 2 reps <-> None
+ */
+sealed interface GymRemoteFocus {
+
+    data object None : GymRemoteFocus
+
+    data class Weight(
+        val setIndex: Int,
+    ) : GymRemoteFocus
+
+    data class Reps(
+        val setIndex: Int,
+    ) : GymRemoteFocus
+}
+
+/**
+ * Lightweight set state used by the pure remote reducer.
+ *
+ * setIndex is zero-based.
+ */
+data class GymRemoteSetState(
+    val setIndex: Int,
     val weight: Double? = null,
     val reps: Int? = null,
 )
 
 /**
- * High-level phase of the hands-free gym flow.
+ * Debug-friendly state text for Logcat tracing.
  */
-enum class GymRemotePhase {
-    IDLE,
-    REVIEWING_SET,
-    EDITING,
-    PERFORMING_SET,
-}
+fun GymRemoteState.debugLabel(): String {
+    val focusText = when (focus) {
+        GymRemoteFocus.None -> "None"
+        is GymRemoteFocus.Weight -> "Set ${focus.setIndex + 1} Weight"
+        is GymRemoteFocus.Reps -> "Set ${focus.setIndex + 1} Reps"
+    }
 
-/**
- * Which value +/- should currently adjust.
- */
-enum class GymRemoteFocusedField {
-    WEIGHT,
-    REPS,
+    val setsText = sets.joinToString(
+        separator = ", ",
+        prefix = "[",
+        postfix = "]",
+    ) { set ->
+        "set=${set.setIndex + 1}, weight=${set.weight}, reps=${set.reps}"
+    }
+
+    return "exercise=$exerciseName, focus=$focusText, sets=$setsText"
 }

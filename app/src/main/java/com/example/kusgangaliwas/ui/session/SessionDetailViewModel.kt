@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.session
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,15 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteEffect
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteFocus
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteInput
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteInputBus
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteReducer
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteSetState
+import com.example.kusgangaliwas.domain.gymremote.GymRemoteState
+import com.example.kusgangaliwas.domain.gymremote.GymVoiceBus
+import com.example.kusgangaliwas.domain.gymremote.debugLabel
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.usecase.session.AddExerciseLogToSessionUseCase
@@ -57,6 +67,8 @@ class SessionDetailViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     exerciseRepository: ExerciseRepository,
     private val addExerciseLogToSessionUseCase: AddExerciseLogToSessionUseCase,
+    private val gymRemoteInputBus: GymRemoteInputBus,
+    private val gymVoiceBus: GymVoiceBus,
 ) : ViewModel() {
 
     private val actualSessionId: Long = checkNotNull(
@@ -64,6 +76,10 @@ class SessionDetailViewModel @Inject constructor(
     ) {
         "Missing actualSessionId."
     }
+
+    private val gymRemoteReducer = GymRemoteReducer()
+
+    private var gymRemoteFocus: GymRemoteFocus = GymRemoteFocus.None
 
     private val exerciseLogsWithSets =
         sessionRepository.observeLogsForSession(actualSessionId)
@@ -114,6 +130,157 @@ class SessionDetailViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = SessionDetailUiState(),
         )
+
+    fun handleGymRemoteInput(
+        input: GymRemoteInput,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                val currentUiState = uiState.value
+                val activeExercise = currentUiState.exerciseLogs
+                    .firstOrNull { it.sets.isNotEmpty() }
+
+                if (activeExercise == null) {
+                    Log.d(GYM_REMOTE_LOG_TAG, "No exercise with sets available.")
+                    return@runCatching
+                }
+
+                val sortedSets = activeExercise.sets.sortedForGymRemote()
+
+                val currentState = GymRemoteState(
+                    exerciseName = activeExercise.exerciseName,
+                    focus = gymRemoteFocus,
+                    sets = sortedSets.mapIndexed { index, set ->
+                        GymRemoteSetState(
+                            setIndex = index,
+                            weight = set.weight,
+                            reps = set.reps,
+                        )
+                    },
+                )
+
+                val result = gymRemoteReducer.reduce(
+                    state = currentState,
+                    input = input,
+                )
+
+                gymRemoteFocus = result.nextState.focus
+
+                Log.d(
+                    GYM_REMOTE_LOG_TAG,
+                    "REAL BEFORE: ${currentState.debugLabel()}",
+                )
+                Log.d(
+                    GYM_REMOTE_LOG_TAG,
+                    "REAL AFTER: ${result.nextState.debugLabel()}",
+                )
+
+                var workingSets = sortedSets
+
+                result.effects.forEach { effect ->
+                    workingSets = applyGymRemoteEffect(
+                        effect = effect,
+                        activeExerciseLogId = activeExercise.log.id,
+                        sortedSets = workingSets,
+                    )
+                }
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    private suspend fun applyGymRemoteEffect(
+        effect: GymRemoteEffect,
+        activeExerciseLogId: Long,
+        sortedSets: List<ActualExerciseSetLogEntity>,
+    ): List<ActualExerciseSetLogEntity> {
+        return when (effect) {
+            is GymRemoteEffect.DebugLog -> {
+                Log.d(GYM_REMOTE_LOG_TAG, effect.message)
+                sortedSets
+            }
+
+            is GymRemoteEffect.Speak -> {
+                Log.d(GYM_REMOTE_LOG_TAG, "SPEAK: ${effect.text}")
+                gymVoiceBus.speak(effect.text)
+                sortedSets
+            }
+
+            is GymRemoteEffect.AnnounceFocus -> {
+                val message = buildFocusSpeech(
+                    focus = effect.focus,
+                    sortedSets = sortedSets,
+                )
+
+                Log.d(GYM_REMOTE_LOG_TAG, "ANNOUNCE FOCUS: $message")
+                gymVoiceBus.speak(message)
+                sortedSets
+            }
+
+            is GymRemoteEffect.UpdateWeight -> {
+                val set = sortedSets.getOrNull(effect.setIndex)
+                    ?: return sortedSets
+
+                val updatedSet = set.copy(
+                    weight = effect.weight,
+                )
+
+                sessionRepository.updateSet(updatedSet)
+
+                sortedSets
+                    .replaceSetAt(
+                        index = effect.setIndex,
+                        set = updatedSet,
+                    )
+                    .sortedForGymRemote()
+            }
+
+            is GymRemoteEffect.UpdateReps -> {
+                val set = sortedSets.getOrNull(effect.setIndex)
+                    ?: return sortedSets
+
+                val updatedSet = set.copy(
+                    reps = effect.reps,
+                )
+
+                sessionRepository.updateSet(updatedSet)
+
+                sortedSets
+                    .replaceSetAt(
+                        index = effect.setIndex,
+                        set = updatedSet,
+                    )
+                    .sortedForGymRemote()
+            }
+
+            is GymRemoteEffect.DuplicateSet -> {
+                val sourceSet = sortedSets.getOrNull(effect.sourceSetIndex)
+                    ?: return sortedSets
+
+                val existingSets = sessionRepository.getSetsForExercise(activeExerciseLogId)
+                val nextOrder = existingSets.size + 1
+
+                val newSet = sourceSet.copy(
+                    id = 0L,
+                    actualExerciseLogId = activeExerciseLogId,
+                    setOrder = nextOrder,
+                    notes = "Auto-created by gym remote",
+                )
+
+                sessionRepository.insertSet(newSet)
+
+                sortedSets
+                    .plus(
+                        newSet.copy(
+                            id = -nextOrder.toLong(),
+                        )
+                    )
+                    .sortedForGymRemote()
+            }
+        }
+    }
+
     fun addSet(actualExerciseLogId: Long) {
         viewModelScope.launch {
             runCatching {
@@ -264,5 +431,71 @@ class SessionDetailViewModel @Inject constructor(
                 error.printStackTrace()
             }
         }
+    }
+
+    private fun buildFocusSpeech(
+        focus: GymRemoteFocus,
+        sortedSets: List<ActualExerciseSetLogEntity>,
+    ): String {
+        return when (focus) {
+            GymRemoteFocus.None -> {
+                "No set selected."
+            }
+
+            is GymRemoteFocus.Weight -> {
+                val set = sortedSets.getOrNull(focus.setIndex)
+                val weight = set?.weight?.let { formatWeight(it) } ?: "no"
+                "Set ${focus.setIndex + 1}, $weight pounds."
+            }
+
+            is GymRemoteFocus.Reps -> {
+                val set = sortedSets.getOrNull(focus.setIndex)
+                val reps = set?.reps?.toString() ?: "no"
+                "Set ${focus.setIndex + 1}, $reps reps."
+            }
+        }
+    }
+
+    private fun List<ActualExerciseSetLogEntity>.replaceSetAt(
+        index: Int,
+        set: ActualExerciseSetLogEntity,
+    ): List<ActualExerciseSetLogEntity> {
+        return mapIndexed { itemIndex, item ->
+            if (itemIndex == index) {
+                set
+            } else {
+                item
+            }
+        }
+    }
+
+    private fun List<ActualExerciseSetLogEntity>.sortedForGymRemote(): List<ActualExerciseSetLogEntity> {
+        return sortedWith(
+            compareBy<ActualExerciseSetLogEntity> { it.setOrder }
+                .thenBy { it.id }
+        )
+    }
+
+    private fun formatWeight(
+        value: Double,
+    ): String {
+        return if (value % 1.0 == 0.0) {
+            value.toInt().toString()
+        } else {
+            value.toString()
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            gymRemoteInputBus.inputs.collect { input ->
+                Log.d(GYM_REMOTE_LOG_TAG, "Collected input: $input")
+                handleGymRemoteInput(input)
+            }
+        }
+    }
+
+    private companion object {
+        const val GYM_REMOTE_LOG_TAG = "KA_GYM_REMOTE_REAL"
     }
 }
