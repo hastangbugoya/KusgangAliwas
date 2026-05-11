@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.domain.repository
 
+import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
  * - actual sessions (what happened)
  * - exercise-level logs
  * - set-level logs
+ * - cardio logs
  */
 interface SessionRepository {
 
@@ -102,6 +104,10 @@ interface SessionRepository {
         endEpochDay: Long,
     ): Flow<List<ActualSessionEntity>>
 
+    fun observeActualSessionById(
+        actualSessionId: Long,
+    ): Flow<ActualSessionEntity?>
+
     suspend fun getActualSessionById(
         actualSessionId: Long,
     ): ActualSessionEntity?
@@ -134,6 +140,10 @@ interface SessionRepository {
         actualSessionId: Long,
     ): List<ActualExerciseLogEntity>
 
+    suspend fun getLogsForExercise(
+        exerciseId: Long,
+    ): List<ActualExerciseLogEntity>
+
     suspend fun insertActualExerciseLog(
         entity: ActualExerciseLogEntity,
     ): Long
@@ -153,6 +163,30 @@ interface SessionRepository {
     suspend fun deleteActualExerciseLog(actualExerciseLogId: Long)
 
     suspend fun deleteAllLogsForSession(actualSessionId: Long)
+
+    // ----------------------------
+    // Cardio Logs
+    // ----------------------------
+
+    fun observeCardioLogsForSession(
+        actualSessionId: Long,
+    ): Flow<List<ActualCardioLogEntity>>
+
+    suspend fun getCardioLogsForSession(
+        actualSessionId: Long,
+    ): List<ActualCardioLogEntity>
+
+    suspend fun insertCardioLog(entity: ActualCardioLogEntity): Long
+
+    suspend fun insertCardioLogs(entities: List<ActualCardioLogEntity>)
+
+    suspend fun updateCardioLog(entity: ActualCardioLogEntity)
+
+    suspend fun updateCardioLogs(entities: List<ActualCardioLogEntity>)
+
+    suspend fun deleteCardioLog(cardioLogId: Long)
+
+    suspend fun deleteAllCardioLogsForSession(actualSessionId: Long)
 
     // ----------------------------
     // Exercise Sets
@@ -177,12 +211,6 @@ interface SessionRepository {
     suspend fun deleteSet(setId: Long)
 
     suspend fun deleteAllSetsForExercise(actualExerciseLogId: Long)
-
-    suspend fun getLogsForExercise(
-        exerciseId: Long,
-    ): List<ActualExerciseLogEntity>
-
-    fun observeActualSessionById(actualSessionId: Long): Flow<ActualSessionEntity?>
 
     /**
      * Returns a suggested starting weight for an exercise based on prior logs.

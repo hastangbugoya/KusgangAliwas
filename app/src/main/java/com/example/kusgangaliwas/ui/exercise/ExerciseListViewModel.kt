@@ -3,6 +3,7 @@ package com.example.kusgangaliwas.ui.exercise
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.usecase.exercise.CreateExerciseUseCase
@@ -57,10 +58,16 @@ class ExerciseListViewModel @Inject constructor(
                 initialValue = ExerciseListUiState(),
             )
 
-    fun createExercise(name: String) {
+    fun createExercise(
+        name: String,
+        exerciseType: ExerciseType,
+    ) {
         viewModelScope.launch {
             runCatching {
-                createExerciseUseCase(name = name)
+                createExerciseUseCase(
+                    name = name,
+                    exerciseType = exerciseType,
+                )
             }.onFailure {
                 // Basic for now. Later we can expose one-shot snackbar events.
             }

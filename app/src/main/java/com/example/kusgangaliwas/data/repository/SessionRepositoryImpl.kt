@@ -1,10 +1,12 @@
 package com.example.kusgangaliwas.data.repository
 
+import com.example.kusgangaliwas.data.local.dao.ActualCardioLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualExerciseLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualExerciseSetLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualSessionDao
 import com.example.kusgangaliwas.data.local.dao.PlannedSessionDao
 import com.example.kusgangaliwas.data.local.dao.PlannedSessionExerciseDao
+import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
@@ -12,13 +14,13 @@ import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
 import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
 import com.example.kusgangaliwas.domain.repository.SessionRepository
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Room-backed implementation of SessionRepository.
  *
- * Combines planned + actual session data and exercise/set logs.
+ * Combines planned + actual session data, exercise/set logs, and cardio logs.
  */
 class SessionRepositoryImpl @Inject constructor(
     private val plannedSessionDao: PlannedSessionDao,
@@ -26,11 +28,8 @@ class SessionRepositoryImpl @Inject constructor(
     private val actualSessionDao: ActualSessionDao,
     private val actualExerciseLogDao: ActualExerciseLogDao,
     private val actualExerciseSetLogDao: ActualExerciseSetLogDao,
+    private val actualCardioLogDao: ActualCardioLogDao,
 ) : SessionRepository {
-
-    // ----------------------------
-    // Planned Sessions
-    // ----------------------------
 
     override fun observeSessionsBetweenDates(
         startEpochDay: Long,
@@ -74,10 +73,6 @@ class SessionRepositoryImpl @Inject constructor(
     override suspend fun deletePlannedSession(plannedSessionId: Long) {
         plannedSessionDao.deletePlannedSession(plannedSessionId)
     }
-
-    // ----------------------------
-    // Planned Session Exercises
-    // ----------------------------
 
     override fun observeExercisesForPlannedSession(
         plannedSessionId: Long,
@@ -141,10 +136,6 @@ class SessionRepositoryImpl @Inject constructor(
         plannedSessionExerciseDao.deleteAllForPlannedSession(plannedSessionId)
     }
 
-    // ----------------------------
-    // Actual Sessions
-    // ----------------------------
-
     override fun observeAllActualSessions(): Flow<List<ActualSessionEntity>> {
         return actualSessionDao.observeAllSessions()
     }
@@ -154,6 +145,12 @@ class SessionRepositoryImpl @Inject constructor(
         endEpochDay: Long,
     ): Flow<List<ActualSessionEntity>> {
         return actualSessionDao.observeSessionsBetweenDates(startEpochDay, endEpochDay)
+    }
+
+    override fun observeActualSessionById(
+        actualSessionId: Long,
+    ): Flow<ActualSessionEntity?> {
+        return actualSessionDao.observeById(actualSessionId)
     }
 
     override suspend fun getActualSessionById(
@@ -166,40 +163,6 @@ class SessionRepositoryImpl @Inject constructor(
         plannedSessionId: Long,
     ): ActualSessionEntity? {
         return actualSessionDao.getLatestForPlannedSession(plannedSessionId)
-    }
-
-    override suspend fun getLatestWeightSuggestionForExercise(
-        exerciseId: Long,
-    ): ExerciseWeightSuggestion? {
-        val logs = actualExerciseLogDao.getLogsForExercise(exerciseId)
-
-        logs.forEach { log ->
-            val sets = actualExerciseSetLogDao.getSetsForExercise(log.id)
-
-            val suggestedSet = sets
-                .filter { it.weight != null }
-                .maxWithOrNull(
-                    compareBy<ActualExerciseSetLogEntity> { it.weight ?: 0.0 }
-                        .thenBy { it.reps ?: 0 }
-                        .thenBy { it.setOrder }
-                )
-
-            if (suggestedSet != null) {
-                val session = actualSessionDao.getById(log.actualSessionId)
-                    ?: return@forEach
-
-                return ExerciseWeightSuggestion(
-                    exerciseId = exerciseId,
-                    exerciseName = null,
-                    sourceActualSessionId = session.id,
-                    sourcePerformedDateEpochDay = session.performedDateEpochDay,
-                    suggestedWeight = suggestedSet.weight ?: return@forEach,
-                    suggestedReps = suggestedSet.reps,
-                )
-            }
-        }
-
-        return null
     }
 
     override suspend fun insertActualSession(entity: ActualSessionEntity): Long {
@@ -226,10 +189,6 @@ class SessionRepositoryImpl @Inject constructor(
         actualSessionDao.deleteActualSession(actualSessionId)
     }
 
-    // ----------------------------
-    // Actual Exercise Logs
-    // ----------------------------
-
     override fun observeLogsForSession(
         actualSessionId: Long,
     ): Flow<List<ActualExerciseLogEntity>> {
@@ -240,6 +199,12 @@ class SessionRepositoryImpl @Inject constructor(
         actualSessionId: Long,
     ): List<ActualExerciseLogEntity> {
         return actualExerciseLogDao.getLogsForSession(actualSessionId)
+    }
+
+    override suspend fun getLogsForExercise(
+        exerciseId: Long,
+    ): List<ActualExerciseLogEntity> {
+        return actualExerciseLogDao.getLogsForExercise(exerciseId)
     }
 
     override suspend fun insertActualExerciseLog(
@@ -274,9 +239,41 @@ class SessionRepositoryImpl @Inject constructor(
         actualExerciseLogDao.deleteAllForSession(actualSessionId)
     }
 
-    // ----------------------------
-    // Exercise Sets
-    // ----------------------------
+    override fun observeCardioLogsForSession(
+        actualSessionId: Long,
+    ): Flow<List<ActualCardioLogEntity>> {
+        return actualCardioLogDao.observeCardioLogsForSession(actualSessionId)
+    }
+
+    override suspend fun getCardioLogsForSession(
+        actualSessionId: Long,
+    ): List<ActualCardioLogEntity> {
+        return actualCardioLogDao.getCardioLogsForSession(actualSessionId)
+    }
+
+    override suspend fun insertCardioLog(entity: ActualCardioLogEntity): Long {
+        return actualCardioLogDao.insertCardioLog(entity)
+    }
+
+    override suspend fun insertCardioLogs(entities: List<ActualCardioLogEntity>) {
+        actualCardioLogDao.insertCardioLogs(entities)
+    }
+
+    override suspend fun updateCardioLog(entity: ActualCardioLogEntity) {
+        actualCardioLogDao.updateCardioLog(entity)
+    }
+
+    override suspend fun updateCardioLogs(entities: List<ActualCardioLogEntity>) {
+        actualCardioLogDao.updateCardioLogs(entities)
+    }
+
+    override suspend fun deleteCardioLog(cardioLogId: Long) {
+        actualCardioLogDao.deleteCardioLog(cardioLogId)
+    }
+
+    override suspend fun deleteAllCardioLogsForSession(actualSessionId: Long) {
+        actualCardioLogDao.deleteAllCardioLogsForSession(actualSessionId)
+    }
 
     override fun observeSetsForExercise(
         actualExerciseLogId: Long,
@@ -314,15 +311,37 @@ class SessionRepositoryImpl @Inject constructor(
         actualExerciseSetLogDao.deleteAllForExercise(actualExerciseLogId)
     }
 
-    override suspend fun getLogsForExercise(
+    override suspend fun getLatestWeightSuggestionForExercise(
         exerciseId: Long,
-    ): List<ActualExerciseLogEntity> {
-        return actualExerciseLogDao.getLogsForExercise(exerciseId)
-    }
+    ): ExerciseWeightSuggestion? {
+        val logs = actualExerciseLogDao.getLogsForExercise(exerciseId)
 
-    override fun observeActualSessionById(
-        actualSessionId: Long,
-    ): Flow<ActualSessionEntity?> {
-        return actualSessionDao.observeById(actualSessionId)
+        logs.forEach { log ->
+            val sets = actualExerciseSetLogDao.getSetsForExercise(log.id)
+
+            val suggestedSet = sets
+                .filter { it.weight != null }
+                .maxWithOrNull(
+                    compareBy<ActualExerciseSetLogEntity> { it.weight ?: 0.0 }
+                        .thenBy { it.reps ?: 0 }
+                        .thenBy { it.setOrder }
+                )
+
+            if (suggestedSet != null) {
+                val session = actualSessionDao.getById(log.actualSessionId)
+                    ?: return@forEach
+
+                return ExerciseWeightSuggestion(
+                    exerciseId = exerciseId,
+                    exerciseName = null,
+                    sourceActualSessionId = session.id,
+                    sourcePerformedDateEpochDay = session.performedDateEpochDay,
+                    suggestedWeight = suggestedSet.weight ?: return@forEach,
+                    suggestedReps = suggestedSet.reps,
+                )
+            }
+        }
+
+        return null
     }
 }

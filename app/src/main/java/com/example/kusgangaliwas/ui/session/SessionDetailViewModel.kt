@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
@@ -34,7 +35,30 @@ import kotlinx.coroutines.launch
 data class SessionDetailUiState(
     val session: ActualSessionEntity? = null,
     val exerciseLogs: List<SessionExerciseLogUiState> = emptyList(),
+    val cardioLogs: List<SessionCardioLogUiState> = emptyList(),
+    val sessionItems: List<SessionDetailItemUiState> = emptyList(),
     val availableExercises: List<ExerciseEntity> = emptyList(),
+)
+
+sealed interface SessionDetailItemUiState {
+    val logOrder: Int
+
+    data class Strength(
+        val item: SessionExerciseLogUiState,
+    ) : SessionDetailItemUiState {
+        override val logOrder: Int = item.log.logOrder
+    }
+
+    data class Cardio(
+        val item: SessionCardioLogUiState,
+    ) : SessionDetailItemUiState {
+        override val logOrder: Int = item.log.logOrder
+    }
+}
+
+data class SessionCardioLogUiState(
+    val log: ActualCardioLogEntity,
+    val cardioName: String,
 )
 
 data class SessionExerciseLogUiState(
@@ -107,22 +131,40 @@ class SessionDetailViewModel @Inject constructor(
         combine(
             sessionRepository.observeActualSessionById(actualSessionId),
             exerciseLogsWithSets,
+            sessionRepository.observeCardioLogsForSession(actualSessionId),
             exerciseRepository.observeActiveExercises(),
-        ) { session, logsWithSets, exercises ->
+        ) { session, logsWithSets, cardioLogs, exercises ->
             val exerciseById = exercises.associateBy { it.id }
+
+            val exerciseItems = logsWithSets.map { item ->
+                SessionExerciseLogUiState(
+                    log = item.log,
+                    exerciseName = item.log.exerciseId
+                        ?.let { exerciseById[it]?.name }
+                        ?: item.log.freeTextName
+                        ?: "Loose exercise note",
+                    sets = item.sets,
+                )
+            }
+
+            val cardioItems = cardioLogs.map { log ->
+                SessionCardioLogUiState(
+                    log = log,
+                    cardioName = log.exerciseId
+                        ?.let { exerciseById[it]?.name }
+                        ?: log.freeTextName
+                        ?: "Cardio",
+                )
+            }
 
             SessionDetailUiState(
                 session = session,
-                exerciseLogs = logsWithSets.map { item ->
-                    SessionExerciseLogUiState(
-                        log = item.log,
-                        exerciseName = item.log.exerciseId
-                            ?.let { exerciseById[it]?.name }
-                            ?: item.log.freeTextName
-                            ?: "Loose exercise note",
-                        sets = item.sets,
-                    )
-                },
+                exerciseLogs = exerciseItems,
+                cardioLogs = cardioItems,
+                sessionItems = buildMixedSessionItems(
+                    exerciseLogs = exerciseItems,
+                    cardioLogs = cardioItems,
+                ),
                 availableExercises = exercises,
             )
         }.stateIn(
@@ -333,6 +375,39 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    fun addCardio() {
+        viewModelScope.launch {
+            runCatching {
+                val exerciseLogs = sessionRepository.getLogsForSession(actualSessionId)
+                val cardioLogs = sessionRepository.getCardioLogsForSession(actualSessionId)
+
+                val nextOrder = (
+                        exerciseLogs.map { it.logOrder } +
+                                cardioLogs.map { it.logOrder }
+                        )
+                    .maxOrNull()
+                    ?.plus(1)
+                    ?: 1
+
+                val now = System.currentTimeMillis()
+
+                sessionRepository.insertCardioLog(
+                    ActualCardioLogEntity(
+                        actualSessionId = actualSessionId,
+                        logOrder = nextOrder,
+                        logType = "steadyState",
+                        freeTextName = "Cardio",
+                        distanceUnit = "mi",
+                        createdAtEpochMillis = now,
+                        updatedAtEpochMillis = now,
+                    )
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
     fun addExercise(exerciseId: Long) {
         viewModelScope.launch {
             runCatching {
@@ -342,6 +417,124 @@ class SessionDetailViewModel @Inject constructor(
                 )
             }.onFailure { error ->
                 error.printStackTrace()
+            }
+        }
+    }
+
+    fun updateCardioLog(
+        cardioLog: ActualCardioLogEntity,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                sessionRepository.updateCardioLog(cardioLog)
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteCardioLog(
+        cardioLogId: Long,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                sessionRepository.deleteCardioLog(cardioLogId)
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun moveSessionItemUp(
+        item: SessionDetailItemUiState,
+    ) {
+        moveSessionItem(
+            item = item,
+            direction = -1,
+        )
+    }
+
+    fun moveSessionItemDown(
+        item: SessionDetailItemUiState,
+    ) {
+        moveSessionItem(
+            item = item,
+            direction = 1,
+        )
+    }
+
+    private fun moveSessionItem(
+        item: SessionDetailItemUiState,
+        direction: Int,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                val items = uiState.value.sessionItems
+
+                val currentIndex = items.indexOfFirst { candidate ->
+                    candidate.itemIdentity() == item.itemIdentity()
+                }
+
+                if (currentIndex == -1) {
+                    return@runCatching
+                }
+
+                val targetIndex = currentIndex + direction
+
+                if (targetIndex !in items.indices) {
+                    return@runCatching
+                }
+
+                val currentItem = items[currentIndex]
+                val targetItem = items[targetIndex]
+
+                updateSessionItemLogOrder(
+                    item = currentItem,
+                    newLogOrder = targetItem.logOrder,
+                )
+
+                updateSessionItemLogOrder(
+                    item = targetItem,
+                    newLogOrder = currentItem.logOrder,
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    private suspend fun updateSessionItemLogOrder(
+        item: SessionDetailItemUiState,
+        newLogOrder: Int,
+    ) {
+        when (item) {
+            is SessionDetailItemUiState.Strength -> {
+                sessionRepository.updateActualExerciseLog(
+                    item.item.log.copy(
+                        logOrder = newLogOrder,
+                    )
+                )
+            }
+
+            is SessionDetailItemUiState.Cardio -> {
+                sessionRepository.updateCardioLog(
+                    item.item.log.copy(
+                        logOrder = newLogOrder,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
+            }
+        }
+    }
+
+    private fun SessionDetailItemUiState.itemIdentity(): String {
+        return when (this) {
+            is SessionDetailItemUiState.Strength -> {
+                "strength:${item.log.id}"
+            }
+
+            is SessionDetailItemUiState.Cardio -> {
+                "cardio:${item.log.id}"
             }
         }
     }
@@ -431,6 +624,35 @@ class SessionDetailViewModel @Inject constructor(
                 error.printStackTrace()
             }
         }
+    }
+
+    private fun buildMixedSessionItems(
+        exerciseLogs: List<SessionExerciseLogUiState>,
+        cardioLogs: List<SessionCardioLogUiState>,
+    ): List<SessionDetailItemUiState> {
+        return buildList {
+            exerciseLogs.forEach { item ->
+                add(SessionDetailItemUiState.Strength(item))
+            }
+
+            cardioLogs.forEach { item ->
+                add(SessionDetailItemUiState.Cardio(item))
+            }
+        }.sortedWith(
+            compareBy<SessionDetailItemUiState> { it.logOrder }
+                .thenBy { item ->
+                    when (item) {
+                        is SessionDetailItemUiState.Strength -> 0
+                        is SessionDetailItemUiState.Cardio -> 1
+                    }
+                }
+                .thenBy { item ->
+                    when (item) {
+                        is SessionDetailItemUiState.Strength -> item.item.log.id
+                        is SessionDetailItemUiState.Cardio -> item.item.log.id
+                    }
+                }
+        )
     }
 
     private fun buildFocusSpeech(

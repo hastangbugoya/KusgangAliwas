@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
@@ -36,6 +37,9 @@ fun SessionDetailScreen(
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
     onAddExercise: (Long) -> Unit,
+    onAddCardio: () -> Unit,
+    onUpdateCardioLog: (ActualCardioLogEntity) -> Unit,
+    onDeleteCardioLog: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (ActualExerciseSetLogEntity, Double?, Int?) -> Unit,
     onDeleteSet: (Long) -> Unit,
@@ -44,6 +48,8 @@ fun SessionDetailScreen(
     onRatingChange: (Int?) -> Unit,
     onDeleteExerciseLogIfEmpty: (Long) -> Unit,
     onDeleteSession: () -> Unit,
+    onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
+    onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -66,59 +72,39 @@ fun SessionDetailScreen(
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Exercise logs")
+                        SectionHeader("Session timeline")
 
-                        if (uiState.exerciseLogs.isEmpty()) {
-                            Text("No exercises logged yet.")
+                        if (uiState.sessionItems.isEmpty()) {
+                            Text("No session items logged yet.")
                         } else {
-                            uiState.exerciseLogs.forEachIndexed { index, item ->
-                                var expanded by rememberSaveable(item.log.id) {
-                                    mutableStateOf(false)
-                                }
+                            uiState.sessionItems.forEachIndexed { index, item ->
+                                when (item) {
+                                    is SessionDetailItemUiState.Strength -> {
+                                        StrengthTimelineCard(
+                                            index = index,
+                                            item = item.item,
+                                            sessionItem = item,
+                                            onMoveSessionItemUp = onMoveSessionItemUp,
+                                            onMoveSessionItemDown = onMoveSessionItemDown,
+                                            onAddSet = onAddSet,
+                                            onUpdateSet = onUpdateSet,
+                                            onDeleteSet = onDeleteSet,
+                                            onDuplicateSet = onDuplicateSet,
+                                            onDeleteExerciseLogIfEmpty =
+                                                onDeleteExerciseLogIfEmpty,
+                                        )
+                                    }
 
-                                SharpCard {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        Text("${index + 1}. ${item.exerciseName}")
-                                        Text(buildSetSummary(item.sets))
-
-                                        OutlinedButton(
-                                            onClick = { expanded = !expanded },
-                                        ) {
-                                            Text(if (expanded) "Collapse" else "Expand")
-                                        }
-
-                                        if (expanded) {
-                                            if (item.sets.isEmpty()) {
-                                                Text("No sets yet.")
-                                            } else {
-                                                item.sets.forEach { set ->
-                                                    SetEditorRow(
-                                                        set = set,
-                                                        onUpdateSet = onUpdateSet,
-                                                        onDeleteSet = onDeleteSet,
-                                                        onDuplicateSet = onDuplicateSet,
-                                                    )
-                                                }
-                                            }
-
-                                            OutlinedButton(
-                                                onClick = { onAddSet(item.log.id) },
-                                            ) {
-                                                Text("Add set")
-                                            }
-
-                                            if (item.sets.isEmpty()) {
-                                                TextButton(
-                                                    onClick = {
-                                                        onDeleteExerciseLogIfEmpty(item.log.id)
-                                                    },
-                                                ) {
-                                                    Text("Remove exercise")
-                                                }
-                                            }
-                                        }
+                                    is SessionDetailItemUiState.Cardio -> {
+                                        CardioTimelineCard(
+                                            index = index,
+                                            item = item.item,
+                                            sessionItem = item,
+                                            onMoveSessionItemUp = onMoveSessionItemUp,
+                                            onMoveSessionItemDown = onMoveSessionItemDown,
+                                            onUpdateCardioLog = onUpdateCardioLog,
+                                            onDeleteCardioLog = onDeleteCardioLog,
+                                        )
                                     }
                                 }
                             }
@@ -162,7 +148,13 @@ fun SessionDetailScreen(
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Add exercise")
+                        SectionHeader("Add session item")
+
+                        OutlinedButton(
+                            onClick = onAddCardio,
+                        ) {
+                            Text("Add cardio")
+                        }
 
                         if (uiState.availableExercises.isEmpty()) {
                             Text("Add exercises in the Exercises tab first.")
@@ -171,13 +163,280 @@ fun SessionDetailScreen(
                                 OutlinedButton(
                                     onClick = { onAddExercise(exercise.id) },
                                 ) {
-                                    Text(exercise.name)
+                                    Text("Add strength: ${exercise.name}")
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun StrengthTimelineCard(
+    index: Int,
+    item: SessionExerciseLogUiState,
+    onAddSet: (Long) -> Unit,
+    onUpdateSet: (ActualExerciseSetLogEntity, Double?, Int?) -> Unit,
+    onDeleteSet: (Long) -> Unit,
+    onDuplicateSet: (ActualExerciseSetLogEntity) -> Unit,
+    onDeleteExerciseLogIfEmpty: (Long) -> Unit,
+    sessionItem: SessionDetailItemUiState,
+    onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
+    onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
+) {
+    var expanded by rememberSaveable(item.log.id) {
+        mutableStateOf(false)
+    }
+
+    SharpCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("${index + 1}. 🏋 ${item.exerciseName}")
+            Text(buildSetSummary(item.sets))
+            ReorderButtons(
+                sessionItem = sessionItem,
+                onMoveSessionItemUp = onMoveSessionItemUp,
+                onMoveSessionItemDown = onMoveSessionItemDown,
+            )
+            OutlinedButton(
+                onClick = { expanded = !expanded },
+            ) {
+                Text(if (expanded) "Collapse" else "Expand")
+            }
+
+            if (expanded) {
+                if (item.sets.isEmpty()) {
+                    Text("No sets yet.")
+                } else {
+                    item.sets.forEach { set ->
+                        SetEditorRow(
+                            set = set,
+                            onUpdateSet = onUpdateSet,
+                            onDeleteSet = onDeleteSet,
+                            onDuplicateSet = onDuplicateSet,
+                        )
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = { onAddSet(item.log.id) },
+                ) {
+                    Text("Add set")
+                }
+
+                if (item.sets.isEmpty()) {
+                    TextButton(
+                        onClick = {
+                            onDeleteExerciseLogIfEmpty(item.log.id)
+                        },
+                    ) {
+                        Text("Remove exercise")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardioTimelineCard(
+    index: Int,
+    item: SessionCardioLogUiState,
+    onUpdateCardioLog: (ActualCardioLogEntity) -> Unit,
+    onDeleteCardioLog: (Long) -> Unit,
+    sessionItem: SessionDetailItemUiState,
+    onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
+    onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
+
+) {
+    var expanded by rememberSaveable(item.log.id) {
+        mutableStateOf(false)
+    }
+
+    var nameText by rememberSaveable(item.log.id) {
+        mutableStateOf(item.cardioName)
+    }
+    var distanceText by rememberSaveable(item.log.id) {
+        mutableStateOf(item.log.distance?.let(::formatDistance) ?: "")
+    }
+    var durationMinutesText by rememberSaveable(item.log.id) {
+        mutableStateOf(item.log.durationSeconds?.let { (it / 60).toString() } ?: "")
+    }
+    var notesText by rememberSaveable(item.log.id) {
+        mutableStateOf(item.log.notes ?: "")
+    }
+
+    LaunchedEffect(item.log.id, item.cardioName) {
+        if (nameText != item.cardioName) {
+            nameText = item.cardioName
+        }
+    }
+
+    LaunchedEffect(item.log.id, item.log.distance) {
+        val next = item.log.distance?.let(::formatDistance) ?: ""
+        if (distanceText != next) {
+            distanceText = next
+        }
+    }
+
+    LaunchedEffect(item.log.id, item.log.durationSeconds) {
+        val next = item.log.durationSeconds?.let { (it / 60).toString() } ?: ""
+        if (durationMinutesText != next) {
+            durationMinutesText = next
+        }
+    }
+
+    LaunchedEffect(item.log.id, item.log.notes) {
+        val next = item.log.notes ?: ""
+        if (notesText != next) {
+            notesText = next
+        }
+    }
+
+    SharpCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("${index + 1}. 🏃 ${item.cardioName}")
+
+            val details = buildList {
+                item.log.distance?.let { distance ->
+                    item.log.distanceUnit?.let { unit ->
+                        add("${formatDistance(distance)} $unit")
+                    }
+                }
+
+                item.log.durationSeconds?.let { seconds ->
+                    add(formatDuration(seconds))
+                }
+
+                item.log.averageInclinePercent?.let { incline ->
+                    add("${formatDistance(incline)}% incline")
+                }
+            }
+
+            if (details.isNotEmpty()) {
+                Text(details.joinToString(" • "))
+            } else {
+                Text("No cardio details yet.")
+            }
+
+            ReorderButtons(
+                sessionItem = sessionItem,
+                onMoveSessionItemUp = onMoveSessionItemUp,
+                onMoveSessionItemDown = onMoveSessionItemDown,
+            )
+
+            OutlinedButton(
+                onClick = { expanded = !expanded },
+            ) {
+                Text(if (expanded) "Collapse" else "Expand")
+            }
+
+            if (expanded) {
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { value ->
+                        nameText = value
+                        onUpdateCardioLog(
+                            item.log.copy(
+                                freeTextName = value.ifBlank { null },
+                                updatedAtEpochMillis = System.currentTimeMillis(),
+                            )
+                        )
+                    },
+                    label = { Text("Name") },
+                    singleLine = true,
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = distanceText,
+                        onValueChange = { value ->
+                            distanceText = value
+                            onUpdateCardioLog(
+                                item.log.copy(
+                                    distance = value.toDoubleOrNull(),
+                                    distanceUnit = item.log.distanceUnit ?: "mi",
+                                    updatedAtEpochMillis = System.currentTimeMillis(),
+                                )
+                            )
+                        },
+                        label = { Text("Distance") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                        ),
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    Text(item.log.distanceUnit ?: "mi")
+                }
+
+                OutlinedTextField(
+                    value = durationMinutesText,
+                    onValueChange = { value ->
+                        durationMinutesText = value
+                        onUpdateCardioLog(
+                            item.log.copy(
+                                durationSeconds = value.toLongOrNull()?.times(60),
+                                updatedAtEpochMillis = System.currentTimeMillis(),
+                            )
+                        )
+                    },
+                    label = { Text("Duration minutes") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                    ),
+                )
+
+                OutlinedTextField(
+                    value = notesText,
+                    onValueChange = { value ->
+                        notesText = value
+                        onUpdateCardioLog(
+                            item.log.copy(
+                                notes = value.ifBlank { null },
+                                updatedAtEpochMillis = System.currentTimeMillis(),
+                            )
+                        )
+                    },
+                    label = { Text("Notes") },
+                )
+
+                TextButton(
+                    onClick = { onDeleteCardioLog(item.log.id) },
+                ) {
+                    Text("Delete cardio")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReorderButtons(
+    sessionItem: SessionDetailItemUiState,
+    onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
+    onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedButton(
+            onClick = { onMoveSessionItemUp(sessionItem) },
+        ) {
+            Text("↑")
+        }
+
+        OutlinedButton(
+            onClick = { onMoveSessionItemDown(sessionItem) },
+        ) {
+            Text("↓")
         }
     }
 }
@@ -433,6 +692,29 @@ private fun buildSetSummary(
     }
 
     return "Sets: ${sets.size} | Weight: $weightText"
+}
+
+private fun formatDuration(
+    seconds: Long,
+): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+
+    return if (remainingSeconds == 0L) {
+        "${minutes}m"
+    } else {
+        "${minutes}m ${remainingSeconds}s"
+    }
+}
+
+private fun formatDistance(
+    value: Double,
+): String {
+    return if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        value.toString()
+    }
 }
 
 internal fun formatWeight(

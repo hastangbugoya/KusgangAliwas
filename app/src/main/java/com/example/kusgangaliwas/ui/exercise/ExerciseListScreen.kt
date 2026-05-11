@@ -3,6 +3,7 @@ package com.example.kusgangaliwas.ui.exercise
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,19 +19,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
+import com.example.kusgangaliwas.data.local.entity.ExerciseType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,11 +38,11 @@ fun ExerciseListScreen(
     uiState: ExerciseListUiState,
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
-    onCreateExercise: (String) -> Unit,
+    onCreateExercise: (String, ExerciseType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var newExerciseName by remember { mutableStateOf("") }
-
+    var selectedExerciseType by remember { mutableStateOf(ExerciseType.STRENGTH) }
 
     Scaffold(
         modifier = modifier,
@@ -103,12 +103,38 @@ fun ExerciseListScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
+                    Text(
+                        text = "Type",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ExerciseType.entries.forEach { type ->
+                            OutlinedButton(
+                                onClick = {
+                                    selectedExerciseType = type
+                                },
+                            ) {
+                                Text(
+                                    text = if (selectedExerciseType == type) {
+                                        "✓ ${type.displayText()}"
+                                    } else {
+                                        type.displayText()
+                                    },
+                                )
+                            }
+                        }
+                    }
+
                     OutlinedButton(
                         onClick = {
                             val cleaned = newExerciseName.trim()
                             if (cleaned.isNotBlank()) {
-                                onCreateExercise(cleaned)
+                                onCreateExercise(cleaned, selectedExerciseType)
                                 newExerciseName = ""
+                                selectedExerciseType = ExerciseType.STRENGTH
                             }
                         },
                     ) {
@@ -157,6 +183,11 @@ fun ExerciseListScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                 )
 
+                                Text(
+                                    text = "Type: ${exercise.exerciseType.displayText()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+
                                 item.lastLogDateText?.let { text ->
                                     Text(text = text)
                                 }
@@ -179,5 +210,14 @@ fun ExerciseListScreen(
                 }
             }
         }
+    }
+}
+
+private fun ExerciseType.displayText(): String {
+    return when (this) {
+        ExerciseType.STRENGTH -> "Strength"
+        ExerciseType.CARDIO -> "Cardio"
+        ExerciseType.MOBILITY -> "Mobility"
+        ExerciseType.OTHER -> "Other"
     }
 }

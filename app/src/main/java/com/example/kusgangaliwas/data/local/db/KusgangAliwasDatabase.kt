@@ -2,6 +2,8 @@ package com.example.kusgangaliwas.data.local.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import com.example.kusgangaliwas.data.local.dao.ActualCardioLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualExerciseLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualExerciseSetLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualSessionDao
@@ -18,6 +20,7 @@ import com.example.kusgangaliwas.data.local.dao.SplitTemplateDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
+import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
@@ -52,6 +55,9 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
  * DB-4 adds simple week-horizon split scheduling:
  * - optional programs
  * - split schedule rules
+ *
+ * DB-5 adds mixed session cardio logging:
+ * - cardio blocks can be shown beside strength logs in one ordered session list
  */
 @Database(
     entities = [
@@ -69,12 +75,14 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
         ActualSessionEntity::class,
         ActualExerciseLogEntity::class,
         ActualExerciseSetLogEntity::class,
+        ActualCardioLogEntity::class,
         ProgramEntity::class,
         SplitScheduleEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = true,
 )
+@TypeConverters(DatabaseConverters::class)
 abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun muscleGroupDao(): MuscleGroupDao
@@ -90,6 +98,7 @@ abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun actualSessionDao(): ActualSessionDao
     abstract fun actualExerciseLogDao(): ActualExerciseLogDao
     abstract fun actualExerciseSetLogDao(): ActualExerciseSetLogDao
+    abstract fun actualCardioLogDao(): ActualCardioLogDao
     abstract fun programDao(): ProgramDao
     abstract fun splitScheduleDao(): SplitScheduleDao
 }

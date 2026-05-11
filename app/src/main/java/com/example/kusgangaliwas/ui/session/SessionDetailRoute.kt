@@ -20,6 +20,9 @@ fun SessionDetailRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         onAddExercise = viewModel::addExercise,
+        onAddCardio = viewModel::addCardio,
+        onUpdateCardioLog = viewModel::updateCardioLog,
+        onDeleteCardioLog = viewModel::deleteCardioLog,
         onAddSet = viewModel::addSet,
         onUpdateSet = viewModel::updateSet,
         onDeleteSet = viewModel::deleteSet,
@@ -31,5 +34,7 @@ fun SessionDetailRoute(
             viewModel.deleteSession()
             onBackClick()
         },
+        onMoveSessionItemUp = viewModel::moveSessionItemUp,
+        onMoveSessionItemDown = viewModel::moveSessionItemDown,
     )
 }

@@ -27,6 +27,7 @@ data class ExerciseEntity(
     val id: Long = 0L,
 
     val name: String,
+    val exerciseType: ExerciseType = ExerciseType.STRENGTH,
 
     val notes: String? = null,
 
