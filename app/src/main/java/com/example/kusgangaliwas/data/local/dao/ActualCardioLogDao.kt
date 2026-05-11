@@ -70,4 +70,16 @@ interface ActualCardioLogDao {
         """
     )
     suspend fun deleteAllCardioLogsForSession(actualSessionId: Long)
+
+    @Query(
+        """
+    SELECT *
+    FROM actual_cardio_log
+    WHERE exerciseId = :exerciseId
+    ORDER BY performedAtEpochMillis DESC, id DESC
+    """
+    )
+    suspend fun getLogsForExercise(
+        exerciseId: Long,
+    ): List<ActualCardioLogEntity>
 }

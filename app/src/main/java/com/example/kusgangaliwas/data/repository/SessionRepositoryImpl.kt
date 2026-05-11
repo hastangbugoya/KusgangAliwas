@@ -12,6 +12,7 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
+import com.example.kusgangaliwas.data.local.model.CardioSuggestion
 import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import javax.inject.Inject
@@ -343,5 +344,31 @@ class SessionRepositoryImpl @Inject constructor(
         }
 
         return null
+    }
+
+    override suspend fun getLatestCardioSuggestionForExercise(
+        exerciseId: Long,
+    ): CardioSuggestion? {
+
+        val cardioLogs = actualCardioLogDao
+            .getLogsForExercise(exerciseId)
+
+        val latestLog = cardioLogs.firstOrNull()
+            ?: return null
+
+        val session = actualSessionDao.getById(latestLog.actualSessionId)
+            ?: return null
+
+        return CardioSuggestion(
+            exerciseId = exerciseId,
+            exerciseName = null,
+            sourceActualSessionId = session.id,
+            sourcePerformedDateEpochDay = session.performedDateEpochDay,
+            distance = latestLog.distance,
+            distanceUnit = latestLog.distanceUnit,
+            durationSeconds = latestLog.durationSeconds,
+            averageInclinePercent = latestLog.averageInclinePercent,
+            averageResistance = latestLog.averageResistance,
+        )
     }
 }

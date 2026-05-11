@@ -375,7 +375,9 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
-    fun addCardio() {
+    fun addCardio(
+        exerciseId: Long? = null,
+    ) {
         viewModelScope.launch {
             runCatching {
                 val exerciseLogs = sessionRepository.getLogsForSession(actualSessionId)
@@ -389,15 +391,33 @@ class SessionDetailViewModel @Inject constructor(
                     ?.plus(1)
                     ?: 1
 
+                val suggestion =
+                    exerciseId?.let {
+                        sessionRepository
+                            .getLatestCardioSuggestionForExercise(it)
+                    }
+
+                val exerciseName = uiState.value.availableExercises
+                    .firstOrNull { it.id == exerciseId }
+                    ?.name
+
                 val now = System.currentTimeMillis()
 
                 sessionRepository.insertCardioLog(
                     ActualCardioLogEntity(
                         actualSessionId = actualSessionId,
+                        exerciseId = exerciseId,
                         logOrder = nextOrder,
                         logType = "steadyState",
-                        freeTextName = "Cardio",
-                        distanceUnit = "mi",
+                        freeTextName = exerciseName ?: "Cardio",
+                        distance = suggestion?.distance,
+                        distanceUnit = suggestion?.distanceUnit ?: "mi",
+                        durationSeconds = suggestion?.durationSeconds,
+                        averageInclinePercent = suggestion?.averageInclinePercent,
+                        averageResistance = suggestion?.averageResistance,
+                        notes = suggestion?.let {
+                            "From previous cardio session"
+                        },
                         createdAtEpochMillis = now,
                         updatedAtEpochMillis = now,
                     )

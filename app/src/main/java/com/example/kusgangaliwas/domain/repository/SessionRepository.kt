@@ -8,6 +8,7 @@ import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
 import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
 import kotlinx.coroutines.flow.Flow
+import com.example.kusgangaliwas.data.local.model.CardioSuggestion
 
 /**
  * Repository boundary for planning + execution of sessions.
@@ -222,4 +223,15 @@ interface SessionRepository {
     suspend fun getLatestWeightSuggestionForExercise(
         exerciseId: Long,
     ): ExerciseWeightSuggestion?
+
+    /**
+     * Returns suggested cardio values for an exercise based on prior cardio logs.
+     *
+     * V1 rule:
+     * - no previous cardio logs -> null
+     * - previous cardio logs exist -> most recent matching cardio log
+     */
+    suspend fun getLatestCardioSuggestionForExercise(
+        exerciseId: Long,
+    ): CardioSuggestion?
 }

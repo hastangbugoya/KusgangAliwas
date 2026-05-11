@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
@@ -37,7 +38,7 @@ fun SessionDetailScreen(
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
     onAddExercise: (Long) -> Unit,
-    onAddCardio: () -> Unit,
+    onAddCardio: (Long?) -> Unit,
     onUpdateCardioLog: (ActualCardioLogEntity) -> Unit,
     onDeleteCardioLog: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
@@ -150,16 +151,30 @@ fun SessionDetailScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Add session item")
 
+                        val cardioExercises = uiState.availableExercises
+                            .filter { it.exerciseType == ExerciseType.CARDIO }
+
+                        val strengthExercises = uiState.availableExercises
+                            .filter { it.exerciseType == ExerciseType.STRENGTH }
+
                         OutlinedButton(
-                            onClick = onAddCardio,
+                            onClick = { onAddCardio(null) },
                         ) {
-                            Text("Add cardio")
+                            Text("Add generic cardio")
                         }
 
-                        if (uiState.availableExercises.isEmpty()) {
-                            Text("Add exercises in the Exercises tab first.")
+                        cardioExercises.forEach { exercise ->
+                            OutlinedButton(
+                                onClick = { onAddCardio(exercise.id) },
+                            ) {
+                                Text("Add cardio: ${exercise.name}")
+                            }
+                        }
+
+                        if (strengthExercises.isEmpty()) {
+                            Text("Add strength exercises in the Exercises tab first.")
                         } else {
-                            uiState.availableExercises.forEach { exercise ->
+                            strengthExercises.forEach { exercise ->
                                 OutlinedButton(
                                     onClick = { onAddExercise(exercise.id) },
                                 ) {
