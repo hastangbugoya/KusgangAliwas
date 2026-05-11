@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.exercise
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -19,10 +21,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,9 +50,7 @@ fun ExerciseListScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = {
-                    Text(text = "Exercises")
-                },
+                title = { Text(text = "Exercises") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -86,7 +86,7 @@ fun ExerciseListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
                         text = "Add exercise",
@@ -96,9 +96,7 @@ fun ExerciseListScreen(
                     OutlinedTextField(
                         value = newExerciseName,
                         onValueChange = { newExerciseName = it },
-                        label = {
-                            Text(text = "Exercise name")
-                        },
+                        label = { Text(text = "Exercise name") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -109,13 +107,12 @@ fun ExerciseListScreen(
                     )
 
                     Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         ExerciseType.entries.forEach { type ->
                             OutlinedButton(
-                                onClick = {
-                                    selectedExerciseType = type
-                                },
+                                onClick = { selectedExerciseType = type },
                             ) {
                                 Text(
                                     text = if (selectedExerciseType == type) {
@@ -196,7 +193,9 @@ fun ExerciseListScreen(
                                     Text(text = text)
                                 }
 
-                                Text(text = "1RM: —")
+                                if (exercise.exerciseType == ExerciseType.STRENGTH) {
+                                    Text(text = "1RM: —")
+                                }
 
                                 if (!exercise.notes.isNullOrBlank()) {
                                     Text(

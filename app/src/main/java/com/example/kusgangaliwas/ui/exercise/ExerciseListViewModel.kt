@@ -92,25 +92,74 @@ class ExerciseListViewModel @Inject constructor(
     private suspend fun buildExerciseListItem(
         exercise: ExerciseEntity,
     ): ExerciseListItemUiState {
-        val latestLog = sessionRepository
-            .getLogsForExercise(exercise.id)
-            .firstOrNull()
+        return when (exercise.exerciseType) {
 
-        if (latestLog == null) {
-            return ExerciseListItemUiState(
-                exercise = exercise,
-            )
+            ExerciseType.CARDIO -> {
+                val suggestion = sessionRepository
+                    .getLatestCardioSuggestionForExercise(exercise.id)
+
+                if (suggestion == null) {
+                    ExerciseListItemUiState(
+                        exercise = exercise,
+                    )
+                } else {
+
+                    val cardioParts = buildList {
+                        suggestion.distance?.let { distance ->
+                            suggestion.distanceUnit?.let { unit ->
+                                add("${formatWeight(distance)} $unit")
+                            }
+                        }
+
+                        suggestion.durationSeconds?.let { seconds ->
+                            add("${seconds / 60}m")
+                        }
+
+                        suggestion.averageInclinePercent?.let { incline ->
+                            add("${formatWeight(incline)}% incline")
+                        }
+
+                        suggestion.averageResistance?.let { resistance ->
+                            add("resistance ${formatWeight(resistance)}")
+                        }
+                    }
+
+                    ExerciseListItemUiState(
+                        exercise = exercise,
+                        lastLogDateText =
+                            "Last: ${formatEpochDay(suggestion.sourcePerformedDateEpochDay)}",
+                        lastSetSummaryText =
+                            if (cardioParts.isEmpty()) {
+                                "Cardio logged"
+                            } else {
+                                cardioParts.joinToString(" · ")
+                            },
+                    )
+                }
+            }
+
+            else -> {
+                val latestLog = sessionRepository
+                    .getLogsForExercise(exercise.id)
+                    .firstOrNull()
+
+                if (latestLog == null) {
+                    ExerciseListItemUiState(
+                        exercise = exercise,
+                    )
+                } else {
+                    val sets = sessionRepository.getSetsForExercise(latestLog.id)
+
+                    ExerciseListItemUiState(
+                        exercise = exercise,
+                        lastLogDateText = latestLog.performedAtEpochMillis?.let { epochMillis ->
+                            "Last: ${formatDate(epochMillis)}"
+                        } ?: "Last: logged",
+                        lastSetSummaryText = buildSetSummary(sets),
+                    )
+                }
+            }
         }
-
-        val sets = sessionRepository.getSetsForExercise(latestLog.id)
-
-        return ExerciseListItemUiState(
-            exercise = exercise,
-            lastLogDateText = latestLog.performedAtEpochMillis?.let { epochMillis ->
-                "Last: ${formatDate(epochMillis)}"
-            } ?: "Last: logged",
-            lastSetSummaryText = buildSetSummary(sets),
-        )
     }
 
     private fun buildSetSummary(
@@ -127,6 +176,16 @@ class ExerciseListViewModel @Inject constructor(
         }
 
         return "Sets: ${sets.size} · ${setTexts.joinToString(" · ")}"
+    }
+
+    private fun formatEpochDay(
+        epochDay: Long,
+    ): String {
+        return Instant
+            .ofEpochSecond(epochDay * 24L * 60L * 60L)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
     }
 
     private fun formatDate(
