@@ -57,11 +57,11 @@ class CreateSessionFromSplitUseCase @Inject constructor(
                             logOrder = index + 1,
                             logType = "steadyState",
                             freeTextName = exercise.name,
-                            distance = suggestion?.distance,
+                            distance = null,
                             distanceUnit = suggestion?.distanceUnit ?: "mi",
-                            durationSeconds = suggestion?.durationSeconds,
-                            averageInclinePercent = suggestion?.averageInclinePercent,
-                            averageResistance = suggestion?.averageResistance,
+                            durationSeconds = null,
+                            averageInclinePercent = null,
+                            averageResistance = null,
                             notes = null,
                             createdAtEpochMillis = now,
                             updatedAtEpochMillis = now,
@@ -70,10 +70,7 @@ class CreateSessionFromSplitUseCase @Inject constructor(
                 }
 
                 else -> {
-                    val suggestion = sessionRepository
-                        .getLatestWeightSuggestionForExercise(exercise.id)
-
-                    val actualExerciseLogId = sessionRepository.insertActualExerciseLog(
+                    sessionRepository.insertActualExerciseLog(
                         ActualExerciseLogEntity(
                             actualSessionId = actualSessionId,
                             exerciseId = exercise.id,
@@ -84,27 +81,6 @@ class CreateSessionFromSplitUseCase @Inject constructor(
                             performedAtEpochMillis = now,
                         )
                     )
-
-                    if (suggestion != null) {
-                        sessionRepository.insertSet(
-                            ActualExerciseSetLogEntity(
-                                actualExerciseLogId = actualExerciseLogId,
-                                setOrder = 1,
-                                weight = suggestion.suggestedWeight,
-                                reps = suggestion.suggestedReps,
-                                notes = buildString {
-                                    append("From previous session max")
-                                    append(" (")
-                                    append(formatWeight(suggestion.suggestedWeight))
-                                    suggestion.suggestedReps?.let { reps ->
-                                        append(" × ")
-                                        append(reps)
-                                    }
-                                    append(")")
-                                },
-                            )
-                        )
-                    }
                 }
             }
         }

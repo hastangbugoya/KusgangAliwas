@@ -76,6 +76,12 @@ interface ActualCardioLogDao {
     SELECT *
     FROM actual_cardio_log
     WHERE exerciseId = :exerciseId
+        AND (
+            distance IS NOT NULL
+            OR durationSeconds IS NOT NULL
+            OR averageInclinePercent IS NOT NULL
+            OR averageResistance IS NOT NULL
+        )
     ORDER BY performedAtEpochMillis DESC, id DESC
     """
     )

@@ -62,6 +62,7 @@ sealed interface SessionDetailItemUiState {
 data class SessionCardioLogUiState(
     val log: ActualCardioLogEntity,
     val cardioName: String,
+    val previousCardioText: String? = null,
 )
 
 data class SessionExerciseLogUiState(
@@ -81,6 +82,7 @@ data class SessionExerciseLogUiState(
      * - or no logged weights yet
      */
     val suggestedWeight: Double? = null,
+    val previousMaxText: String? = null,
 )
 
 private data class ExerciseLogWithSets(
@@ -140,26 +142,56 @@ class SessionDetailViewModel @Inject constructor(
             val exerciseById = exercises.associateBy { it.id }
 
             val exerciseItems = logsWithSets.map { item ->
+                val exerciseName = item.log.exerciseId
+                    ?.let { exerciseById[it]?.name }
+                    ?: item.log.freeTextName
+                    ?: "Loose exercise note"
+
+                val suggestion = item.log.exerciseId
+                    ?.let { exerciseId ->
+                        sessionRepository.getLatestWeightSuggestionForExercise(exerciseId)
+                    }
+
                 SessionExerciseLogUiState(
                     log = item.log,
-                    exerciseName = item.log.exerciseId
-                        ?.let { exerciseById[it]?.name }
-                        ?: item.log.freeTextName
-                        ?: "Loose exercise note",
+                    exerciseName = exerciseName,
                     sets = item.sets,
+                    previousMaxText = suggestion?.let {
+                        buildPreviousMaxText(
+                            exerciseName = exerciseName,
+                            weight = it.suggestedWeight,
+                            reps = it.suggestedReps,
+                        )
+                    } ?: "No previous $exerciseName log.",
                 )
             }
 
             val cardioItems = cardioLogs.map { log ->
+                val cardioName = log.exerciseId
+                    ?.let { exerciseById[it]?.name }
+                    ?: log.freeTextName
+                    ?: "Cardio"
+
+                val suggestion = log.exerciseId
+                    ?.let { exerciseId ->
+                        sessionRepository.getLatestCardioSuggestionForExercise(exerciseId)
+                    }
+
                 SessionCardioLogUiState(
                     log = log,
-                    cardioName = log.exerciseId
-                        ?.let { exerciseById[it]?.name }
-                        ?: log.freeTextName
-                        ?: "Cardio",
+                    cardioName = cardioName,
+                    previousCardioText = suggestion?.let {
+                        buildPreviousCardioText(
+                            cardioName = cardioName,
+                            distance = it.distance,
+                            distanceUnit = it.distanceUnit,
+                            durationSeconds = it.durationSeconds,
+                            incline = it.averageInclinePercent,
+                            resistance = it.averageResistance,
+                        )
+                    } ?: "No previous $cardioName log.",
                 )
             }
-
             SessionDetailUiState(
                 session = session,
                 exerciseLogs = exerciseItems,
@@ -658,6 +690,41 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    private fun buildPreviousCardioText(
+        cardioName: String,
+        distance: Double?,
+        distanceUnit: String?,
+        durationSeconds: Long?,
+        incline: Double?,
+        resistance: Double?,
+    ): String {
+        val parts = buildList {
+            distance?.let { value ->
+                distanceUnit?.let { unit ->
+                    add("${formatWeight(value)} $unit")
+                }
+            }
+
+            durationSeconds?.let { seconds ->
+                add("${seconds / 60}m")
+            }
+
+            incline?.let { value ->
+                add("${formatWeight(value)}% incline")
+            }
+
+            resistance?.let { value ->
+                add("resistance ${formatWeight(value)}")
+            }
+        }
+
+        return if (parts.isEmpty()) {
+            "No previous $cardioName log."
+        } else {
+            "Previous $cardioName session: ${parts.joinToString(" • ")}"
+        }
+    }
+
     private fun buildMixedSessionItems(
         exerciseLogs: List<SessionExerciseLogUiState>,
         cardioLogs: List<SessionCardioLogUiState>,
@@ -728,6 +795,24 @@ class SessionDetailViewModel @Inject constructor(
             compareBy<ActualExerciseSetLogEntity> { it.setOrder }
                 .thenBy { it.id }
         )
+    }
+
+    private fun buildPreviousMaxText(
+        exerciseName: String,
+        weight: Double,
+        reps: Int?,
+    ): String {
+        return buildString {
+            append("Previous ")
+            append(exerciseName)
+            append(" max: ")
+            append(formatWeight(weight))
+
+            reps?.let {
+                append(" × ")
+                append(it)
+            }
+        }
     }
 
     private fun formatWeight(

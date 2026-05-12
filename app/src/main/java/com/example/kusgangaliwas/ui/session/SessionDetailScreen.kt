@@ -210,9 +210,9 @@ private fun StrengthTimelineCard(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${index + 1}. 🏋 ${item.exerciseName}")
             Text(buildSetSummary(item.sets))
-            if (item.sets.isEmpty()) {
+            item.previousMaxText?.let { text ->
                 Text(
-                    "No previous ${item.exerciseName} log.",
+                    text = text,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -240,7 +240,6 @@ private fun StrengthTimelineCard(
                 } else {
                     item.sets.forEach { set ->
                         SetEditorRow(
-                            exerciseName = item.exerciseName,
                             set = set,
                             onUpdateSet = onUpdateSet,
                             onDeleteSet = onDeleteSet,
@@ -326,14 +325,13 @@ private fun CardioTimelineCard(
                 Text("No cardio details yet.")
             }
 
-            Text(
-                text = buildCardioSupportText(
-                    cardioName = item.cardioName,
-                    details = details,
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+            item.previousCardioText?.let { text ->
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
 
             ReorderButtons(
                 sessionItem = sessionItem,
@@ -477,7 +475,6 @@ private fun StarRatingRow(
 
 @Composable
 private fun SetEditorRow(
-    exerciseName: String,
     set: ActualExerciseSetLogEntity,
     onUpdateSet: (ActualExerciseSetLogEntity, Double?, Int?) -> Unit,
     onDeleteSet: (Long) -> Unit,
@@ -714,16 +711,16 @@ private fun buildCardioDetails(
     }
 }
 
-private fun buildCardioSupportText(
-    cardioName: String,
-    details: List<String>,
-): String {
-    return if (details.isEmpty()) {
-        "No previous $cardioName log."
-    } else {
-        "From previous $cardioName session (${details.joinToString(" • ")})"
-    }
-}
+//private fun buildCardioSupportText(
+//    cardioName: String,
+//    details: List<String>,
+//): String {
+//    return if (details.isEmpty()) {
+//        "No previous $cardioName log."
+//    } else {
+//        "From previous $cardioName session (${details.joinToString(" • ")})"
+//    }
+//}
 
 private fun formatDuration(
     seconds: Long,
