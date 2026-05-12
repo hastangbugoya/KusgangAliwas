@@ -89,7 +89,11 @@ interface ActualExerciseLogDao {
     SELECT *
     FROM actual_exercise_log
     WHERE exerciseId = :exerciseId
-    ORDER BY id DESC
+        AND id IN (
+            SELECT actualExerciseLogId
+            FROM actual_exercise_set_log
+        )
+    ORDER BY performedAtEpochMillis DESC, id DESC
     """
     )
     suspend fun getLogsForExercise(

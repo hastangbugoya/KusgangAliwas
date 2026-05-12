@@ -415,9 +415,7 @@ class SessionDetailViewModel @Inject constructor(
                         durationSeconds = suggestion?.durationSeconds,
                         averageInclinePercent = suggestion?.averageInclinePercent,
                         averageResistance = suggestion?.averageResistance,
-                        notes = suggestion?.let {
-                            "From previous cardio session"
-                        },
+                        notes = null,
                         createdAtEpochMillis = now,
                         updatedAtEpochMillis = now,
                     )

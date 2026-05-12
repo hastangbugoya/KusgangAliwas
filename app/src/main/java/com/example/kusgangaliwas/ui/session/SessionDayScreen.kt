@@ -28,6 +28,7 @@ fun SessionDayScreen(
     modifier: Modifier = Modifier,
     onStartQuickSession: () -> Unit,
     onActualSessionClick: (Long) -> Unit,
+    onStartSplitSession: (Long) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -89,13 +90,32 @@ fun SessionDayScreen(
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Actions")
-
                         OutlinedButton(
                             onClick = {
                                 onStartQuickSession()
                             },
                         ) {
                             Text("Start quick session")
+                        }
+
+                        if (uiState.availableSplits.isEmpty()) {
+
+                            Text("No saved splits yet.")
+
+                        } else {
+
+                            Text("Start from saved split")
+
+                            uiState.availableSplits.forEach { split ->
+
+                                OutlinedButton(
+                                    onClick = {
+                                        onStartSplitSession(split.id)
+                                    },
+                                ) {
+                                    Text(split.name)
+                                }
+                            }
                         }
                     }
                 }

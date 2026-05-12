@@ -210,11 +210,13 @@ private fun StrengthTimelineCard(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${index + 1}. 🏋 ${item.exerciseName}")
             Text(buildSetSummary(item.sets))
+
             ReorderButtons(
                 sessionItem = sessionItem,
                 onMoveSessionItemUp = onMoveSessionItemUp,
                 onMoveSessionItemDown = onMoveSessionItemDown,
             )
+
             OutlinedButton(
                 onClick = { expanded = !expanded },
             ) {
@@ -223,6 +225,7 @@ private fun StrengthTimelineCard(
 
             if (expanded) {
                 if (item.sets.isEmpty()) {
+                    Text("No previous ${item.exerciseName} log.")
                     Text("No sets yet.")
                 } else {
                     item.sets.forEach { set ->
@@ -264,15 +267,11 @@ private fun CardioTimelineCard(
     sessionItem: SessionDetailItemUiState,
     onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
-
 ) {
     var expanded by rememberSaveable(item.log.id) {
         mutableStateOf(false)
     }
 
-    var nameText by rememberSaveable(item.log.id) {
-        mutableStateOf(item.cardioName)
-    }
     var distanceText by rememberSaveable(item.log.id) {
         mutableStateOf(item.log.distance?.let(::formatDistance) ?: "")
     }
@@ -281,12 +280,6 @@ private fun CardioTimelineCard(
     }
     var notesText by rememberSaveable(item.log.id) {
         mutableStateOf(item.log.notes ?: "")
-    }
-
-    LaunchedEffect(item.log.id, item.cardioName) {
-        if (nameText != item.cardioName) {
-            nameText = item.cardioName
-        }
     }
 
     LaunchedEffect(item.log.id, item.log.distance) {
@@ -314,27 +307,22 @@ private fun CardioTimelineCard(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${index + 1}. 🏃 ${item.cardioName}")
 
-            val details = buildList {
-                item.log.distance?.let { distance ->
-                    item.log.distanceUnit?.let { unit ->
-                        add("${formatDistance(distance)} $unit")
-                    }
-                }
-
-                item.log.durationSeconds?.let { seconds ->
-                    add(formatDuration(seconds))
-                }
-
-                item.log.averageInclinePercent?.let { incline ->
-                    add("${formatDistance(incline)}% incline")
-                }
-            }
+            val details = buildCardioDetails(item.log)
 
             if (details.isNotEmpty()) {
                 Text(details.joinToString(" • "))
             } else {
                 Text("No cardio details yet.")
             }
+
+            Text(
+                text = buildCardioSupportText(
+                    cardioName = item.cardioName,
+                    details = details,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
 
             ReorderButtons(
                 sessionItem = sessionItem,
@@ -349,21 +337,6 @@ private fun CardioTimelineCard(
             }
 
             if (expanded) {
-                OutlinedTextField(
-                    value = nameText,
-                    onValueChange = { value ->
-                        nameText = value
-                        onUpdateCardioLog(
-                            item.log.copy(
-                                freeTextName = value.ifBlank { null },
-                                updatedAtEpochMillis = System.currentTimeMillis(),
-                            )
-                        )
-                    },
-                    label = { Text("Name") },
-                    singleLine = true,
-                )
-
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -707,6 +680,37 @@ private fun buildSetSummary(
     }
 
     return "Sets: ${sets.size} | Weight: $weightText"
+}
+
+private fun buildCardioDetails(
+    log: ActualCardioLogEntity,
+): List<String> {
+    return buildList {
+        log.distance?.let { distance ->
+            log.distanceUnit?.let { unit ->
+                add("${formatDistance(distance)} $unit")
+            }
+        }
+
+        log.durationSeconds?.let { seconds ->
+            add(formatDuration(seconds))
+        }
+
+        log.averageInclinePercent?.let { incline ->
+            add("${formatDistance(incline)}% incline")
+        }
+    }
+}
+
+private fun buildCardioSupportText(
+    cardioName: String,
+    details: List<String>,
+): String {
+    return if (details.isEmpty()) {
+        "No previous $cardioName log."
+    } else {
+        "From previous $cardioName session (${details.joinToString(" • ")})"
+    }
 }
 
 private fun formatDuration(

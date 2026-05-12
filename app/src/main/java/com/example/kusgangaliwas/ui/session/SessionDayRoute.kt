@@ -23,5 +23,6 @@ fun SessionDayRoute(
         onStartQuickSession = viewModel::startQuickSession,
         onActualSessionClick = onActualSessionClick,
         modifier = modifier,
+        onStartSplitSession = viewModel::startSessionFromSplit,
     )
 }
