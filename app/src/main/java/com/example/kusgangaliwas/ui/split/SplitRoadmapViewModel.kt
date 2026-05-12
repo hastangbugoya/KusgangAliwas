@@ -106,6 +106,40 @@ class SplitRoadmapViewModel @Inject constructor(
         }
     }
 
+    fun renameSplit(
+        newName: String,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                val trimmed = newName.trim()
+
+                if (trimmed.isBlank()) {
+                    return@runCatching
+                }
+
+                val split = splitTemplateRepository
+                    .getSplitById(splitId)
+                    ?: return@runCatching
+
+                splitTemplateRepository.updateSplit(
+                    split.copy(
+                        name = trimmed,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
+
+                scheduleState.update {
+                    it.copy(
+                        splitName = trimmed,
+                        scheduleTitle = trimmed,
+                    )
+                }
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
     fun setScheduleEnabled(enabled: Boolean) {
         scheduleState.update {
             it.copy(scheduleEnabled = enabled)

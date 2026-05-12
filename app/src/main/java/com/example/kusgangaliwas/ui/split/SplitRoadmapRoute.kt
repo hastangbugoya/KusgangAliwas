@@ -28,6 +28,6 @@ fun SplitRoadmapRoute(
         onScheduleTitleChange = viewModel::updateScheduleTitle,
         onSaveSchedule = viewModel::saveSchedule,
         modifier = modifier,
-
+        onRenameSplit = viewModel::renameSplit,
     )
 }

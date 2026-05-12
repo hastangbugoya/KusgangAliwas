@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 data class SessionDetailUiState(
     val session: ActualSessionEntity? = null,
@@ -38,6 +40,7 @@ data class SessionDetailUiState(
     val cardioLogs: List<SessionCardioLogUiState> = emptyList(),
     val sessionItems: List<SessionDetailItemUiState> = emptyList(),
     val availableExercises: List<ExerciseEntity> = emptyList(),
+    val titleText: String = "Session",
 )
 
 sealed interface SessionDetailItemUiState {
@@ -166,6 +169,7 @@ class SessionDetailViewModel @Inject constructor(
                     cardioLogs = cardioItems,
                 ),
                 availableExercises = exercises,
+                titleText = buildSessionTitle(session),
             )
         }.stateIn(
             scope = viewModelScope,
@@ -352,7 +356,17 @@ class SessionDetailViewModel @Inject constructor(
                         weight = suggestion?.suggestedWeight,
                         notes = suggestion?.let {
                             buildString {
-                                append("From previous session max")
+                                append("From previous ")
+                                append(
+                                    exerciseLog?.exerciseId
+                                        ?.let { exerciseId ->
+                                            uiState.value.availableExercises
+                                                .firstOrNull { it.id == exerciseId }
+                                                ?.name
+                                        }
+                                        ?: "exercise"
+                                )
+                                append(" session max")
 
                                 it.suggestedWeight.let { weight ->
                                     append(" (")
@@ -724,6 +738,18 @@ class SessionDetailViewModel @Inject constructor(
         } else {
             value.toString()
         }
+    }
+
+    private fun buildSessionTitle(
+        session: ActualSessionEntity?,
+    ): String {
+        if (session == null) return "Session"
+
+        val dateText = LocalDate
+            .ofEpochDay(session.performedDateEpochDay)
+            .format(DateTimeFormatter.ofPattern("MMM d"))
+
+        return "${session.title} · $dateText"
     }
 
     init {

@@ -44,6 +44,7 @@ fun SplitRoadmapScreen(
     onScheduleTitleChange: (String) -> Unit,
     onSaveSchedule: () -> Unit,
     modifier: Modifier = Modifier,
+    onRenameSplit: (String) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -63,6 +64,12 @@ fun SplitRoadmapScreen(
             contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            item {
+                RenameSplitCard(
+                    splitName = uiState.splitName,
+                    onRenameSplit = onRenameSplit,
+                )
+            }
             item {
                 ScheduleCard(
                     uiState = uiState,
@@ -178,6 +185,46 @@ private fun ExerciseType.displayText(): String {
         ExerciseType.CARDIO -> "Cardio"
         ExerciseType.MOBILITY -> "Mobility"
         ExerciseType.OTHER -> "Other"
+    }
+}
+
+@Composable
+private fun RenameSplitCard(
+    splitName: String,
+    onRenameSplit: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var text by remember(splitName) {
+        mutableStateOf(splitName)
+    }
+
+    SharpCard {
+        Column(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SectionHeader("Split")
+
+            OutlinedTextField(
+                value = text,
+                onValueChange = { value ->
+                    text = value
+                },
+                label = {
+                    Text("Split name")
+                },
+                singleLine = true,
+            )
+
+            Button(
+                onClick = {
+                    onRenameSplit(text)
+                },
+                enabled = text.isNotBlank(),
+            ) {
+                Text("Rename split")
+            }
+        }
     }
 }
 

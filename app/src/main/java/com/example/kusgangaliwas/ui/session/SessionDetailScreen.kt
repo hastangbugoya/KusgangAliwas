@@ -56,7 +56,7 @@ fun SessionDetailScreen(
         modifier = modifier,
         topBar = {
             KusgangTopBar(
-                title = uiState.session?.title ?: "Session",
+                title = uiState.titleText,
                 onBackClick = onBackClick,
                 onOverflowClick = onOverflowClick,
             )
@@ -210,6 +210,13 @@ private fun StrengthTimelineCard(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${index + 1}. 🏋 ${item.exerciseName}")
             Text(buildSetSummary(item.sets))
+            if (item.sets.isEmpty()) {
+                Text(
+                    "No previous ${item.exerciseName} log.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
 
             ReorderButtons(
                 sessionItem = sessionItem,
@@ -225,11 +232,15 @@ private fun StrengthTimelineCard(
 
             if (expanded) {
                 if (item.sets.isEmpty()) {
-                    Text("No previous ${item.exerciseName} log.")
-                    Text("No sets yet.")
+                    Text(
+                        "No sets yet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
                 } else {
                     item.sets.forEach { set ->
                         SetEditorRow(
+                            exerciseName = item.exerciseName,
                             set = set,
                             onUpdateSet = onUpdateSet,
                             onDeleteSet = onDeleteSet,
@@ -466,6 +477,7 @@ private fun StarRatingRow(
 
 @Composable
 private fun SetEditorRow(
+    exerciseName: String,
     set: ActualExerciseSetLogEntity,
     onUpdateSet: (ActualExerciseSetLogEntity, Double?, Int?) -> Unit,
     onDeleteSet: (Long) -> Unit,
