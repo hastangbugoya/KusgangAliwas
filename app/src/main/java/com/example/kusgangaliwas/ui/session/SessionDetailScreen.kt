@@ -326,11 +326,43 @@ private fun CardioTimelineCard(
             }
 
             item.previousCardioText?.let { text ->
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    if (
+                        item.previousDistance != null ||
+                        item.previousDurationSeconds != null ||
+                        item.previousIncline != null ||
+                        item.previousResistance != null
+                    ) {
+                        TextButton(
+                            onClick = {
+                                onUpdateCardioLog(
+                                    item.log.copy(
+                                        distance = item.previousDistance,
+                                        distanceUnit = item.previousDistanceUnit
+                                            ?: item.log.distanceUnit
+                                            ?: "mi",
+                                        durationSeconds = item.previousDurationSeconds,
+                                        averageInclinePercent = item.previousIncline,
+                                        averageResistance = item.previousResistance,
+                                        updatedAtEpochMillis = System.currentTimeMillis(),
+                                    )
+                                )
+                            },
+                        ) {
+                            Text("Use")
+                        }
+                    }
+                }
             }
 
             ReorderButtons(

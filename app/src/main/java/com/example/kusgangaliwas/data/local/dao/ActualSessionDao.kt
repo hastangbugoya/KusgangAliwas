@@ -151,4 +151,18 @@ interface ActualSessionDao {
     fun observeById(
         actualSessionId: Long,
     ): Flow<ActualSessionEntity?>
+
+    @Query(
+        """
+    SELECT *
+    FROM actual_session
+    WHERE performedDateEpochDay >= :startEpochDay
+        AND performedDateEpochDay < :endEpochDay
+    ORDER BY performedDateEpochDay ASC, id ASC
+    """
+    )
+    suspend fun getSessionsBetweenDates(
+        startEpochDay: Long,
+        endEpochDay: Long,
+    ): List<ActualSessionEntity>
 }

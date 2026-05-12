@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import com.example.kusgangaliwas.domain.model.WeeklyTrainingProgress
+import com.example.kusgangaliwas.domain.usecase.session.GetWeeklyTrainingProgressUseCase
+import java.time.LocalDate
 
 /**
  * ViewModel for the monthly calendar screen.
@@ -50,6 +53,7 @@ import kotlinx.coroutines.flow.stateIn
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
+    private val getWeeklyTrainingProgressUseCase: GetWeeklyTrainingProgressUseCase,
 ) : ViewModel() {
 
     private val visibleMonth = MutableStateFlow(YearMonth.now())
@@ -115,9 +119,20 @@ class CalendarViewModel @Inject constructor(
                             }
                         }
 
+                    val anchorDate = if (YearMonth.now() == month) {
+                        LocalDate.now()
+                    } else {
+                        month.atDay(1)
+                    }
+
+                    val weeklyProgress = getWeeklyTrainingProgressUseCase(
+                        anchorDate = anchorDate,
+                    )
+
                     CalendarUiState(
                         month = month,
                         dayStatusByEpochDay = statusMap,
+                        weeklyProgress = weeklyProgress,
                     )
                 }
             }
@@ -156,6 +171,7 @@ class CalendarViewModel @Inject constructor(
 data class CalendarUiState(
     val month: YearMonth = YearMonth.now(),
     val dayStatusByEpochDay: Map<Long, CalendarDayStatus> = emptyMap(),
+    val weeklyProgress: WeeklyTrainingProgress? = null,
 )
 
 /**

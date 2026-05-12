@@ -148,6 +148,16 @@ class SessionRepositoryImpl @Inject constructor(
         return actualSessionDao.observeSessionsBetweenDates(startEpochDay, endEpochDay)
     }
 
+    override suspend fun getActualSessionsBetweenDates(
+        startEpochDay: Long,
+        endEpochDay: Long,
+    ): List<ActualSessionEntity> {
+        return actualSessionDao.getSessionsBetweenDates(
+            startEpochDay = startEpochDay,
+            endEpochDay = endEpochDay,
+        )
+    }
+
     override fun observeActualSessionById(
         actualSessionId: Long,
     ): Flow<ActualSessionEntity?> {

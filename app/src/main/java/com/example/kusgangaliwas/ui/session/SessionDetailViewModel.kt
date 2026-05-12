@@ -63,6 +63,11 @@ data class SessionCardioLogUiState(
     val log: ActualCardioLogEntity,
     val cardioName: String,
     val previousCardioText: String? = null,
+    val previousDistance: Double? = null,
+    val previousDistanceUnit: String? = null,
+    val previousDurationSeconds: Long? = null,
+    val previousIncline: Double? = null,
+    val previousResistance: Double? = null,
 )
 
 data class SessionExerciseLogUiState(
@@ -190,6 +195,11 @@ class SessionDetailViewModel @Inject constructor(
                             resistance = it.averageResistance,
                         )
                     } ?: "No previous $cardioName log.",
+                    previousDistance = suggestion?.distance,
+                    previousDistanceUnit = suggestion?.distanceUnit,
+                    previousDurationSeconds = suggestion?.durationSeconds,
+                    previousIncline = suggestion?.averageInclinePercent,
+                    previousResistance = suggestion?.averageResistance,
                 )
             }
             SessionDetailUiState(
@@ -456,11 +466,11 @@ class SessionDetailViewModel @Inject constructor(
                         logOrder = nextOrder,
                         logType = "steadyState",
                         freeTextName = exerciseName ?: "Cardio",
-                        distance = suggestion?.distance,
+                        distance = null,
                         distanceUnit = suggestion?.distanceUnit ?: "mi",
-                        durationSeconds = suggestion?.durationSeconds,
-                        averageInclinePercent = suggestion?.averageInclinePercent,
-                        averageResistance = suggestion?.averageResistance,
+                        durationSeconds = null,
+                        averageInclinePercent = null,
+                        averageResistance = null,
                         notes = null,
                         createdAtEpochMillis = now,
                         updatedAtEpochMillis = now,

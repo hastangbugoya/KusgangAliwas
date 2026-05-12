@@ -105,6 +105,11 @@ interface SessionRepository {
         endEpochDay: Long,
     ): Flow<List<ActualSessionEntity>>
 
+    suspend fun getActualSessionsBetweenDates(
+        startEpochDay: Long,
+        endEpochDay: Long,
+    ): List<ActualSessionEntity>
+
     fun observeActualSessionById(
         actualSessionId: Long,
     ): Flow<ActualSessionEntity?>
