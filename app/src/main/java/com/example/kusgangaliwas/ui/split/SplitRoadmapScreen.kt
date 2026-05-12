@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
@@ -83,6 +84,7 @@ fun SplitRoadmapScreen(
                         } else {
                             uiState.roadmapItems.forEachIndexed { index, item ->
                                 val splitExercise = item.splitTemplateExercise
+                                val exerciseType = item.exerciseType
 
                                 SharpCard {
                                     Column(
@@ -92,19 +94,38 @@ fun SplitRoadmapScreen(
                                         Text(
                                             text = "${index + 1}. ${item.exerciseName}",
                                         )
-
-                                        buildTargetText(
-                                            sets = splitExercise.targetSets,
-                                            min = splitExercise.targetRepsMin,
-                                            max = splitExercise.targetRepsMax,
-                                        )?.let { targetText ->
-                                            Text(targetText)
-                                        }
-
-                                        TargetEditorRow(
-                                            splitExercise = splitExercise,
-                                            onUpdateExerciseTargets = onUpdateExerciseTargets,
+                                        Text(
+                                            text = "Type: ${exerciseType?.displayText() ?: "Unknown"}",
                                         )
+
+                                        Column(
+                                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        ) {
+                                            Text(
+                                                text = when (exerciseType) {
+                                                    ExerciseType.STRENGTH ->
+                                                        "Previous workout values will be suggested during logging."
+
+                                                    ExerciseType.CARDIO ->
+                                                        "Uses latest logged cardio metrics during workout start."
+
+                                                    ExerciseType.MOBILITY ->
+                                                        "Mobility exercise."
+
+                                                    ExerciseType.OTHER ->
+                                                        "General exercise."
+
+                                                    null ->
+                                                        "Previous workout values will be suggested during logging."
+                                                },
+                                            )
+
+                                            if (exerciseType == ExerciseType.CARDIO) {
+                                                Text(
+                                                    text = "Examples: distance, duration, incline, resistance.",
+                                                )
+                                            }
+                                        }
 
                                         Row(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -147,6 +168,16 @@ fun SplitRoadmapScreen(
                 }
             }
         }
+    }
+
+}
+
+private fun ExerciseType.displayText(): String {
+    return when (this) {
+        ExerciseType.STRENGTH -> "Strength"
+        ExerciseType.CARDIO -> "Cardio"
+        ExerciseType.MOBILITY -> "Mobility"
+        ExerciseType.OTHER -> "Other"
     }
 }
 

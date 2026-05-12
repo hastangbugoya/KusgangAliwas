@@ -1,6 +1,7 @@
 package com.example.kusgangaliwas.ui.split
 
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 
 data class SplitRoadmapUiState(
@@ -49,4 +50,5 @@ data class SplitRoadmapUiState(
 data class SplitRoadmapItemUiState(
     val splitTemplateExercise: SplitTemplateExerciseEntity,
     val exerciseName: String,
+    val exerciseType: ExerciseType? = null,
 )

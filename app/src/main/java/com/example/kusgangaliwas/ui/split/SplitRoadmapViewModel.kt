@@ -51,9 +51,12 @@ class SplitRoadmapViewModel @Inject constructor(
                 splitId = splitId,
                 splitName = schedule.splitName,
                 roadmapItems = roadmap.map { item ->
+                    val exercise = exerciseById[item.exerciseId]
+
                     SplitRoadmapItemUiState(
                         splitTemplateExercise = item,
-                        exerciseName = exerciseById[item.exerciseId]?.name ?: "Unknown exercise",
+                        exerciseName = exercise?.name ?: "Unknown exercise",
+                        exerciseType = exercise?.exerciseType,
                     )
                 },
                 availableExercises = exercises,
