@@ -93,4 +93,21 @@ data class ActualCardioLogEntity(
 
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
+
+    /**
+     * True when distance was approximated from duration/intensity.
+     */
+    val isEstimatedDistance: Boolean = false,
+
+    /**
+     * User-selected effort/speed scale.
+     *
+     * Suggested:
+     * 1 = slow walk
+     * 2 = walk
+     * 3 = brisk walk
+     * 4 = jog
+     * 5 = run
+     */
+    val intensityLevel: Int? = null,
 )

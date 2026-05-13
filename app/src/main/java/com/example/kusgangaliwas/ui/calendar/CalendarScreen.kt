@@ -168,6 +168,7 @@ private fun rememberCalendarMonthCells(
             isInCurrentMonth = YearMonth.from(date) == month,
             status = dayStatusByEpochDay[date.toEpochDay()]
                 ?: CalendarDayStatus.NEUTRAL,
+            isToday = date == LocalDate.now(),
         )
     }
 }
@@ -176,6 +177,7 @@ data class CalendarDayCellState(
     val date: LocalDate,
     val isInCurrentMonth: Boolean,
     val status: CalendarDayStatus,
+    val isToday: Boolean = false,
 )
 
 internal fun DayOfWeek.shortLabel(): String {

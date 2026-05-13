@@ -58,6 +58,10 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
  *
  * DB-5 adds mixed session cardio logging:
  * - cardio blocks can be shown beside strength logs in one ordered session list
+ *
+ * DB-7 adds cardio distance estimation metadata:
+ * - isEstimatedDistance
+ * - intensityLevel
  */
 @Database(
     entities = [
@@ -79,7 +83,7 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
         ProgramEntity::class,
         SplitScheduleEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)

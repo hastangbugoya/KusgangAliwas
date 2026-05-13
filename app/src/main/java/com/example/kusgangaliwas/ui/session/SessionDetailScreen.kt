@@ -423,6 +423,38 @@ private fun CardioTimelineCard(
                     ),
                 )
 
+                IntensitySelectorRow(
+                    intensityLevel = item.log.intensityLevel,
+                    onIntensitySelected = { level ->
+
+                        val durationSeconds = item.log.durationSeconds
+
+                        val estimatedDistance =
+                            if (
+                                item.log.distance == null &&
+                                durationSeconds != null
+                            ) {
+                                estimateDistanceMiles(
+                                    durationSeconds = durationSeconds,
+                                    intensityLevel = level,
+                                )
+                            } else {
+                                item.log.distance
+                            }
+
+                        onUpdateCardioLog(
+                            item.log.copy(
+                                intensityLevel = level,
+                                distance = estimatedDistance,
+                                isEstimatedDistance =
+                                    estimatedDistance != null &&
+                                            item.log.distance == null,
+                                updatedAtEpochMillis = System.currentTimeMillis(),
+                            )
+                        )
+                    },
+                )
+
                 OutlinedTextField(
                     value = notesText,
                     onValueChange = { value ->
@@ -467,6 +499,51 @@ private fun ReorderButtons(
         ) {
             Text("↓")
         }
+    }
+}
+
+@Composable
+private fun IntensitySelectorRow(
+    intensityLevel: Int?,
+    onIntensitySelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = "Intensity",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            (1..5).forEach { level ->
+
+                val selected = intensityLevel == level
+
+                OutlinedButton(
+                    onClick = { onIntensitySelected(level) },
+                ) {
+                    Text(
+                        text =
+                            if (selected) {
+                                "[$level]"
+                            } else {
+                                level.toString()
+                            }
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = "1=slow walk · 3=brisk walk · 5=run",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+        )
     }
 }
 
@@ -729,7 +806,17 @@ private fun buildCardioDetails(
     return buildList {
         log.distance?.let { distance ->
             log.distanceUnit?.let { unit ->
-                add("${formatDistance(distance)} $unit")
+                add(
+                    buildString {
+                        append(formatDistance(distance))
+                        append(" ")
+                        append(unit)
+
+                        if (log.isEstimatedDistance) {
+                            append(" estimated")
+                        }
+                    }
+                )
             }
         }
 
@@ -775,6 +862,24 @@ private fun formatDistance(
     } else {
         value.toString()
     }
+}
+
+private fun estimateDistanceMiles(
+    durationSeconds: Long,
+    intensityLevel: Int,
+): Double {
+    val mph = when (intensityLevel) {
+        1 -> 2.0
+        2 -> 3.0
+        3 -> 4.0
+        4 -> 5.5
+        5 -> 7.0
+        else -> 3.0
+    }
+
+    val hours = durationSeconds / 3600.0
+
+    return ((mph * hours) * 100).toInt() / 100.0
 }
 
 internal fun formatWeight(

@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.calendar
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,20 @@ fun DayCell(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
+            .border(
+                width =
+                    if (day.isToday) {
+                        2.dp
+                    } else {
+                        0.dp
+                    },
+                color =
+                    if (day.isToday) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        Color.Transparent
+                    },
+            )
             .clickable {
                 onClick(day.date.toEpochDay())
             },
@@ -40,8 +55,24 @@ fun DayCell(
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = day.date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.bodySmall,
+                text =
+                    if (day.status == CalendarDayStatus.TODAY) {
+                        "${day.date.dayOfMonth}"
+                    } else {
+                        day.date.dayOfMonth.toString()
+                    },
+                style =
+                    if (day.status == CalendarDayStatus.TODAY) {
+                        MaterialTheme.typography.bodyMedium
+                    } else {
+                        MaterialTheme.typography.bodySmall
+                    },
+                color =
+                    if (day.status == CalendarDayStatus.TODAY) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
             )
@@ -67,6 +98,7 @@ private val CalendarDayStatus.tempDrawableRes: Int
         CalendarDayStatus.YELLOW -> R.drawable.interrogation
         CalendarDayStatus.RED -> R.drawable.exclamation
         CalendarDayStatus.NEUTRAL -> R.drawable.empty_set
+        CalendarDayStatus.TODAY -> R.drawable.target
     }
 
 private val CalendarDayStatus.contentDescription: String
@@ -75,6 +107,7 @@ private val CalendarDayStatus.contentDescription: String
         CalendarDayStatus.YELLOW -> "Partially complete"
         CalendarDayStatus.RED -> "Missed planned session"
         CalendarDayStatus.NEUTRAL -> "No planned or logged session"
+        CalendarDayStatus.TODAY -> "Today"
     }
 
 @Composable

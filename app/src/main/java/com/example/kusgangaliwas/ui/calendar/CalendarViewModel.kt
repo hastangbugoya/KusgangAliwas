@@ -85,22 +85,26 @@ class CalendarViewModel @Inject constructor(
                             it.performedDateEpochDay
                         }.eachCount()
 
-                    val allDays =
-                        plannedCounts.keys + actualCounts.keys
+                    val todayEpochDay = LocalDate.now().toEpochDay()
 
-                    val todayEpochDay = java.time.LocalDate.now().toEpochDay()
+                    val allDays =
+                        plannedCounts.keys + actualCounts.keys + todayEpochDay
 
                     val statusMap =
                         allDays.associateWith { epochDay ->
-
-                            if (epochDay > todayEpochDay) {
-                                return@associateWith CalendarDayStatus.NEUTRAL
-                            }
 
                             val planned = plannedCounts[epochDay] ?: 0
                             val logged = actualCounts[epochDay] ?: 0
 
                             when {
+                                epochDay > todayEpochDay -> {
+                                    CalendarDayStatus.NEUTRAL
+                                }
+
+                                epochDay == todayEpochDay && logged == 0 -> {
+                                    CalendarDayStatus.TODAY
+                                }
+
                                 planned == 0 && logged == 0 -> {
                                     CalendarDayStatus.NEUTRAL
                                 }
@@ -118,7 +122,6 @@ class CalendarViewModel @Inject constructor(
                                 }
                             }
                         }
-
                     val anchorDate = if (YearMonth.now() == month) {
                         LocalDate.now()
                     } else {
@@ -185,4 +188,5 @@ enum class CalendarDayStatus {
     GREEN,
     YELLOW,
     RED,
+    TODAY,
 }
