@@ -51,6 +51,7 @@ fun SessionDetailScreen(
     onDeleteSession: () -> Unit,
     onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
+    onToggleRemoteFocus: (Long) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -93,6 +94,8 @@ fun SessionDetailScreen(
                                             onDuplicateSet = onDuplicateSet,
                                             onDeleteExerciseLogIfEmpty =
                                                 onDeleteExerciseLogIfEmpty,
+                                            focusedExerciseLogId = uiState.focusedExerciseLogId,
+                                            onToggleRemoteFocus = onToggleRemoteFocus,
                                         )
                                     }
 
@@ -201,6 +204,8 @@ private fun StrengthTimelineCard(
     sessionItem: SessionDetailItemUiState,
     onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
+    focusedExerciseLogId: Long?,
+    onToggleRemoteFocus: (Long) -> Unit,
 ) {
     var expanded by rememberSaveable(item.log.id) {
         mutableStateOf(false)
@@ -223,6 +228,19 @@ private fun StrengthTimelineCard(
                 onMoveSessionItemUp = onMoveSessionItemUp,
                 onMoveSessionItemDown = onMoveSessionItemDown,
             )
+            OutlinedButton(
+                onClick = {
+                    onToggleRemoteFocus(item.log.id)
+                },
+            ) {
+                Text(
+                    if (focusedExerciseLogId == item.log.id) {
+                        "Remote focused"
+                    } else {
+                        "Focus for remote"
+                    }
+                )
+            }
 
             OutlinedButton(
                 onClick = { expanded = !expanded },

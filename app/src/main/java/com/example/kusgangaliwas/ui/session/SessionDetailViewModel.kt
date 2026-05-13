@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.MutableStateFlow
 
 data class SessionDetailUiState(
     val session: ActualSessionEntity? = null,
@@ -41,6 +42,7 @@ data class SessionDetailUiState(
     val sessionItems: List<SessionDetailItemUiState> = emptyList(),
     val availableExercises: List<ExerciseEntity> = emptyList(),
     val titleText: String = "Session",
+    val focusedExerciseLogId: Long? = null,
 )
 
 sealed interface SessionDetailItemUiState {
@@ -115,6 +117,8 @@ class SessionDetailViewModel @Inject constructor(
 
     private var gymRemoteFocus: GymRemoteFocus = GymRemoteFocus.None
 
+    private val focusedExerciseLogId = MutableStateFlow<Long?>(null)
+
     private val exerciseLogsWithSets =
         sessionRepository.observeLogsForSession(actualSessionId)
             .flatMapLatest { logs ->
@@ -143,7 +147,8 @@ class SessionDetailViewModel @Inject constructor(
             exerciseLogsWithSets,
             sessionRepository.observeCardioLogsForSession(actualSessionId),
             exerciseRepository.observeActiveExercises(),
-        ) { session, logsWithSets, cardioLogs, exercises ->
+            focusedExerciseLogId,
+        ) { session, logsWithSets, cardioLogs, exercises, focusedExerciseLogId  ->
             val exerciseById = exercises.associateBy { it.id }
 
             val exerciseItems = logsWithSets.map { item ->
@@ -212,6 +217,7 @@ class SessionDetailViewModel @Inject constructor(
                 ),
                 availableExercises = exercises,
                 titleText = buildSessionTitle(session),
+                focusedExerciseLogId = focusedExerciseLogId,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -225,13 +231,33 @@ class SessionDetailViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val currentUiState = uiState.value
-                val activeExercise = currentUiState.exerciseLogs
-                    .firstOrNull { it.sets.isNotEmpty() }
 
-                if (activeExercise == null) {
-                    Log.d(GYM_REMOTE_LOG_TAG, "No exercise with sets available.")
+                val focusedId = currentUiState.focusedExerciseLogId
+
+                if (focusedId == null) {
+                    gymVoiceBus.speak("No exercise selected.")
                     return@runCatching
                 }
+
+                val activeExercise = currentUiState.exerciseLogs
+                    .firstOrNull { it.log.id == focusedId }
+
+                if (activeExercise == null) {
+                    gymVoiceBus.speak("Selected exercise is no longer available.")
+                    focusedExerciseLogId.value = null
+                    gymRemoteFocus = GymRemoteFocus.None
+                    return@runCatching
+                }
+
+                if (activeExercise.sets.isEmpty()) {
+                    gymVoiceBus.speak("${activeExercise.exerciseName} has no sets.")
+                    return@runCatching
+                }
+
+//                if (activeExercise == null) {
+//                    Log.d(GYM_REMOTE_LOG_TAG, "No exercise with sets available.")
+//                    return@runCatching
+//                }
 
                 val sortedSets = activeExercise.sets.sortedForGymRemote()
 
@@ -367,6 +393,19 @@ class SessionDetailViewModel @Inject constructor(
                     .sortedForGymRemote()
             }
         }
+    }
+
+    fun toggleRemoteFocus(
+        actualExerciseLogId: Long,
+    ) {
+        focusedExerciseLogId.value =
+            if (focusedExerciseLogId.value == actualExerciseLogId) {
+                gymRemoteFocus = GymRemoteFocus.None
+                null
+            } else {
+                gymRemoteFocus = GymRemoteFocus.None
+                actualExerciseLogId
+            }
     }
 
     fun addSet(actualExerciseLogId: Long) {

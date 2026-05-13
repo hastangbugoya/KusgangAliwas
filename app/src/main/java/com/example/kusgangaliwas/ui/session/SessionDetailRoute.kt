@@ -36,5 +36,6 @@ fun SessionDetailRoute(
         },
         onMoveSessionItemUp = viewModel::moveSessionItemUp,
         onMoveSessionItemDown = viewModel::moveSessionItemDown,
+        onToggleRemoteFocus = viewModel::toggleRemoteFocus,
     )
 }
