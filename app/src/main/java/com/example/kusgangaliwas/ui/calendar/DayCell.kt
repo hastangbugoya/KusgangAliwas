@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.ui.calendar
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,23 +33,29 @@ fun DayCell(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
+            .background(
+                if (day.isCurrentWeek) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                } else {
+                    Color.Transparent
+                },
+            )
             .border(
-                width =
-                    if (day.isToday) {
-                        2.dp
-                    } else {
-                        0.dp
-                    },
-                color =
-                    if (day.isToday) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        Color.Transparent
-                    },
+                width = when {
+                    day.isToday -> 2.dp
+                    day.isCurrentWeek -> 1.dp
+                    else -> 0.dp
+                },
+                color = when {
+                    day.isToday -> MaterialTheme.colorScheme.primary
+                    day.isCurrentWeek -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                    else -> Color.Transparent
+                },
             )
             .clickable {
                 onClick(day.date.toEpochDay())
-            },
+            }
+
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),

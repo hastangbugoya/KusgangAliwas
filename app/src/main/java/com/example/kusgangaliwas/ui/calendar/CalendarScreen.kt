@@ -1,20 +1,27 @@
 package com.example.kusgangaliwas.ui.calendar
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.domain.model.WeeklyTrainingProgress
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
@@ -53,7 +60,7 @@ fun CalendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(12.dp),
+                .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             MonthHeader(
@@ -70,7 +77,7 @@ fun CalendarScreen(
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -91,58 +98,145 @@ private fun WeeklyProgressCard(
     progress: WeeklyTrainingProgress,
     modifier: Modifier = Modifier,
 ) {
+    val maxStrength =
+        progress.days.maxOfOrNull { it.strengthVolume }
+            ?.takeIf { it > 0.0 }
+            ?: 1.0
+
+    val maxCardio =
+        progress.days.maxOfOrNull { it.cardioDistance }
+            ?.takeIf { it > 0.0 }
+            ?: 1.0
+
     SharpCard(
-        modifier = modifier,
+        modifier = modifier
+            .background(
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.04f)
+            ),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = "This week",
-                style = MaterialTheme.typography.titleMedium,
+//            Text(
+//                text = "Weekly progress",
+//                style = MaterialTheme.typography.titleMedium,
+//            )
+
+            WeeklyMetricBarRow(
+                label = "Strength",
+                dayLabels = progress.days.map {
+                    LocalDate
+                        .ofEpochDay(it.epochDay)
+                        .dayOfWeek
+                        .shortLabel()
+                },
+                values = progress.days.map { it.strengthVolume },
+                maxValue = maxStrength,
+                valueText = { value ->
+                    if (value > 0.0) {
+                        "${value.toInt()}"
+                    } else {
+                        "—"
+                    }
+                },
             )
 
-            progress.days.forEach { day ->
-
-                val date = LocalDate.ofEpochDay(day.epochDay)
-
-                val strengthText =
-                    if (day.strengthVolume > 0.0) {
-                        "${day.strengthVolume}"
+            WeeklyMetricBarRow(
+                label = "Cardio (miles)",
+                dayLabels = progress.days.map {
+                    LocalDate
+                        .ofEpochDay(it.epochDay)
+                        .dayOfWeek
+                        .shortLabel()
+                },
+                values = progress.days.map { it.cardioDistance },
+                maxValue = maxCardio,
+                valueText = { value ->
+                    if (value > 0.0) {
+                        "${formatDistance(value)}"
                     } else {
                         "—"
                     }
+                },
+            )
+        }
+    }
+}
 
-                val cardioText =
-                    if (day.cardioDistance > 0.0) {
-                        "${day.cardioDistance} mi (${day.completedCardioEntries})"
-                    } else {
-                        "—"
-                    }
+@Composable
+private fun WeeklyMetricBarRow(
+    label: String,
+    dayLabels: List<String>,
+    values: List<Double>,
+    maxValue: Double,
+    valueText: (Double) -> String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+        )
 
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            values.forEachIndexed { index, value ->
+                val ratio = (value / maxValue)
+                    .toFloat()
+                    .coerceIn(0f, 1f)
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
-                        text = date.dayOfWeek.shortLabel(),
-                        modifier = Modifier.weight(1f),
+                        text = dayLabels[index],
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall,
                     )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height((36 * ratio).dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.primary)
+                                .align(Alignment.BottomCenter)
+                        )
+                    }
 
                     Text(
-                        text = strengthText,
-                        modifier = Modifier.weight(1f),
-                    )
-
-                    Text(
-                        text = cardioText,
-                        modifier = Modifier.weight(1f),
+                        text = valueText(value),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
         }
     }
 }
+
+private fun formatDistance(
+    value: Double,
+): String {
+    return if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        value.toString()
+    }
+}
+
 private fun rememberCalendarMonthCells(
     month: YearMonth,
     dayStatusByEpochDay: Map<Long, CalendarDayStatus>,
@@ -160,6 +254,16 @@ private fun rememberCalendarMonthCells(
 
     val firstVisibleDate = firstDay.minusDays(daysBeforeMonth.toLong())
 
+    val today = LocalDate.now()
+    val currentWeekStart = today.minusDays(
+        (
+                today.dayOfWeek.value -
+                        firstDayOfWeek.value +
+                        7
+                ) % 7L
+    )
+    val currentWeekEndExclusive = currentWeekStart.plusDays(7)
+
     return List(42) { index ->
         val date = firstVisibleDate.plusDays(index.toLong())
 
@@ -169,6 +273,7 @@ private fun rememberCalendarMonthCells(
             status = dayStatusByEpochDay[date.toEpochDay()]
                 ?: CalendarDayStatus.NEUTRAL,
             isToday = date == LocalDate.now(),
+            isCurrentWeek = date >= currentWeekStart && date < currentWeekEndExclusive,
         )
     }
 }
@@ -178,6 +283,7 @@ data class CalendarDayCellState(
     val isInCurrentMonth: Boolean,
     val status: CalendarDayStatus,
     val isToday: Boolean = false,
+    val isCurrentWeek: Boolean = false,
 )
 
 internal fun DayOfWeek.shortLabel(): String {
