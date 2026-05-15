@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -23,8 +26,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.kusgangaliwas.R
 import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
@@ -53,6 +59,10 @@ fun SessionDetailScreen(
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
     onToggleRemoteFocus: (Long) -> Unit,
 ) {
+    var reorderMode by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -73,8 +83,22 @@ fun SessionDetailScreen(
         ) {
             item {
                 SharpCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Session timeline")
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                SectionHeader("Session timeline")
+                            }
+
+                            TextButton(
+                                onClick = { reorderMode = !reorderMode },
+                            ) {
+                                Text(if (reorderMode) "Done" else "Reorder")
+                            }
+                        }
 
                         if (uiState.sessionItems.isEmpty()) {
                             Text("No session items logged yet.")
@@ -86,6 +110,7 @@ fun SessionDetailScreen(
                                             index = index,
                                             item = item.item,
                                             sessionItem = item,
+                                            reorderMode = reorderMode,
                                             onMoveSessionItemUp = onMoveSessionItemUp,
                                             onMoveSessionItemDown = onMoveSessionItemDown,
                                             onAddSet = onAddSet,
@@ -104,6 +129,7 @@ fun SessionDetailScreen(
                                             index = index,
                                             item = item.item,
                                             sessionItem = item,
+                                            reorderMode = reorderMode,
                                             onMoveSessionItemUp = onMoveSessionItemUp,
                                             onMoveSessionItemDown = onMoveSessionItemDown,
                                             onUpdateCardioLog = onUpdateCardioLog,
@@ -202,6 +228,7 @@ private fun StrengthTimelineCard(
     onDuplicateSet: (ActualExerciseSetLogEntity) -> Unit,
     onDeleteExerciseLogIfEmpty: (Long) -> Unit,
     sessionItem: SessionDetailItemUiState,
+    reorderMode: Boolean,
     onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
     focusedExerciseLogId: Long?,
@@ -213,8 +240,40 @@ private fun StrengthTimelineCard(
 
     SharpCard {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("${index + 1}. 🏋 ${item.exerciseName}")
-            Text(buildSetSummary(item.sets))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "${index + 1}. 🏋 ${item.exerciseName}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Text(
+                        text = buildSetSummary(item.sets),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+
+                CompactSessionItemControls(
+                    sessionItem = sessionItem,
+                    reorderMode = reorderMode,
+                    onMoveSessionItemUp = onMoveSessionItemUp,
+                    onMoveSessionItemDown = onMoveSessionItemDown,
+                    isRemoteFocused = focusedExerciseLogId == item.log.id,
+                    onToggleRemoteFocus = { onToggleRemoteFocus(item.log.id) },
+                    expanded = expanded,
+                    onToggleExpanded = { expanded = !expanded },
+                )
+            }
+
             item.previousMaxText?.let { text ->
                 Text(
                     text = text,
@@ -223,32 +282,7 @@ private fun StrengthTimelineCard(
                 )
             }
 
-            ReorderButtons(
-                sessionItem = sessionItem,
-                onMoveSessionItemUp = onMoveSessionItemUp,
-                onMoveSessionItemDown = onMoveSessionItemDown,
-            )
-            OutlinedButton(
-                onClick = {
-                    onToggleRemoteFocus(item.log.id)
-                },
-            ) {
-                Text(
-                    if (focusedExerciseLogId == item.log.id) {
-                        "Remote focused"
-                    } else {
-                        "Focus for remote"
-                    }
-                )
-            }
-
-            OutlinedButton(
-                onClick = { expanded = !expanded },
-            ) {
-                Text(if (expanded) "Collapse" else "Expand")
-            }
-
-            if (expanded) {
+            if (!reorderMode && expanded) {
                 if (item.sets.isEmpty()) {
                     Text(
                         "No sets yet.",
@@ -266,10 +300,25 @@ private fun StrengthTimelineCard(
                     }
                 }
 
-                OutlinedButton(
-                    onClick = { onAddSet(item.log.id) },
+//                OutlinedButton(
+//                    onClick = { onAddSet(item.log.id) },
+//                ) {
+//                    Text("Add set")
+//                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Text("Add set")
+                    OutlinedButton(
+                        onClick = { onAddSet(item.log.id) },
+                        modifier = Modifier.fillMaxWidth(0.32f).padding(4.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.add_document),
+                            contentDescription = "Add set",
+                        )
+                    }
                 }
 
                 if (item.sets.isEmpty()) {
@@ -293,6 +342,7 @@ private fun CardioTimelineCard(
     onUpdateCardioLog: (ActualCardioLogEntity) -> Unit,
     onDeleteCardioLog: (Long) -> Unit,
     sessionItem: SessionDetailItemUiState,
+    reorderMode: Boolean,
     onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
 ) {
@@ -333,14 +383,48 @@ private fun CardioTimelineCard(
 
     SharpCard {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("${index + 1}. 🏃 ${item.cardioName}")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "${index + 1}. 🏃 ${item.cardioName}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
 
-            val details = buildCardioDetails(item.log)
+                    val details = buildCardioDetails(item.log)
 
-            if (details.isNotEmpty()) {
-                Text(details.joinToString(" • "))
-            } else {
-                Text("No cardio details yet.")
+                    if (details.isNotEmpty()) {
+                        Text(
+                            text = details.joinToString(" • "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                        )
+                    } else {
+                        Text(
+                            text = "No cardio details yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                        )
+                    }
+                }
+
+                CompactSessionItemControls(
+                    sessionItem = sessionItem,
+                    reorderMode = reorderMode,
+                    onMoveSessionItemUp = onMoveSessionItemUp,
+                    onMoveSessionItemDown = onMoveSessionItemDown,
+                    isRemoteFocused = false,
+                    onToggleRemoteFocus = null,
+                    expanded = expanded,
+                    onToggleExpanded = { expanded = !expanded },
+                )
             }
 
             item.previousCardioText?.let { text ->
@@ -383,19 +467,7 @@ private fun CardioTimelineCard(
                 }
             }
 
-            ReorderButtons(
-                sessionItem = sessionItem,
-                onMoveSessionItemUp = onMoveSessionItemUp,
-                onMoveSessionItemDown = onMoveSessionItemDown,
-            )
-
-            OutlinedButton(
-                onClick = { expanded = !expanded },
-            ) {
-                Text(if (expanded) "Collapse" else "Expand")
-            }
-
-            if (expanded) {
+            if (!reorderMode && expanded) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -498,25 +570,87 @@ private fun CardioTimelineCard(
 }
 
 @Composable
-private fun ReorderButtons(
+private fun CompactSessionItemControls(
     sessionItem: SessionDetailItemUiState,
+    reorderMode: Boolean,
     onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
+    isRemoteFocused: Boolean,
+    onToggleRemoteFocus: (() -> Unit)?,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedButton(
-            onClick = { onMoveSessionItemUp(sessionItem) },
-        ) {
-            Text("↑")
-        }
+        if (reorderMode) {
+            ControlIconButton(
+                drawableResId = R.drawable.angle_up,
+                contentDescription = "Move item up",
+                onClick = { onMoveSessionItemUp(sessionItem) },
+            )
 
-        OutlinedButton(
-            onClick = { onMoveSessionItemDown(sessionItem) },
-        ) {
-            Text("↓")
+            ControlIconButton(
+                drawableResId = R.drawable.angle_down,
+                contentDescription = "Move item down",
+                onClick = { onMoveSessionItemDown(sessionItem) },
+            )
+        } else {
+            onToggleRemoteFocus?.let { toggleRemoteFocus ->
+                IconButton(
+                    onClick = toggleRemoteFocus,
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            id =
+                                if (isRemoteFocused) {
+                                    R.drawable.remote_control
+                                } else {
+                                    R.drawable.signal_stream_slash
+                                }
+                        ),
+                        contentDescription =
+                            if (isRemoteFocused) {
+                                "Remote focused"
+                            } else {
+                                "Focus for remote"
+                            },
+                    )
+                }
+            }
+            ControlIconButton(
+                drawableResId =
+                    if (expanded) {
+                        R.drawable.compress
+                    } else {
+                        R.drawable.expand
+                    },
+                contentDescription =
+                    if (expanded) {
+                        "Collapse item"
+                    } else {
+                        "Expand item"
+                    },
+                onClick = onToggleExpanded,
+            )
         }
+    }
+}
+
+@Composable
+private fun ControlIconButton(
+    drawableResId: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+    ) {
+        Icon(
+            painter = painterResource(id = drawableResId),
+            contentDescription = contentDescription,
+        )
     }
 }
 
@@ -612,7 +746,50 @@ private fun SetEditorRow(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text("Set ${set.setOrder}")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Set ${set.setOrder}",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+
+//            TextButton(
+//                onClick = { onDuplicateSet(set) },
+//            ) {
+//                Text("Copy")
+//            }
+
+            OutlinedButton(
+                onClick = { onDuplicateSet(set) },
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.copy),
+                    contentDescription = "Increase",
+                )
+            }
+
+//            TextButton(
+//                onClick = { onDeleteSet(set.id) },
+//            ) {
+//                Text("Delete")
+//            }
+
+            OutlinedButton(
+                onClick = { onDeleteSet(set.id) },
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.trash),
+                    contentDescription = "Increase",
+                )
+            }
+        }
 
         WeightRepsInputRow(
             set = set,
@@ -628,22 +805,6 @@ private fun SetEditorRow(
                     color = MaterialTheme.colorScheme.secondary,
                 )
             }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TextButton(
-                onClick = { onDuplicateSet(set) },
-            ) {
-                Text("Duplicate")
-            }
-
-            TextButton(
-                onClick = { onDeleteSet(set.id) },
-            ) {
-                Text("Delete")
-            }
-        }
     }
 }
 
@@ -780,14 +941,20 @@ private fun NumberInputWithStepper(
                 onClick = onDecrement,
                 modifier = Modifier.weight(1f),
             ) {
-                Text("-")
+                Icon(
+                    painter = painterResource(R.drawable.minus),
+                    contentDescription = "Decrease",
+                )
             }
 
             OutlinedButton(
                 onClick = onIncrement,
                 modifier = Modifier.weight(1f),
             ) {
-                Text("+")
+                Icon(
+                    painter = painterResource(R.drawable.plus),
+                    contentDescription = "Increase",
+                )
             }
         }
     }
@@ -847,17 +1014,6 @@ private fun buildCardioDetails(
         }
     }
 }
-
-//private fun buildCardioSupportText(
-//    cardioName: String,
-//    details: List<String>,
-//): String {
-//    return if (details.isEmpty()) {
-//        "No previous $cardioName log."
-//    } else {
-//        "From previous $cardioName session (${details.joinToString(" • ")})"
-//    }
-//}
 
 private fun formatDuration(
     seconds: Long,
