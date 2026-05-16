@@ -472,7 +472,15 @@ private fun ExerciseDetailSheetContent(
             fontWeight = FontWeight.Bold,
         )
 
-        if (availableMuscleGroups.isEmpty()) {
+        val sortedMuscleGroups = availableMuscleGroups.sortedWith(
+            compareByDescending<MuscleGroupEntity> { muscleGroup ->
+                item.selectedMuscleGroupIds.contains(muscleGroup.id)
+            }.thenBy { muscleGroup ->
+                muscleGroup.name.lowercase()
+            }
+        )
+
+        if (sortedMuscleGroups.isEmpty()) {
             Text(
                 text = "No muscle groups yet.",
                 style = MaterialTheme.typography.bodySmall,
@@ -483,7 +491,7 @@ private fun ExerciseDetailSheetContent(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                availableMuscleGroups.forEach { muscleGroup ->
+                sortedMuscleGroups.forEach { muscleGroup ->
                     val selected = item.selectedMuscleGroupIds.contains(muscleGroup.id)
 
                     FilterChip(
