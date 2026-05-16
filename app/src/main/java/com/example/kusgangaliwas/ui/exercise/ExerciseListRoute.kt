@@ -22,6 +22,14 @@ fun ExerciseListRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         onCreateExercise = viewModel::createExercise,
+        onSaveActualOneRepMax = viewModel::saveActualOneRepMax,
+        onDeleteActualOneRepMax = viewModel::deleteActualOneRepMax,
         modifier = modifier,
+        onToggleMuscleGroupForExercise = viewModel::toggleMuscleGroupForExercise,
+        selectedFilterMuscleGroupIds = uiState.selectedFilterMuscleGroupIds,
+        onToggleFilterMuscleGroup = viewModel::toggleFilterMuscleGroup,
+        onClearMuscleGroupFilters = viewModel::clearMuscleGroupFilters,
+        searchQuery = uiState.searchQuery,
+        onSearchQueryChange = viewModel::onSearchQueryChange,
     )
 }

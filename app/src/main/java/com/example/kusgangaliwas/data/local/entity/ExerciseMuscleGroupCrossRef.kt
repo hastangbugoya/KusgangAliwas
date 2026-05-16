@@ -42,12 +42,11 @@ data class ExerciseMuscleGroupCrossRef(
     /**
      * Indicates how strongly this muscle group is involved.
      *
-     * Suggested values:
-     * - "primary"
-     * - "secondary"
-     * - "minor"
-     *
-     * Kept as String for flexibility in v1.
+     * Values:
+     * - PRIMARY
+     * - SECONDARY
+     * - STABILIZER
      */
-    val emphasis: String = "secondary",
+    val emphasis: ExerciseMuscleEmphasis =
+        ExerciseMuscleEmphasis.SECONDARY,
 )

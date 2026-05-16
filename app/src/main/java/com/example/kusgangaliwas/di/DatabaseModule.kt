@@ -21,6 +21,7 @@ import com.example.kusgangaliwas.data.local.dao.SplitTemplateDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
+import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
 import com.example.kusgangaliwas.data.local.db.KusgangAliwasDatabase
 import dagger.Module
 import dagger.Provides
@@ -219,6 +220,44 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+            CREATE TABLE IF NOT EXISTS exercise_pr (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                exerciseId INTEGER NOT NULL,
+                prType TEXT NOT NULL,
+                value REAL NOT NULL,
+                secondaryValue REAL,
+                achievedAtEpochMillis INTEGER NOT NULL,
+                sourceSetLogId INTEGER,
+                notes TEXT,
+                createdAtEpochMillis INTEGER NOT NULL,
+                updatedAtEpochMillis INTEGER NOT NULL,
+                FOREIGN KEY(exerciseId)
+                    REFERENCES exercise(id)
+                    ON DELETE CASCADE
+            )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+            CREATE INDEX IF NOT EXISTS index_exercise_pr_exerciseId
+            ON exercise_pr(exerciseId)
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+            CREATE UNIQUE INDEX IF NOT EXISTS index_exercise_pr_exerciseId_prType
+            ON exercise_pr(exerciseId, prType)
+            """.trimIndent()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(
@@ -236,6 +275,7 @@ object DatabaseModule {
                 MIGRATION_4_5,
                 MIGRATION_5_6,
                 MIGRATION_6_7,
+                MIGRATION_7_8
             )
             .build()
     }
@@ -307,4 +347,8 @@ object DatabaseModule {
     @Provides
     fun provideSplitScheduleDao(database: KusgangAliwasDatabase): SplitScheduleDao =
         database.splitScheduleDao()
+
+    @Provides
+    fun provideExercisePrDao(database: KusgangAliwasDatabase): ExercisePrDao =
+        database.exercisePrDao()
 }

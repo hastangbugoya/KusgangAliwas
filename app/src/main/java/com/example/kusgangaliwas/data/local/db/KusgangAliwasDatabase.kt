@@ -20,6 +20,8 @@ import com.example.kusgangaliwas.data.local.dao.SplitTemplateDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
+import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
+import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
 import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
@@ -82,8 +84,9 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
         ActualCardioLogEntity::class,
         ProgramEntity::class,
         SplitScheduleEntity::class,
+        ExercisePrEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -105,4 +108,5 @@ abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun actualCardioLogDao(): ActualCardioLogDao
     abstract fun programDao(): ProgramDao
     abstract fun splitScheduleDao(): SplitScheduleDao
+    abstract fun exercisePrDao(): ExercisePrDao
 }

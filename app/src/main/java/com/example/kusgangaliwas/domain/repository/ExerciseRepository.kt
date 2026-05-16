@@ -5,6 +5,8 @@ import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleGroupCrossRef
 import com.example.kusgangaliwas.data.local.entity.ExerciseSubstitutionEntity
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
 import kotlinx.coroutines.flow.Flow
+import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
+import com.example.kusgangaliwas.data.local.entity.ExercisePrType
 
 /**
  * Repository boundary for exercise-library behavior.
@@ -89,5 +91,23 @@ interface ExerciseRepository {
     suspend fun deleteSubstitutionPair(
         sourceExerciseId: Long,
         substituteExerciseId: Long,
+    )
+
+    fun observePrsForExercise(
+        exerciseId: Long,
+    ): Flow<List<ExercisePrEntity>>
+
+    suspend fun getPrForExercise(
+        exerciseId: Long,
+        prType: ExercisePrType,
+    ): ExercisePrEntity?
+
+    suspend fun upsertExercisePr(
+        entity: ExercisePrEntity,
+    )
+
+    suspend fun deletePrForExercise(
+        exerciseId: Long,
+        prType: ExercisePrType,
     )
 }

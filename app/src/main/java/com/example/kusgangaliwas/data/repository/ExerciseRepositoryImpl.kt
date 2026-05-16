@@ -9,6 +9,9 @@ import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleGroupCrossRef
 import com.example.kusgangaliwas.data.local.entity.ExerciseSubstitutionEntity
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
+import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
+import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
+import com.example.kusgangaliwas.data.local.entity.ExercisePrType
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -23,6 +26,7 @@ class ExerciseRepositoryImpl @Inject constructor(
     private val muscleGroupDao: MuscleGroupDao,
     private val exerciseMuscleGroupDao: ExerciseMuscleGroupDao,
     private val exerciseSubstitutionDao: ExerciseSubstitutionDao,
+    private val exercisePrDao: ExercisePrDao,
 ) : ExerciseRepository {
 
     override fun observeActiveExercises(): Flow<List<ExerciseEntity>> {
@@ -120,6 +124,38 @@ class ExerciseRepositoryImpl @Inject constructor(
         exerciseMuscleGroupDao.deleteMapping(
             exerciseId = exerciseId,
             muscleGroupId = muscleGroupId,
+        )
+    }
+
+    override fun observePrsForExercise(
+        exerciseId: Long,
+    ): Flow<List<ExercisePrEntity>> {
+        return exercisePrDao.observePrsForExercise(exerciseId)
+    }
+
+    override suspend fun getPrForExercise(
+        exerciseId: Long,
+        prType: ExercisePrType,
+    ): ExercisePrEntity? {
+        return exercisePrDao.getPrForExercise(
+            exerciseId = exerciseId,
+            prType = prType,
+        )
+    }
+
+    override suspend fun upsertExercisePr(
+        entity: ExercisePrEntity,
+    ) {
+        exercisePrDao.upsertExercisePr(entity)
+    }
+
+    override suspend fun deletePrForExercise(
+        exerciseId: Long,
+        prType: ExercisePrType,
+    ) {
+        exercisePrDao.deletePrForExercise(
+            exerciseId = exerciseId,
+            prType = prType,
         )
     }
 
