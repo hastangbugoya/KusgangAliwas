@@ -57,6 +57,7 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.res.painterResource
 import com.example.kusgangaliwas.R
+import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +78,7 @@ fun ExerciseListScreen(
     onCreateMuscleGroup: (String) -> Unit,
     onRenameMuscleGroup: (MuscleGroupEntity, String) -> Unit,
     onDeleteMuscleGroup: (Long) -> Unit,
+    onRenameExercise: (ExerciseEntity, String) -> Unit,
 ) {
     var newExerciseName by remember { mutableStateOf("") }
     var selectedExerciseType by remember { mutableStateOf(ExerciseType.STRENGTH) }
@@ -139,6 +141,7 @@ fun ExerciseListScreen(
                 onClose = { selectedExerciseId = 0L },
                 availableMuscleGroups = uiState.availableMuscleGroups,
                 onToggleMuscleGroupForExercise = onToggleMuscleGroupForExercise,
+                onRenameExercise = onRenameExercise,
             )
         }
     }
@@ -395,6 +398,7 @@ private fun ExerciseDetailSheetContent(
     onClose: () -> Unit,
     availableMuscleGroups: List<MuscleGroupEntity>,
     onToggleMuscleGroupForExercise: (Long, Long, Boolean) -> Unit,
+    onRenameExercise: (ExerciseEntity, String) -> Unit,
 ) {
     val exercise = item.exercise
     val todayText = remember {
@@ -417,6 +421,10 @@ private fun ExerciseDetailSheetContent(
         mutableStateOf("")
     }
 
+    var exerciseNameText by remember(exercise.id, exercise.name) {
+        mutableStateOf(exercise.name)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -426,11 +434,30 @@ private fun ExerciseDetailSheetContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = exercise.name,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedTextField(
+                value = exerciseNameText,
+                onValueChange = { exerciseNameText = it },
+                label = { Text("Exercise name") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+
+            IconButton(
+                onClick = {
+                    onRenameExercise(exercise, exerciseNameText)
+                },
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.floppy_disk_pen),
+                    contentDescription = "Update exercise name",
+                )
+            }
+        }
 
         Text(
             text = "Type: ${exercise.exerciseType.displayText()}",

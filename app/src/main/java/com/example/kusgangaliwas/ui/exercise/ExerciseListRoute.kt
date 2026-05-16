@@ -34,5 +34,6 @@ fun ExerciseListRoute(
         onCreateMuscleGroup = viewModel::createMuscleGroup,
         onRenameMuscleGroup = viewModel::renameMuscleGroup,
         onDeleteMuscleGroup = viewModel::deleteMuscleGroup,
+        onRenameExercise = viewModel::renameExercise,
     )
 }

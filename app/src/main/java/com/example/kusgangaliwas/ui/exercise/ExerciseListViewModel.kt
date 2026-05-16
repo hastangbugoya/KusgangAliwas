@@ -404,6 +404,30 @@ class ExerciseListViewModel @Inject constructor(
         return "Sets: ${sets.size} · ${setTexts.joinToString(" · ")}"
     }
 
+    fun renameExercise(
+        exercise: ExerciseEntity,
+        newName: String,
+    ) {
+        viewModelScope.launch {
+            val cleaned = newName
+                .trim()
+                .replaceFirstChar { character ->
+                    character.uppercase()
+                }
+
+            if (cleaned.isBlank()) return@launch
+
+            runCatching {
+                exerciseRepository.updateExercise(
+                    exercise.copy(
+                        name = cleaned,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
+            }
+        }
+    }
+
     fun createMuscleGroup(
         name: String,
     ) {
