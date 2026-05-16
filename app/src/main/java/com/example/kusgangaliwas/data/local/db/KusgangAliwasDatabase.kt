@@ -41,6 +41,8 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
+import com.example.kusgangaliwas.data.local.dao.TrainingCycleProgressEventDao
+import com.example.kusgangaliwas.data.local.entity.TrainingCycleProgressEventEntity
 
 /**
  * Main Room database for Kusgang Aliwas.
@@ -69,6 +71,9 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCross
  *
  * DB-10 simplifies training cycle steps into an ordered split queue and adds
  * optional cycle linkage snapshots to actual sessions.
+ *
+ * DB-11 adds explicit non-session cycle progress events for actions like
+ * marking a split done without creating a workout session.
  */
 @Database(
     entities = [
@@ -81,6 +86,7 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCross
         SplitTemplateMuscleGroupCrossRef::class,
         TrainingCycleEntity::class,
         TrainingCycleStepEntity::class,
+        TrainingCycleProgressEventEntity::class,
         CycleCalendarAnchorEntity::class,
         PlannedSessionEntity::class,
         PlannedSessionExerciseEntity::class,
@@ -92,7 +98,7 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCross
         SplitScheduleEntity::class,
         ExercisePrEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -116,4 +122,5 @@ abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun programDao(): ProgramDao
     abstract fun splitScheduleDao(): SplitScheduleDao
     abstract fun exercisePrDao(): ExercisePrDao
+    abstract fun trainingCycleProgressEventDao(): TrainingCycleProgressEventDao
 }

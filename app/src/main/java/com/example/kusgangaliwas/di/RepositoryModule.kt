@@ -12,6 +12,8 @@ import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitScheduleRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import com.example.kusgangaliwas.domain.repository.TrainingCycleRepository
+import com.example.kusgangaliwas.data.repository.TrainingCycleProgressEventRepositoryImpl
+import com.example.kusgangaliwas.domain.repository.TrainingCycleProgressEventRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -60,4 +62,10 @@ abstract class RepositoryModule {
     abstract fun bindSplitScheduleRepository(
         impl: SplitScheduleRepositoryImpl,
     ): SplitScheduleRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTrainingCycleProgressEventRepository(
+        impl: TrainingCycleProgressEventRepositoryImpl,
+    ): TrainingCycleProgressEventRepository
 }

@@ -8,17 +8,20 @@ import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
+import com.example.kusgangaliwas.domain.repository.TrainingCycleRepository
 import javax.inject.Inject
 
 class CreateSessionFromSplitUseCase @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val splitTemplateRepository: SplitTemplateRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val trainingCycleRepository: TrainingCycleRepository,
 ) {
 
     suspend operator fun invoke(
         splitTemplateId: Long,
         epochDay: Long,
+        trainingCycleId: Long? = null,
     ): Long {
         val split = splitTemplateRepository.getSplitById(splitTemplateId)
             ?: error("Split not found.")
@@ -26,11 +29,24 @@ class CreateSessionFromSplitUseCase @Inject constructor(
         val roadmap = splitTemplateRepository.getExercisesForSplit(splitTemplateId)
         val now = System.currentTimeMillis()
 
+        val cycleStep = trainingCycleId?.let { cycleId ->
+            trainingCycleRepository.getStepForSplit(
+                cycleId = cycleId,
+                splitTemplateId = splitTemplateId,
+            )
+        }
+
         val actualSessionId = sessionRepository.insertActualSession(
             ActualSessionEntity(
                 plannedSessionId = null,
                 performedDateEpochDay = epochDay,
                 splitTemplateId = splitTemplateId,
+
+                trainingCycleId = trainingCycleId,
+                trainingCycleStepId = cycleStep?.id,
+                trainingCycleStepOrderSnapshot =
+                    cycleStep?.stepOrder,
+
                 title = split.name,
                 status = "inProgress",
                 startedAtEpochMillis = now,

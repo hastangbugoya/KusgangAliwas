@@ -23,6 +23,7 @@ import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
 import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
+import com.example.kusgangaliwas.data.local.dao.TrainingCycleProgressEventDao
 import com.example.kusgangaliwas.data.local.db.KusgangAliwasDatabase
 import dagger.Module
 import dagger.Provides
@@ -458,6 +459,51 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+            CREATE TABLE IF NOT EXISTS training_cycle_progress_event (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                trainingCycleId INTEGER NOT NULL,
+                trainingCycleStepId INTEGER NOT NULL,
+                eventType TEXT NOT NULL,
+                eventDateEpochDay INTEGER NOT NULL,
+                notes TEXT,
+                createdAtEpochMillis INTEGER NOT NULL,
+                FOREIGN KEY(trainingCycleId)
+                    REFERENCES training_cycle(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY(trainingCycleStepId)
+                    REFERENCES training_cycle_step(id)
+                    ON DELETE CASCADE
+            )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+            CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleId
+            ON training_cycle_progress_event(trainingCycleId)
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+            CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleStepId
+            ON training_cycle_progress_event(trainingCycleStepId)
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+            CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleId_eventDateEpochDay
+            ON training_cycle_progress_event(trainingCycleId, eventDateEpochDay)
+            """.trimIndent()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(
@@ -477,7 +523,8 @@ object DatabaseModule {
                 MIGRATION_6_7,
                 MIGRATION_7_8,
                 MIGRATION_8_9,
-                MIGRATION_9_10
+                MIGRATION_9_10,
+                MIGRATION_10_11
             )
             .build()
     }
@@ -513,6 +560,12 @@ object DatabaseModule {
     @Provides
     fun provideTrainingCycleStepDao(database: KusgangAliwasDatabase): TrainingCycleStepDao =
         database.trainingCycleStepDao()
+
+    @Provides
+    fun provideTrainingCycleProgressEventDao(
+        database: KusgangAliwasDatabase,
+    ): TrainingCycleProgressEventDao =
+        database.trainingCycleProgressEventDao()
 
     @Provides
     fun provideCycleCalendarAnchorDao(database: KusgangAliwasDatabase): CycleCalendarAnchorDao =
