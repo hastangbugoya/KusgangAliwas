@@ -31,5 +31,8 @@ fun ExerciseListRoute(
         onClearMuscleGroupFilters = viewModel::clearMuscleGroupFilters,
         searchQuery = uiState.searchQuery,
         onSearchQueryChange = viewModel::onSearchQueryChange,
+        onCreateMuscleGroup = viewModel::createMuscleGroup,
+        onRenameMuscleGroup = viewModel::renameMuscleGroup,
+        onDeleteMuscleGroup = viewModel::deleteMuscleGroup,
     )
 }

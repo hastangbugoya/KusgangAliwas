@@ -404,6 +404,67 @@ class ExerciseListViewModel @Inject constructor(
         return "Sets: ${sets.size} · ${setTexts.joinToString(" · ")}"
     }
 
+    fun createMuscleGroup(
+        name: String,
+    ) {
+        viewModelScope.launch {
+            val cleaned = name
+                .trim()
+                .replaceFirstChar { character ->
+                    character.uppercase()
+                }
+
+            if (cleaned.isBlank()) return@launch
+
+            runCatching {
+                exerciseRepository.insertMuscleGroup(
+                    MuscleGroupEntity(
+                        name = cleaned,
+                        sortOrder = uiState.value.availableMuscleGroups.size,
+                        isActive = true,
+                    )
+                )
+            }
+        }
+    }
+
+    fun renameMuscleGroup(
+        muscleGroup: MuscleGroupEntity,
+        newName: String,
+    ) {
+        viewModelScope.launch {
+            val cleaned = newName
+                .trim()
+                .replaceFirstChar { character ->
+                    character.uppercase()
+                }
+
+            if (cleaned.isBlank()) return@launch
+
+            runCatching {
+                exerciseRepository.updateMuscleGroup(
+                    muscleGroup.copy(
+                        name = cleaned,
+                    )
+                )
+            }
+        }
+    }
+
+    fun deleteMuscleGroup(
+        muscleGroupId: Long,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                exerciseRepository.softDeleteMuscleGroup(muscleGroupId)
+
+                selectedFilterMuscleGroupIds.update { current ->
+                    current - muscleGroupId
+                }
+            }
+        }
+    }
+
     private fun formatEpochDay(
         epochDay: Long,
     ): String {

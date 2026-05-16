@@ -55,6 +55,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.res.painterResource
+import com.example.kusgangaliwas.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +74,9 @@ fun ExerciseListScreen(
     onClearMuscleGroupFilters: () -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
+    onCreateMuscleGroup: (String) -> Unit,
+    onRenameMuscleGroup: (MuscleGroupEntity, String) -> Unit,
+    onDeleteMuscleGroup: (Long) -> Unit,
 ) {
     var newExerciseName by remember { mutableStateOf("") }
     var selectedExerciseType by remember { mutableStateOf(ExerciseType.STRENGTH) }
@@ -86,6 +91,7 @@ fun ExerciseListScreen(
     val selectedExerciseItem = uiState.exercises.firstOrNull { item ->
         item.exercise.id == selectedExerciseId
     }
+    var showManageMuscleGroupsSheet by remember { mutableStateOf(false) }
 
     if (showAddExerciseSheet) {
         ModalBottomSheet(
@@ -137,6 +143,21 @@ fun ExerciseListScreen(
         }
     }
 
+    if (showManageMuscleGroupsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showManageMuscleGroupsSheet = false
+            },
+        ) {
+            ManageMuscleGroupsSheetContent(
+                muscleGroups = uiState.availableMuscleGroups,
+                onCreateMuscleGroup = onCreateMuscleGroup,
+                onRenameMuscleGroup = onRenameMuscleGroup,
+                onDeleteMuscleGroup = onDeleteMuscleGroup,
+            )
+        }
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -154,10 +175,14 @@ fun ExerciseListScreen(
                         )
                     }
 
-                    IconButton(onClick = onOverflowClick) {
+                    IconButton(
+                        onClick = {
+                            showManageMuscleGroupsSheet = true
+                        },
+                    ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options",
+                            contentDescription = "Manage muscle groups",
                         )
                     }
                 },
@@ -650,6 +675,126 @@ private fun ExerciseHistoryGraph(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ManageMuscleGroupsSheetContent(
+    muscleGroups: List<MuscleGroupEntity>,
+    onCreateMuscleGroup: (String) -> Unit,
+    onRenameMuscleGroup: (MuscleGroupEntity, String) -> Unit,
+    onDeleteMuscleGroup: (Long) -> Unit,
+) {
+    var newName by remember { mutableStateOf("") }
+
+    var searchText by remember { mutableStateOf("") }
+
+    val filteredGroups = muscleGroups.filter { group ->
+        searchText.isBlank() ||
+                group.name.contains(searchText.trim(), ignoreCase = true)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .navigationBarsPadding()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Manage muscle groups",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+        )
+
+        OutlinedTextField(
+            value = newName,
+            onValueChange = { newName = it },
+            label = { Text("New muscle group") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        OutlinedButton(
+            onClick = {
+                onCreateMuscleGroup(newName)
+                newName = ""
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Add muscle group")
+        }
+
+        HorizontalDivider()
+
+        OutlinedTextField(
+            value = searchText,
+            onValueChange = { searchText = it },
+            label = { Text("Search muscle groups") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        filteredGroups
+            .filter { it.name.isNotBlank() }
+            .forEach { muscleGroup ->
+            MuscleGroupEditRow(
+                muscleGroup = muscleGroup,
+                onRenameMuscleGroup = onRenameMuscleGroup,
+                onDeleteMuscleGroup = onDeleteMuscleGroup,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MuscleGroupEditRow(
+    muscleGroup: MuscleGroupEntity,
+    onRenameMuscleGroup: (MuscleGroupEntity, String) -> Unit,
+    onDeleteMuscleGroup: (Long) -> Unit,
+) {
+    var nameText by remember(muscleGroup.id, muscleGroup.name) {
+        mutableStateOf(muscleGroup.name)
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = nameText,
+            onValueChange = { nameText = it },
+            label = { Text("Name") },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+
+        IconButton(
+            onClick = {
+                onRenameMuscleGroup(
+                    muscleGroup,
+                    nameText,
+                )
+            },
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.floppy_disk_pen),
+                contentDescription = "Update muscle group",
+            )
+        }
+
+        IconButton(
+            onClick = {
+                onDeleteMuscleGroup(muscleGroup.id)
+            },
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.trash),
+                contentDescription = "Delete muscle group",
+            )
         }
     }
 }
