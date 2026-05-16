@@ -66,6 +66,9 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCross
  * DB-7 adds cardio distance estimation metadata:
  * - isEstimatedDistance
  * - intensityLevel
+ *
+ * DB-10 simplifies training cycle steps into an ordered split queue and adds
+ * optional cycle linkage snapshots to actual sessions.
  */
 @Database(
     entities = [
@@ -89,7 +92,7 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCross
         SplitScheduleEntity::class,
         ExercisePrEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)

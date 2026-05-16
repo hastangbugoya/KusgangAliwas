@@ -42,23 +42,23 @@ object DatabaseModule {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 """
-                ALTER TABLE split_template_exercise
-                ADD COLUMN targetSets INTEGER
-                """.trimIndent()
+                    ALTER TABLE split_template_exercise
+                    ADD COLUMN targetSets INTEGER
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                ALTER TABLE split_template_exercise
-                ADD COLUMN targetRepsMin INTEGER
-                """.trimIndent()
+                    ALTER TABLE split_template_exercise
+                    ADD COLUMN targetRepsMin INTEGER
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                ALTER TABLE split_template_exercise
-                ADD COLUMN targetRepsMax INTEGER
-                """.trimIndent()
+                    ALTER TABLE split_template_exercise
+                    ADD COLUMN targetRepsMax INTEGER
+                    """.trimIndent()
             )
         }
     }
@@ -69,17 +69,17 @@ object DatabaseModule {
             // Exercise reference URL
             db.execSQL(
                 """
-                ALTER TABLE exercise
-                ADD COLUMN referenceUrl TEXT
-                """.trimIndent()
+                    ALTER TABLE exercise
+                    ADD COLUMN referenceUrl TEXT
+                    """.trimIndent()
             )
 
             // Session novelty rating
             db.execSQL(
                 """
-                ALTER TABLE actual_session
-                ADD COLUMN rating INTEGER
-                """.trimIndent()
+                    ALTER TABLE actual_session
+                    ADD COLUMN rating INTEGER
+                    """.trimIndent()
             )
         }
     }
@@ -88,51 +88,51 @@ object DatabaseModule {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS program (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    name TEXT NOT NULL,
-                    notes TEXT NOT NULL,
-                    startEpochDay INTEGER,
-                    horizonWeeks INTEGER NOT NULL,
-                    isActive INTEGER NOT NULL,
-                    createdAtEpochMillis INTEGER NOT NULL,
-                    updatedAtEpochMillis INTEGER NOT NULL
-                )
-                """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS program (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        notes TEXT NOT NULL,
+                        startEpochDay INTEGER,
+                        horizonWeeks INTEGER NOT NULL,
+                        isActive INTEGER NOT NULL,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS split_schedule (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    programId INTEGER,
-                    splitTemplateId INTEGER NOT NULL,
-                    title TEXT NOT NULL,
-                    startEpochDay INTEGER NOT NULL,
-                    horizonWeeks INTEGER NOT NULL,
-                    scheduleMode TEXT NOT NULL,
-                    daysOfWeekMask INTEGER NOT NULL,
-                    cycleOrder INTEGER NOT NULL,
-                    restDaysAfter INTEGER NOT NULL,
-                    isActive INTEGER NOT NULL,
-                    createdAtEpochMillis INTEGER NOT NULL,
-                    updatedAtEpochMillis INTEGER NOT NULL
-                )
-                """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS split_schedule (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        programId INTEGER,
+                        splitTemplateId INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        startEpochDay INTEGER NOT NULL,
+                        horizonWeeks INTEGER NOT NULL,
+                        scheduleMode TEXT NOT NULL,
+                        daysOfWeekMask INTEGER NOT NULL,
+                        cycleOrder INTEGER NOT NULL,
+                        restDaysAfter INTEGER NOT NULL,
+                        isActive INTEGER NOT NULL,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                CREATE INDEX IF NOT EXISTS index_split_schedule_programId
-                ON split_schedule(programId)
-                """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_split_schedule_programId
+                    ON split_schedule(programId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                CREATE INDEX IF NOT EXISTS index_split_schedule_splitTemplateId
-                ON split_schedule(splitTemplateId)
-                """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_split_schedule_splitTemplateId
+                    ON split_schedule(splitTemplateId)
+                    """.trimIndent()
             )
         }
     }
@@ -142,51 +142,51 @@ object DatabaseModule {
 
             db.execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS actual_cardio_log (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    actualSessionId INTEGER NOT NULL,
-                    exerciseId INTEGER,
-                    logOrder INTEGER NOT NULL,
-                    logType TEXT NOT NULL,
-                    freeTextName TEXT,
-                    distance REAL,
-                    distanceUnit TEXT,
-                    durationSeconds INTEGER,
-                    averageInclinePercent REAL,
-                    averageResistance REAL,
-                    notes TEXT,
-                    performedAtEpochMillis INTEGER,
-                    createdAtEpochMillis INTEGER NOT NULL,
-                    updatedAtEpochMillis INTEGER NOT NULL,
-                    FOREIGN KEY(actualSessionId)
-                        REFERENCES actual_session(id)
-                        ON DELETE CASCADE,
-                    FOREIGN KEY(exerciseId)
-                        REFERENCES exercise(id)
-                        ON DELETE SET NULL
-                )
-                """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS actual_cardio_log (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        actualSessionId INTEGER NOT NULL,
+                        exerciseId INTEGER,
+                        logOrder INTEGER NOT NULL,
+                        logType TEXT NOT NULL,
+                        freeTextName TEXT,
+                        distance REAL,
+                        distanceUnit TEXT,
+                        durationSeconds INTEGER,
+                        averageInclinePercent REAL,
+                        averageResistance REAL,
+                        notes TEXT,
+                        performedAtEpochMillis INTEGER,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(actualSessionId)
+                            REFERENCES actual_session(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(exerciseId)
+                            REFERENCES exercise(id)
+                            ON DELETE SET NULL
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                CREATE INDEX IF NOT EXISTS index_actual_cardio_log_actualSessionId
-                ON actual_cardio_log(actualSessionId)
-                """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_cardio_log_actualSessionId
+                    ON actual_cardio_log(actualSessionId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                CREATE INDEX IF NOT EXISTS index_actual_cardio_log_exerciseId
-                ON actual_cardio_log(exerciseId)
-                """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_cardio_log_exerciseId
+                    ON actual_cardio_log(exerciseId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                CREATE INDEX IF NOT EXISTS index_actual_cardio_log_logOrder
-                ON actual_cardio_log(logOrder)
-                """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_cardio_log_logOrder
+                    ON actual_cardio_log(logOrder)
+                    """.trimIndent()
             )
         }
     }
@@ -195,9 +195,9 @@ object DatabaseModule {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 """
-            ALTER TABLE exercise
-            ADD COLUMN exerciseType TEXT NOT NULL DEFAULT 'STRENGTH'
-            """.trimIndent()
+                    ALTER TABLE exercise
+                    ADD COLUMN exerciseType TEXT NOT NULL DEFAULT 'STRENGTH'
+                    """.trimIndent()
             )
         }
     }
@@ -207,16 +207,16 @@ object DatabaseModule {
 
             db.execSQL(
                 """
-            ALTER TABLE actual_cardio_log
-            ADD COLUMN isEstimatedDistance INTEGER NOT NULL DEFAULT 0
-            """.trimIndent()
+                    ALTER TABLE actual_cardio_log
+                    ADD COLUMN isEstimatedDistance INTEGER NOT NULL DEFAULT 0
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-            ALTER TABLE actual_cardio_log
-            ADD COLUMN intensityLevel INTEGER
-            """.trimIndent()
+                    ALTER TABLE actual_cardio_log
+                    ADD COLUMN intensityLevel INTEGER
+                    """.trimIndent()
             )
         }
     }
@@ -225,36 +225,36 @@ object DatabaseModule {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 """
-            CREATE TABLE IF NOT EXISTS exercise_pr (
-                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                exerciseId INTEGER NOT NULL,
-                prType TEXT NOT NULL,
-                value REAL NOT NULL,
-                secondaryValue REAL,
-                achievedAtEpochMillis INTEGER NOT NULL,
-                sourceSetLogId INTEGER,
-                notes TEXT,
-                createdAtEpochMillis INTEGER NOT NULL,
-                updatedAtEpochMillis INTEGER NOT NULL,
-                FOREIGN KEY(exerciseId)
-                    REFERENCES exercise(id)
-                    ON DELETE CASCADE
-            )
-            """.trimIndent()
-            )
-
-            db.execSQL(
-                """
-            CREATE INDEX IF NOT EXISTS index_exercise_pr_exerciseId
-            ON exercise_pr(exerciseId)
-            """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS exercise_pr (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        exerciseId INTEGER NOT NULL,
+                        prType TEXT NOT NULL,
+                        value REAL NOT NULL,
+                        secondaryValue REAL,
+                        achievedAtEpochMillis INTEGER NOT NULL,
+                        sourceSetLogId INTEGER,
+                        notes TEXT,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(exerciseId)
+                            REFERENCES exercise(id)
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-            CREATE UNIQUE INDEX IF NOT EXISTS index_exercise_pr_exerciseId_prType
-            ON exercise_pr(exerciseId, prType)
-            """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_exercise_pr_exerciseId
+                    ON exercise_pr(exerciseId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_exercise_pr_exerciseId_prType
+                    ON exercise_pr(exerciseId, prType)
+                    """.trimIndent()
             )
         }
     }
@@ -263,53 +263,197 @@ object DatabaseModule {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 """
-            CREATE TABLE IF NOT EXISTS split_template_muscle_group (
-                splitTemplateId INTEGER NOT NULL,
-                muscleGroupId INTEGER NOT NULL,
-                PRIMARY KEY(splitTemplateId, muscleGroupId),
-                FOREIGN KEY(splitTemplateId)
-                    REFERENCES split_template(id)
-                    ON DELETE CASCADE,
-                FOREIGN KEY(muscleGroupId)
-                    REFERENCES muscle_group(id)
-                    ON DELETE CASCADE
-            )
-            """.trimIndent()
-            )
-
-            db.execSQL(
-                """
-            CREATE INDEX IF NOT EXISTS index_split_template_muscle_group_splitTemplateId
-            ON split_template_muscle_group(splitTemplateId)
-            """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS split_template_muscle_group (
+                        splitTemplateId INTEGER NOT NULL,
+                        muscleGroupId INTEGER NOT NULL,
+                        PRIMARY KEY(splitTemplateId, muscleGroupId),
+                        FOREIGN KEY(splitTemplateId)
+                            REFERENCES split_template(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(muscleGroupId)
+                            REFERENCES muscle_group(id)
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-            CREATE INDEX IF NOT EXISTS index_split_template_muscle_group_muscleGroupId
-            ON split_template_muscle_group(muscleGroupId)
-            """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_split_template_muscle_group_splitTemplateId
+                    ON split_template_muscle_group(splitTemplateId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    ALTER TABLE split_template_exercise
-    ADD COLUMN targetDistance REAL
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_split_template_muscle_group_muscleGroupId
+                    ON split_template_muscle_group(muscleGroupId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    ALTER TABLE split_template_exercise
-    ADD COLUMN targetDistanceUnit TEXT
-    """.trimIndent()
+                    ALTER TABLE split_template_exercise
+                    ADD COLUMN targetDistance REAL
+                    """.trimIndent()
+                            )
+
+                            db.execSQL(
+                                """
+                    ALTER TABLE split_template_exercise
+                    ADD COLUMN targetDistanceUnit TEXT
+                    """.trimIndent()
+                            )
+
+                            db.execSQL(
+                                """
+                    ALTER TABLE split_template_exercise
+                    ADD COLUMN targetDurationMinutes INTEGER
+                    """.trimIndent()
+            )
+        }
+    }
+
+    private val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+
+            // -----------------------------------------------------------------
+            // training_cycle_step simplification
+            // -----------------------------------------------------------------
+
+            db.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS training_cycle_step_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        cycleId INTEGER NOT NULL,
+                        stepOrder INTEGER NOT NULL,
+                        splitTemplateId INTEGER NOT NULL,
+                        warnBeforeMarkDone INTEGER NOT NULL DEFAULT 0,
+                        notes TEXT,
+                        FOREIGN KEY(cycleId)
+                            REFERENCES training_cycle(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(splitTemplateId)
+                            REFERENCES split_template(id)
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    ALTER TABLE split_template_exercise
-    ADD COLUMN targetDurationMinutes INTEGER
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_training_cycle_step_new_cycleId
+                    ON training_cycle_step_new(cycleId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_training_cycle_step_new_splitTemplateId
+                    ON training_cycle_step_new(splitTemplateId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                    index_training_cycle_step_new_cycleId_stepOrder
+                    ON training_cycle_step_new(cycleId, stepOrder)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE UNIQUE INDEX IF NOT EXISTS
+                    index_training_cycle_step_new_cycleId_splitTemplateId
+                    ON training_cycle_step_new(cycleId, splitTemplateId)
+                    """.trimIndent()
+            )
+
+            // Keep only rows that actually reference splits.
+            db.execSQL(
+                """
+                    INSERT INTO training_cycle_step_new (
+                        id,
+                        cycleId,
+                        stepOrder,
+                        splitTemplateId,
+                        warnBeforeMarkDone,
+                        notes
+                    )
+                    SELECT
+                        id,
+                        cycleId,
+                        stepOrder,
+                        splitTemplateId,
+                        0,
+                        notes
+                    FROM training_cycle_step
+                    WHERE splitTemplateId IS NOT NULL
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    DROP TABLE training_cycle_step
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    ALTER TABLE training_cycle_step_new
+                    RENAME TO training_cycle_step
+                    """.trimIndent()
+            )
+
+            // -----------------------------------------------------------------
+            // actual_session cycle linkage
+            // -----------------------------------------------------------------
+
+            db.execSQL(
+                """
+                    ALTER TABLE actual_session
+                    ADD COLUMN trainingCycleId INTEGER
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    ALTER TABLE actual_session
+                    ADD COLUMN trainingCycleStepId INTEGER
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    ALTER TABLE actual_session
+                    ADD COLUMN trainingCycleStepOrderSnapshot INTEGER
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId
+                    ON actual_session(trainingCycleId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleStepId
+                    ON actual_session(trainingCycleStepId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS
+                    index_actual_session_trainingCycleId_performedDateEpochDay
+                    ON actual_session(
+                        trainingCycleId,
+                        performedDateEpochDay
+                    )
+                    """.trimIndent()
             )
         }
     }
@@ -332,7 +476,8 @@ object DatabaseModule {
                 MIGRATION_5_6,
                 MIGRATION_6_7,
                 MIGRATION_7_8,
-                MIGRATION_8_9
+                MIGRATION_8_9,
+                MIGRATION_9_10
             )
             .build()
     }

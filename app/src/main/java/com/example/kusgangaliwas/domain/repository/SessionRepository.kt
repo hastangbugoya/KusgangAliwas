@@ -135,6 +135,23 @@ interface SessionRepository {
     suspend fun deleteActualSession(actualSessionId: Long)
 
     // ----------------------------
+    // Training Cycle Progress
+    // ----------------------------
+
+    suspend fun getLatestCompletedCycleSession(
+        trainingCycleId: Long,
+    ): ActualSessionEntity?
+
+    suspend fun getCompletedCycleSessions(
+        trainingCycleId: Long,
+    ): List<ActualSessionEntity>
+
+    suspend fun getCompletedSessionsForCycleStep(
+        trainingCycleId: Long,
+        trainingCycleStepId: Long,
+    ): List<ActualSessionEntity>
+
+    // ----------------------------
     // Actual Exercise Logs
     // ----------------------------
 

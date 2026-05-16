@@ -165,4 +165,69 @@ interface ActualSessionDao {
         startEpochDay: Long,
         endEpochDay: Long,
     ): List<ActualSessionEntity>
+
+    /**
+     * Returns the latest completed session associated with a cycle.
+     *
+     * Used for:
+     * - cycle support text
+     * - determining recent cycle history
+     * - deriving next suggested split
+     */
+    @Query(
+        """
+        SELECT *
+        FROM actual_session
+        WHERE trainingCycleId = :trainingCycleId
+            AND trainingCycleStepId IS NOT NULL
+            AND status = 'completed'
+        ORDER BY performedDateEpochDay DESC, id DESC
+        LIMIT 1
+        """
+    )
+    suspend fun getLatestCompletedCycleSession(
+        trainingCycleId: Long,
+    ): ActualSessionEntity?
+
+    /**
+     * Returns all completed cycle sessions for the given cycle ordered oldest
+     * to newest.
+     *
+     * This is intentionally day-based rather than timestamp-based.
+     */
+    @Query(
+        """
+        SELECT *
+        FROM actual_session
+        WHERE trainingCycleId = :trainingCycleId
+            AND trainingCycleStepId IS NOT NULL
+            AND status = 'completed'
+        ORDER BY performedDateEpochDay ASC, id ASC
+        """
+    )
+    suspend fun getCompletedCycleSessions(
+        trainingCycleId: Long,
+    ): List<ActualSessionEntity>
+
+    /**
+     * Returns completed sessions for a specific cycle step.
+     *
+     * Useful for:
+     * - determining whether a split is already completed in the current round
+     * - cycle progress calculations
+     */
+    @Query(
+        """
+        SELECT *
+        FROM actual_session
+        WHERE trainingCycleId = :trainingCycleId
+            AND trainingCycleStepId = :trainingCycleStepId
+            AND status = 'completed'
+        ORDER BY performedDateEpochDay DESC, id DESC
+        """
+    )
+    suspend fun getCompletedSessionsForCycleStep(
+        trainingCycleId: Long,
+        trainingCycleStepId: Long,
+    ): List<ActualSessionEntity>
 }

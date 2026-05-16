@@ -58,6 +58,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.res.painterResource
 import com.example.kusgangaliwas.R
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.ui.common.MuscleGroupChipRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -210,12 +211,23 @@ fun ExerciseListScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            MuscleGroupFilterChips(
+//            MuscleGroupFilterChips(
+//                muscleGroups = uiState.availableMuscleGroups,
+//                selectedMuscleGroupIds = selectedFilterMuscleGroupIds,
+//                onToggleMuscleGroup = onToggleFilterMuscleGroup,
+//                onClearFilters = onClearMuscleGroupFilters,
+//            )
+
+            MuscleGroupChipRow(
                 muscleGroups = uiState.availableMuscleGroups,
                 selectedMuscleGroupIds = selectedFilterMuscleGroupIds,
-                onToggleMuscleGroup = onToggleFilterMuscleGroup,
-                onClearFilters = onClearMuscleGroupFilters,
+                allLabel = "All",
+                onClearSelection = onClearMuscleGroupFilters,
+                onToggleMuscleGroup = { muscleGroupId, _ ->
+                    onToggleFilterMuscleGroup(muscleGroupId)
+                },
             )
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp),
@@ -361,34 +373,34 @@ private fun AddExerciseSheetContent(
     }
 }
 
-@Composable
-private fun MuscleGroupFilterChips(
-    muscleGroups: List<MuscleGroupEntity>,
-    selectedMuscleGroupIds: Set<Long>,
-    onToggleMuscleGroup: (Long) -> Unit,
-    onClearFilters: () -> Unit,
-) {
-    if (muscleGroups.isEmpty()) return
-
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = selectedMuscleGroupIds.isEmpty(),
-            onClick = onClearFilters,
-            label = { Text("All") },
-        )
-
-        muscleGroups.forEach { muscleGroup ->
-            FilterChip(
-                selected = selectedMuscleGroupIds.contains(muscleGroup.id),
-                onClick = { onToggleMuscleGroup(muscleGroup.id) },
-                label = { Text(muscleGroup.name) },
-            )
-        }
-    }
-}
+//@Composable
+//private fun MuscleGroupFilterChips(
+//    muscleGroups: List<MuscleGroupEntity>,
+//    selectedMuscleGroupIds: Set<Long>,
+//    onToggleMuscleGroup: (Long) -> Unit,
+//    onClearFilters: () -> Unit,
+//) {
+//    if (muscleGroups.isEmpty()) return
+//
+//    Row(
+//        modifier = Modifier.horizontalScroll(rememberScrollState()),
+//        horizontalArrangement = Arrangement.spacedBy(8.dp),
+//    ) {
+//        FilterChip(
+//            selected = selectedMuscleGroupIds.isEmpty(),
+//            onClick = onClearFilters,
+//            label = { Text("All") },
+//        )
+//
+//        muscleGroups.forEach { muscleGroup ->
+//            FilterChip(
+//                selected = selectedMuscleGroupIds.contains(muscleGroup.id),
+//                onClick = { onToggleMuscleGroup(muscleGroup.id) },
+//                label = { Text(muscleGroup.name) },
+//            )
+//        }
+//    }
+//}
 
 @Composable
 private fun ExerciseDetailSheetContent(
@@ -472,43 +484,24 @@ private fun ExerciseDetailSheetContent(
             fontWeight = FontWeight.Bold,
         )
 
-        val sortedMuscleGroups = availableMuscleGroups.sortedWith(
-            compareByDescending<MuscleGroupEntity> { muscleGroup ->
-                item.selectedMuscleGroupIds.contains(muscleGroup.id)
-            }.thenBy { muscleGroup ->
-                muscleGroup.name.lowercase()
-            }
-        )
-
-        if (sortedMuscleGroups.isEmpty()) {
+        if (availableMuscleGroups.isEmpty()) {
             Text(
                 text = "No muscle groups yet.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary,
             )
         } else {
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                sortedMuscleGroups.forEach { muscleGroup ->
-                    val selected = item.selectedMuscleGroupIds.contains(muscleGroup.id)
-
-                    FilterChip(
-                        selected = selected,
-                        onClick = {
-                            onToggleMuscleGroupForExercise(
-                                exercise.id,
-                                muscleGroup.id,
-                                selected,
-                            )
-                        },
-                        label = {
-                            Text(muscleGroup.name)
-                        },
+            MuscleGroupChipRow(
+                muscleGroups = availableMuscleGroups,
+                selectedMuscleGroupIds = item.selectedMuscleGroupIds,
+                onToggleMuscleGroup = { muscleGroupId, isSelected ->
+                    onToggleMuscleGroupForExercise(
+                        exercise.id,
+                        muscleGroupId,
+                        isSelected,
                     )
-                }
-            }
+                },
+            )
         }
 
         HorizontalDivider()

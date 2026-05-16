@@ -9,10 +9,17 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * DAO for training cycles.
+ * DAO for reusable training cycles.
  *
- * A cycle defines the suggested sequence of training steps.
- * It does not enforce dates or completion.
+ * A cycle is an ordered split queue used for progression suggestions.
+ *
+ * Cycles are intentionally:
+ * - day-agnostic
+ * - non-blocking
+ * - recommendation-based
+ *
+ * Runtime progress should be derived from cycle progress/session history,
+ * not from mutable index state stored on the cycle itself.
  */
 @Dao
 interface TrainingCycleDao {
@@ -40,17 +47,46 @@ interface TrainingCycleDao {
         """
         SELECT *
         FROM training_cycle
+        WHERE isActive = 1
+        ORDER BY updatedAtEpochMillis DESC
+        LIMIT 1
+        """
+    )
+    fun observeMostRecentlyUpdatedActiveCycle():
+            Flow<TrainingCycleEntity?>
+
+    @Query(
+        """
+        SELECT *
+        FROM training_cycle
         WHERE id = :cycleId
         LIMIT 1
         """
     )
-    suspend fun getCycleById(cycleId: Long): TrainingCycleEntity?
+    suspend fun getCycleById(
+        cycleId: Long,
+    ): TrainingCycleEntity?
+
+    @Query(
+        """
+        SELECT *
+        FROM training_cycle
+        WHERE isActive = 1
+        LIMIT 1
+        """
+    )
+    suspend fun getAnyActiveCycle():
+            TrainingCycleEntity?
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertCycle(entity: TrainingCycleEntity): Long
+    suspend fun insertCycle(
+        entity: TrainingCycleEntity,
+    ): Long
 
     @Update
-    suspend fun updateCycle(entity: TrainingCycleEntity)
+    suspend fun updateCycle(
+        entity: TrainingCycleEntity,
+    )
 
     @Query(
         """
@@ -62,6 +98,17 @@ interface TrainingCycleDao {
     )
     suspend fun softDeleteCycle(
         cycleId: Long,
+        updatedAtEpochMillis: Long,
+    )
+
+    @Query(
+        """
+        UPDATE training_cycle
+        SET isActive = 0,
+            updatedAtEpochMillis = :updatedAtEpochMillis
+        """
+    )
+    suspend fun deactivateAllCycles(
         updatedAtEpochMillis: Long,
     )
 }

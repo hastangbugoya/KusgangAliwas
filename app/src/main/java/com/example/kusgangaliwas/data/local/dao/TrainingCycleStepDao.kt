@@ -9,11 +9,10 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * DAO for steps inside a training cycle.
+ * DAO for ordered split steps inside a training cycle.
  *
- * Responsibilities:
- * - manage step order
- * - support split/rest/open steps
+ * Cycles are day-agnostic. This DAO manages only the cycle definition/order,
+ * not runtime cycle progress.
  */
 @Dao
 interface TrainingCycleStepDao {
@@ -42,6 +41,32 @@ interface TrainingCycleStepDao {
         cycleId: Long,
     ): List<TrainingCycleStepEntity>
 
+    @Query(
+        """
+        SELECT *
+        FROM training_cycle_step
+        WHERE id = :stepId
+        LIMIT 1
+        """
+    )
+    suspend fun getStepById(
+        stepId: Long,
+    ): TrainingCycleStepEntity?
+
+    @Query(
+        """
+        SELECT *
+        FROM training_cycle_step
+        WHERE cycleId = :cycleId
+            AND splitTemplateId = :splitTemplateId
+        LIMIT 1
+        """
+    )
+    suspend fun getStepForSplit(
+        cycleId: Long,
+        splitTemplateId: Long,
+    ): TrainingCycleStepEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStep(entity: TrainingCycleStepEntity): Long
 
@@ -61,6 +86,18 @@ interface TrainingCycleStepDao {
         """
     )
     suspend fun deleteStep(stepId: Long)
+
+    @Query(
+        """
+        DELETE FROM training_cycle_step
+        WHERE cycleId = :cycleId
+            AND splitTemplateId = :splitTemplateId
+        """
+    )
+    suspend fun deleteStepForSplit(
+        cycleId: Long,
+        splitTemplateId: Long,
+    )
 
     @Query(
         """

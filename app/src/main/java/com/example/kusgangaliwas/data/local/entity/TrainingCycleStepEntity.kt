@@ -6,15 +6,14 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Represents one step in a training cycle.
+ * Represents one ordered split inside a reusable training cycle.
  *
- * A step can be:
- * - a split (linked to SplitTemplate)
- * - a rest step
- * - an open/optional step
+ * Cycles are intentionally day-agnostic. They do not schedule workouts by
+ * calendar date and they do not enforce completion. They only provide the
+ * ordered split queue the user cycles through.
  *
- * This allows flexible cycles like:
- * A → Rest → B → Rest → C → Rest → repeat
+ * Runtime progress should be derived from cycle progress/session history, not
+ * from this definition row.
  */
 @Entity(
     tableName = "training_cycle_step",
@@ -29,14 +28,14 @@ import androidx.room.PrimaryKey
             entity = SplitTemplateEntity::class,
             parentColumns = ["id"],
             childColumns = ["splitTemplateId"],
-            onDelete = ForeignKey.SET_NULL,
+            onDelete = ForeignKey.CASCADE,
         ),
     ],
     indices = [
         Index(value = ["cycleId"]),
         Index(value = ["splitTemplateId"]),
-        // Ensure unique ordering per cycle
         Index(value = ["cycleId", "stepOrder"], unique = true),
+        Index(value = ["cycleId", "splitTemplateId"], unique = true),
     ],
 )
 data class TrainingCycleStepEntity(
@@ -46,35 +45,22 @@ data class TrainingCycleStepEntity(
     val cycleId: Long,
 
     /**
-     * Order within the cycle (0-based or 1-based, your choice—just stay consistent).
+     * Order within the cycle. Use 0-based ordering.
      */
     val stepOrder: Int,
 
     /**
-     * Type of step.
+     * The split template represented by this cycle step.
+     */
+    val splitTemplateId: Long,
+
+    /**
+     * When true, the UI should warn before allowing the user to mark this
+     * split done without logging an actual workout.
      *
-     * Suggested values:
-     * - "split"
-     * - "rest"
-     * - "open"
+     * This is only gentle friction. It should not block the user.
      */
-    val stepType: String,
-
-    /**
-     * Only used when stepType == "split".
-     */
-    val splitTemplateId: Long? = null,
-
-    /**
-     * Optional label override (e.g. "Light Rest", "Optional Cardio").
-     */
-    val label: String? = null,
-
-    /**
-     * Optional color key for calendar display.
-     * Keep as string for flexibility (e.g. "blue", "A", "cycle1_step2").
-     */
-    val colorKey: String? = null,
+    val warnBeforeMarkDone: Boolean = false,
 
     val notes: String? = null,
 )

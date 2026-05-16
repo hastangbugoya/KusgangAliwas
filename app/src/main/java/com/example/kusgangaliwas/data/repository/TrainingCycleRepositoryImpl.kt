@@ -27,6 +27,19 @@ class TrainingCycleRepositoryImpl @Inject constructor(
         return trainingCycleDao.observeAllCycles()
     }
 
+    override fun observeMostRecentlyUpdatedActiveCycle():
+            Flow<TrainingCycleEntity?> {
+
+        return trainingCycleDao
+            .observeMostRecentlyUpdatedActiveCycle()
+    }
+
+    override suspend fun getAnyActiveCycle():
+            TrainingCycleEntity? {
+
+        return trainingCycleDao.getAnyActiveCycle()
+    }
+
     override suspend fun getCycleById(cycleId: Long): TrainingCycleEntity? {
         return trainingCycleDao.getCycleById(cycleId)
     }
@@ -61,6 +74,23 @@ class TrainingCycleRepositoryImpl @Inject constructor(
         return trainingCycleStepDao.getStepsForCycle(cycleId)
     }
 
+    override suspend fun getStepById(
+        stepId: Long,
+    ): TrainingCycleStepEntity? {
+        return trainingCycleStepDao.getStepById(stepId)
+    }
+
+    override suspend fun getStepForSplit(
+        cycleId: Long,
+        splitTemplateId: Long,
+    ): TrainingCycleStepEntity? {
+
+        return trainingCycleStepDao.getStepForSplit(
+            cycleId = cycleId,
+            splitTemplateId = splitTemplateId,
+        )
+    }
+
     override suspend fun insertStep(entity: TrainingCycleStepEntity): Long {
         return trainingCycleStepDao.insertStep(entity)
     }
@@ -79,6 +109,16 @@ class TrainingCycleRepositoryImpl @Inject constructor(
 
     override suspend fun deleteStep(stepId: Long) {
         trainingCycleStepDao.deleteStep(stepId)
+    }
+
+    override suspend fun deleteStepForSplit(
+        cycleId: Long,
+        splitTemplateId: Long,
+    ) {
+        trainingCycleStepDao.deleteStepForSplit(
+            cycleId = cycleId,
+            splitTemplateId = splitTemplateId,
+        )
     }
 
     override suspend fun deleteAllStepsForCycle(cycleId: Long) {

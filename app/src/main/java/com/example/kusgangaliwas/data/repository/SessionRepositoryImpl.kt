@@ -200,6 +200,36 @@ class SessionRepositoryImpl @Inject constructor(
         actualSessionDao.deleteActualSession(actualSessionId)
     }
 
+    // ----------------------------
+    // Training Cycle Progress
+    // ----------------------------
+
+    override suspend fun getLatestCompletedCycleSession(
+        trainingCycleId: Long,
+    ): ActualSessionEntity? {
+        return actualSessionDao.getLatestCompletedCycleSession(
+            trainingCycleId = trainingCycleId,
+        )
+    }
+
+    override suspend fun getCompletedCycleSessions(
+        trainingCycleId: Long,
+    ): List<ActualSessionEntity> {
+        return actualSessionDao.getCompletedCycleSessions(
+            trainingCycleId = trainingCycleId,
+        )
+    }
+
+    override suspend fun getCompletedSessionsForCycleStep(
+        trainingCycleId: Long,
+        trainingCycleStepId: Long,
+    ): List<ActualSessionEntity> {
+        return actualSessionDao.getCompletedSessionsForCycleStep(
+            trainingCycleId = trainingCycleId,
+            trainingCycleStepId = trainingCycleStepId,
+        )
+    }
+
     override fun observeLogsForSession(
         actualSessionId: Long,
     ): Flow<List<ActualExerciseLogEntity>> {

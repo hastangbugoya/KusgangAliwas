@@ -6,12 +6,13 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Repository boundary for training cycles and their calendar anchoring.
+ * Repository boundary for training cycles.
  *
- * Cycles define sequence:
- * A → Rest → B → Rest → C → ...
+ * A cycle is an ordered split queue. It is intentionally day-agnostic,
+ * non-blocking, and recommendation-based.
  *
- * Anchors map that sequence onto actual calendar dates.
+ * Calendar anchors are legacy/simple display helpers and should not drive
+ * cycle progression.
  */
 interface TrainingCycleRepository {
 
@@ -22,6 +23,10 @@ interface TrainingCycleRepository {
     fun observeActiveCycles(): Flow<List<TrainingCycleEntity>>
 
     fun observeAllCycles(): Flow<List<TrainingCycleEntity>>
+
+    fun observeMostRecentlyUpdatedActiveCycle(): Flow<TrainingCycleEntity?>
+
+    suspend fun getAnyActiveCycle(): TrainingCycleEntity?
 
     suspend fun getCycleById(cycleId: Long): TrainingCycleEntity?
 
@@ -46,6 +51,15 @@ interface TrainingCycleRepository {
         cycleId: Long,
     ): List<TrainingCycleStepEntity>
 
+    suspend fun getStepById(
+        stepId: Long,
+    ): TrainingCycleStepEntity?
+
+    suspend fun getStepForSplit(
+        cycleId: Long,
+        splitTemplateId: Long,
+    ): TrainingCycleStepEntity?
+
     suspend fun insertStep(entity: TrainingCycleStepEntity): Long
 
     suspend fun insertSteps(entities: List<TrainingCycleStepEntity>)
@@ -55,6 +69,11 @@ interface TrainingCycleRepository {
     suspend fun updateSteps(entities: List<TrainingCycleStepEntity>)
 
     suspend fun deleteStep(stepId: Long)
+
+    suspend fun deleteStepForSplit(
+        cycleId: Long,
+        splitTemplateId: Long,
+    )
 
     suspend fun deleteAllStepsForCycle(cycleId: Long)
 
