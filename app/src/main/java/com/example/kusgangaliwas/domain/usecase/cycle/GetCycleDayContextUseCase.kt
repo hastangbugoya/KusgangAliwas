@@ -55,6 +55,7 @@ class GetCycleDayContextUseCase @Inject constructor(
                 latestSession?.performedDateEpochDay,
 
             nextStepId = nextStep?.id,
+            nextSplitTemplateId = nextStep?.splitTemplateId,
             nextStepName = nextSplit?.name,
 
             hasWarnBeforeMarkDone =

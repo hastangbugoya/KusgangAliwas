@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.example.kusgangaliwas.domain.usecase.cycle.MarkCycleSplitDoneUseCase
 
 data class SessionDayUiState(
     val epochDay: Long = 0L,
@@ -40,6 +41,7 @@ class SessionDayViewModel @Inject constructor(
     splitTemplateRepository: SplitTemplateRepository,
     private val createSessionFromSplitUseCase: CreateSessionFromSplitUseCase,
     private val getCycleDayContextUseCase: GetCycleDayContextUseCase,
+    private val markCycleSplitDoneUseCase: MarkCycleSplitDoneUseCase,
 ) : ViewModel() {
 
     private val epochDay: Long = checkNotNull(
@@ -100,6 +102,49 @@ class SessionDayViewModel @Inject constructor(
                 createSessionFromSplitUseCase(
                     splitTemplateId = splitTemplateId,
                     epochDay = epochDay,
+                )
+                refreshCycleDayContext()
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun startCycleSession() {
+        val context = cycleDayContext.value
+            ?: return
+
+        val splitTemplateId = context.nextSplitTemplateId
+            ?: return
+
+        viewModelScope.launch {
+            runCatching {
+                createSessionFromSplitUseCase(
+                    splitTemplateId = splitTemplateId,
+                    epochDay = epochDay,
+                    trainingCycleId = context.trainingCycleId,
+                )
+                refreshCycleDayContext()
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun markCycleSplitDone() {
+        val context = cycleDayContext.value
+            ?: return
+
+        val nextStepId = context.nextStepId
+            ?: return
+
+        viewModelScope.launch {
+            runCatching {
+                markCycleSplitDoneUseCase(
+                    trainingCycleId = context.trainingCycleId,
+                    trainingCycleStepId = nextStepId,
+                    eventDateEpochDay = epochDay,
+                    createdAtEpochMillis = System.currentTimeMillis(),
                 )
                 refreshCycleDayContext()
             }.onFailure { error ->

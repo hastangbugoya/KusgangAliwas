@@ -35,6 +35,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 
+
 data class SessionDetailUiState(
     val session: ActualSessionEntity? = null,
     val exerciseLogs: List<SessionExerciseLogUiState> = emptyList(),

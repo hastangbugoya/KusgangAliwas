@@ -11,11 +11,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
@@ -29,6 +26,8 @@ fun SessionDayScreen(
     onStartQuickSession: () -> Unit,
     onActualSessionClick: (Long) -> Unit,
     onStartSplitSession: (Long) -> Unit,
+    onStartCycleSession: () -> Unit,
+    onMarkCycleSplitDone: () -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -67,6 +66,46 @@ fun SessionDayScreen(
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionHeader("Cycle")
+
+                        val cycleContext = uiState.cycleDayContext
+
+                        if (cycleContext == null) {
+                            Text("No active cycle.")
+                        } else {
+                            Text(cycleContext.trainingCycleName)
+
+                            if (cycleContext.lastCompletedStepName != null) {
+                                Text(
+                                    "Last: ${cycleContext.lastCompletedStepName}"
+                                )
+                            }
+
+                            if (cycleContext.nextStepName != null) {
+                                Text("Next: ${cycleContext.nextStepName}")
+
+                                OutlinedButton(
+                                    onClick = onStartCycleSession,
+                                ) {
+                                    Text("Start cycle split")
+                                }
+
+                                OutlinedButton(
+                                    onClick = onMarkCycleSplitDone,
+                                ) {
+                                    Text("Mark done")
+                                }
+                            } else {
+                                Text("No cycle split available.")
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                SharpCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Logged")
 
                         if (uiState.actualSessions.isEmpty()) {
@@ -89,25 +128,26 @@ fun SessionDayScreen(
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Actions")
+                        SectionHeader("Quick Session")
+
                         OutlinedButton(
-                            onClick = {
-                                onStartQuickSession()
-                            },
+                            onClick = onStartQuickSession,
                         ) {
                             Text("Start quick session")
                         }
+                    }
+                }
+            }
+
+            item {
+                SharpCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionHeader("Choose Split")
 
                         if (uiState.availableSplits.isEmpty()) {
-
                             Text("No saved splits yet.")
-
                         } else {
-
-                            Text("Start from saved split")
-
                             uiState.availableSplits.forEach { split ->
-
                                 OutlinedButton(
                                     onClick = {
                                         onStartSplitSession(split.id)

@@ -11,6 +11,12 @@ data class CycleDayContext(
     val lastCompletedEpochDay: Long? = null,
 
     val nextStepId: Long? = null,
+
+    /**
+     * Split template backing the next suggested cycle step.
+     */
+    val nextSplitTemplateId: Long? = null,
+
     val nextStepName: String? = null,
 
     val hasWarnBeforeMarkDone: Boolean = false,
