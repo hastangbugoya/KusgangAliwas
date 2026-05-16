@@ -29,5 +29,7 @@ fun SplitRoadmapRoute(
         onSaveSchedule = viewModel::saveSchedule,
         modifier = modifier,
         onRenameSplit = viewModel::renameSplit,
+        onToggleMuscleGroupForSplit = viewModel::toggleMuscleGroupForSplit,
+        onUpdateCardioTargets = viewModel::updateCardioTargets,
     )
 }

@@ -39,6 +39,8 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
+import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
+import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
 
 /**
  * Main Room database for Kusgang Aliwas.
@@ -73,6 +75,7 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
         ExerciseSubstitutionEntity::class,
         SplitTemplateEntity::class,
         SplitTemplateExerciseEntity::class,
+        SplitTemplateMuscleGroupCrossRef::class,
         TrainingCycleEntity::class,
         TrainingCycleStepEntity::class,
         CycleCalendarAnchorEntity::class,
@@ -86,7 +89,7 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
         SplitScheduleEntity::class,
         ExercisePrEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -97,6 +100,7 @@ abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun exerciseSubstitutionDao(): ExerciseSubstitutionDao
     abstract fun splitTemplateDao(): SplitTemplateDao
     abstract fun splitTemplateExerciseDao(): SplitTemplateExerciseDao
+    abstract fun splitTemplateMuscleGroupDao(): SplitTemplateMuscleGroupDao
     abstract fun trainingCycleDao(): TrainingCycleDao
     abstract fun trainingCycleStepDao(): TrainingCycleStepDao
     abstract fun cycleCalendarAnchorDao(): CycleCalendarAnchorDao

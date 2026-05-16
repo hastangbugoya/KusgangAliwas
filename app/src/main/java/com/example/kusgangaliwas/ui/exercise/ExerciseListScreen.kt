@@ -142,14 +142,6 @@ fun ExerciseListScreen(
         topBar = {
             TopAppBar(
                 title = { Text(text = "Exercises") },
-//                navigationIcon = {
-//                    IconButton(onClick = onBackClick) {
-//                        Icon(
-//                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-//                            contentDescription = "Back",
-//                        )
-//                    }
-//                },
                 actions = {
                     IconButton(
                         onClick = {
@@ -179,73 +171,6 @@ fun ExerciseListScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-//            Card(
-//                modifier = Modifier.fillMaxWidth(),
-//                shape = MaterialTheme.shapes.extraSmall,
-//                colors = CardDefaults.cardColors(),
-//            ) {
-//                Column(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(12.dp),
-//                    verticalArrangement = Arrangement.spacedBy(6.dp),
-//                ) {
-//                    Text(
-//                        text = "Add exercise",
-//                        style = MaterialTheme.typography.titleMedium,
-//                    )
-//
-//                    OutlinedTextField(
-//                        value = newExerciseName,
-//                        onValueChange = { newExerciseName = it },
-//                        label = { Text(text = "Exercise name") },
-//                        singleLine = true,
-//                        modifier = Modifier.fillMaxWidth(),
-//                    )
-//
-//                    Text(
-//                        text = "Type",
-//                        style = MaterialTheme.typography.bodyMedium,
-//                    )
-//
-//                    Row(
-//                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-//                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                    ) {
-//                        ExerciseType.entries.forEach { type ->
-//                            OutlinedButton(
-//                                onClick = { selectedExerciseType = type },
-//                            ) {
-//                                Text(
-//                                    text = if (selectedExerciseType == type) {
-//                                        "✓ ${type.displayText()}"
-//                                    } else {
-//                                        type.displayText()
-//                                    },
-//                                )
-//                            }
-//                        }
-//                    }
-//
-//                    OutlinedButton(
-//                        onClick = {
-//                            val cleaned = newExerciseName
-//                                .trim()
-//                                .replaceFirstChar { character ->
-//                                    character.uppercase()
-//                                }
-//
-//                            if (cleaned.isNotBlank()) {
-//                                onCreateExercise(cleaned, selectedExerciseType)
-//                                newExerciseName = ""
-//                                selectedExerciseType = ExerciseType.STRENGTH
-//                            }
-//                        },
-//                    ) {
-//                        Text(text = "Add")
-//                    }
-//                }
-//            }
             OutlinedTextField(
                 value = localSearchQuery,
                 onValueChange = { value ->

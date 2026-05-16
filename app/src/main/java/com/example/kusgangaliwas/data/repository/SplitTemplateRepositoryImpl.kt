@@ -7,6 +7,8 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
+import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
 
 /**
  * Room-backed implementation of SplitTemplateRepository.
@@ -14,6 +16,7 @@ import javax.inject.Inject
 class SplitTemplateRepositoryImpl @Inject constructor(
     private val splitTemplateDao: SplitTemplateDao,
     private val splitTemplateExerciseDao: SplitTemplateExerciseDao,
+    private val splitTemplateMuscleGroupDao: SplitTemplateMuscleGroupDao,
 ) : SplitTemplateRepository {
 
     override fun observeActiveSplits(): Flow<List<SplitTemplateEntity>> {
@@ -88,5 +91,27 @@ class SplitTemplateRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAllExercisesForSplit(splitTemplateId: Long) {
         splitTemplateExerciseDao.deleteAllForSplit(splitTemplateId)
+    }
+
+    override fun observeMuscleGroupsForSplit(
+        splitTemplateId: Long,
+    ): Flow<List<SplitTemplateMuscleGroupCrossRef>> {
+        return splitTemplateMuscleGroupDao.observeForSplit(splitTemplateId)
+    }
+
+    override suspend fun upsertSplitMuscleGroup(
+        crossRef: SplitTemplateMuscleGroupCrossRef,
+    ) {
+        splitTemplateMuscleGroupDao.upsert(crossRef)
+    }
+
+    override suspend fun deleteSplitMuscleGroup(
+        splitTemplateId: Long,
+        muscleGroupId: Long,
+    ) {
+        splitTemplateMuscleGroupDao.delete(
+            splitTemplateId = splitTemplateId,
+            muscleGroupId = muscleGroupId,
+        )
     }
 }

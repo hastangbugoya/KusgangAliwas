@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
 
 @HiltViewModel
 class SplitRoadmapViewModel @Inject constructor(
@@ -43,8 +44,10 @@ class SplitRoadmapViewModel @Inject constructor(
         combine(
             getSplitRoadmapUseCase(splitId),
             exerciseRepository.observeActiveExercises(),
+            exerciseRepository.observeActiveMuscleGroups(),
+            splitTemplateRepository.observeMuscleGroupsForSplit(splitId),
             scheduleState,
-        ) { roadmap, exercises, schedule ->
+        ) { roadmap, exercises, muscleGroups, selectedSplitMuscleGroups, schedule ->
             val exerciseById = exercises.associateBy { it.id }
 
             SplitRoadmapUiState(
@@ -64,6 +67,10 @@ class SplitRoadmapViewModel @Inject constructor(
                 selectedDaysMask = schedule.selectedDaysMask,
                 horizonWeeksText = schedule.horizonWeeksText,
                 scheduleTitle = schedule.scheduleTitle,
+                availableMuscleGroups = muscleGroups,
+                selectedMuscleGroupIds = selectedSplitMuscleGroups
+                    .map { it.muscleGroupId }
+                    .toSet(),
             )
         }.stateIn(
             scope = viewModelScope,
@@ -106,6 +113,27 @@ class SplitRoadmapViewModel @Inject constructor(
         }
     }
 
+    fun toggleMuscleGroupForSplit(
+        muscleGroupId: Long,
+        isSelected: Boolean,
+    ) {
+        viewModelScope.launch {
+            if (isSelected) {
+                splitTemplateRepository.deleteSplitMuscleGroup(
+                    splitTemplateId = splitId,
+                    muscleGroupId = muscleGroupId,
+                )
+            } else {
+                splitTemplateRepository.upsertSplitMuscleGroup(
+                    SplitTemplateMuscleGroupCrossRef(
+                        splitTemplateId = splitId,
+                        muscleGroupId = muscleGroupId,
+                    )
+                )
+            }
+        }
+    }
+
     fun renameSplit(
         newName: String,
     ) {
@@ -144,17 +172,18 @@ class SplitRoadmapViewModel @Inject constructor(
         scheduleState.update {
             it.copy(scheduleEnabled = enabled)
         }
+        saveSchedule()
     }
 
     fun toggleScheduleDay(bitIndex: Int) {
         if (bitIndex !in 0..6) return
-
         scheduleState.update { current ->
             val bit = 1 shl bitIndex
             current.copy(
                 selectedDaysMask = current.selectedDaysMask xor bit,
             )
         }
+        saveSchedule()
     }
 
     fun updateHorizonWeeksText(value: String) {
@@ -255,7 +284,33 @@ class SplitRoadmapViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateCardioTargets(
+        entity: SplitTemplateExerciseEntity,
+        targetDistance: Double?,
+        targetDistanceUnit: String?,
+        targetDurationMinutes: Int?,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                splitTemplateRepository.updateSplitExercise(
+                    entity.copy(
+                        targetDistance = targetDistance,
+                        targetDistanceUnit = targetDistanceUnit?.takeIf { it.isNotBlank() },
+                        targetDurationMinutes = targetDurationMinutes,
+                        targetSets = null,
+                        targetRepsMin = null,
+                        targetRepsMax = null,
+                    )
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
 }
+
+
 
 private data class SplitRoadmapScheduleState(
     val splitName: String = "Split",

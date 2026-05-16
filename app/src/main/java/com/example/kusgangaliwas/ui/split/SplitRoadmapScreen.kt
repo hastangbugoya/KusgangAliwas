@@ -1,21 +1,34 @@
 package com.example.kusgangaliwas.ui.split
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,12 +37,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
+import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
-import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SplitRoadmapScreen(
     uiState: SplitRoadmapUiState,
@@ -45,14 +60,61 @@ fun SplitRoadmapScreen(
     onSaveSchedule: () -> Unit,
     modifier: Modifier = Modifier,
     onRenameSplit: (String) -> Unit,
+    onToggleMuscleGroupForSplit: (Long, Boolean) -> Unit,
+    onUpdateCardioTargets: (SplitTemplateExerciseEntity, Double?, String?, Int?) -> Unit,
 ) {
+    var showAddExerciseSheet by remember { mutableStateOf(false) }
+
+    if (showAddExerciseSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showAddExerciseSheet = false
+            },
+        ) {
+            AddExerciseToSplitSheetContent(
+                availableExercises = uiState.availableExercises,
+                onAddExercise = { exerciseId ->
+                    onAddExercise(exerciseId)
+                    showAddExerciseSheet = false
+                },
+            )
+        }
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
-            KusgangTopBar(
-                title = uiState.splitName,
-                onBackClick = onBackClick,
-                onOverflowClick = onOverflowClick,
+            TopAppBar(
+                title = {
+                    Text(uiState.splitName)
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            showAddExerciseSheet = true
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add exercise",
+                        )
+                    }
+
+                    IconButton(onClick = onOverflowClick) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                        )
+                    }
+                },
             )
         },
     ) { innerPadding ->
@@ -70,6 +132,15 @@ fun SplitRoadmapScreen(
                     onRenameSplit = onRenameSplit,
                 )
             }
+
+            item {
+                SplitMuscleGroupCard(
+                    muscleGroups = uiState.availableMuscleGroups,
+                    selectedMuscleGroupIds = uiState.selectedMuscleGroupIds,
+                    onToggleMuscleGroup = onToggleMuscleGroupForSplit,
+                )
+            }
+
             item {
                 ScheduleCard(
                     uiState = uiState,
@@ -101,37 +172,60 @@ fun SplitRoadmapScreen(
                                         Text(
                                             text = "${index + 1}. ${item.exerciseName}",
                                         )
+
                                         Text(
                                             text = "Type: ${exerciseType?.displayText() ?: "Unknown"}",
                                         )
 
-                                        Column(
-                                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                                        ) {
+                                        buildTargetText(
+                                            sets = splitExercise.targetSets,
+                                            min = splitExercise.targetRepsMin,
+                                            max = splitExercise.targetRepsMax,
+                                        )?.let { text ->
+                                            Text(text = text)
+                                        }
+
+                                        Text(
+                                            text = when (exerciseType) {
+                                                ExerciseType.STRENGTH ->
+                                                    "Previous workout values will be suggested during logging."
+
+                                                ExerciseType.CARDIO ->
+                                                    "Uses latest logged cardio metrics during workout start."
+
+                                                ExerciseType.MOBILITY ->
+                                                    "Mobility exercise."
+
+                                                ExerciseType.OTHER ->
+                                                    "General exercise."
+
+                                                null ->
+                                                    "Previous workout values will be suggested during logging."
+                                            },
+                                        )
+
+                                        if (exerciseType == ExerciseType.CARDIO) {
                                             Text(
-                                                text = when (exerciseType) {
-                                                    ExerciseType.STRENGTH ->
-                                                        "Previous workout values will be suggested during logging."
-
-                                                    ExerciseType.CARDIO ->
-                                                        "Uses latest logged cardio metrics during workout start."
-
-                                                    ExerciseType.MOBILITY ->
-                                                        "Mobility exercise."
-
-                                                    ExerciseType.OTHER ->
-                                                        "General exercise."
-
-                                                    null ->
-                                                        "Previous workout values will be suggested during logging."
-                                                },
+                                                text = "Examples: distance, duration, incline, resistance.",
                                             )
+                                        }
 
-                                            if (exerciseType == ExerciseType.CARDIO) {
-                                                Text(
-                                                    text = "Examples: distance, duration, incline, resistance.",
+                                        when (exerciseType) {
+                                            ExerciseType.STRENGTH -> {
+                                                TargetEditorRow(
+                                                    splitExercise = splitExercise,
+                                                    onUpdateExerciseTargets = onUpdateExerciseTargets,
                                                 )
                                             }
+
+                                            ExerciseType.CARDIO -> {
+                                                CardioTargetEditorRow(
+                                                    splitExercise = splitExercise,
+                                                    onUpdateCardioTargets = onUpdateCardioTargets,
+                                                )
+                                            }
+
+                                            else -> Unit
                                         }
 
                                         Row(
@@ -152,31 +246,66 @@ fun SplitRoadmapScreen(
                     }
                 }
             }
+        }
+    }
+}
 
-            item {
-                SharpCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Add exercise")
+@Composable
+private fun AddExerciseToSplitSheetContent(
+    availableExercises: List<ExerciseEntity>,
+    onAddExercise: (Long) -> Unit,
+) {
+    var searchText by remember { mutableStateOf("") }
 
-                        if (uiState.availableExercises.isEmpty()) {
-                            Text("Add exercises in the Exercises tab first.")
-                        } else {
-                            uiState.availableExercises.forEach { exercise ->
-                                OutlinedButton(
-                                    onClick = {
-                                        onAddExercise(exercise.id)
-                                    },
-                                ) {
-                                    Text(exercise.name)
-                                }
-                            }
-                        }
-                    }
+    val filteredExercises = availableExercises.filter { exercise ->
+        if (searchText.isBlank()) {
+            true
+        } else {
+            exercise.name.contains(
+                searchText.trim(),
+                ignoreCase = true,
+            )
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("Add exercise")
+
+        OutlinedTextField(
+            value = searchText,
+            onValueChange = {
+                searchText = it
+            },
+            label = {
+                Text("Search exercises")
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        if (availableExercises.isEmpty()) {
+            Text("Add exercises in the Exercises tab first.")
+        } else if (filteredExercises.isEmpty()) {
+            Text("No matching exercises.")
+        } else {
+            filteredExercises.forEach { exercise ->
+                OutlinedButton(
+                    onClick = {
+                        onAddExercise(exercise.id)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(exercise.name)
                 }
             }
         }
     }
-
 }
 
 private fun ExerciseType.displayText(): String {
@@ -223,6 +352,47 @@ private fun RenameSplitCard(
                 enabled = text.isNotBlank(),
             ) {
                 Text("Rename split")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SplitMuscleGroupCard(
+    muscleGroups: List<MuscleGroupEntity>,
+    selectedMuscleGroupIds: Set<Long>,
+    onToggleMuscleGroup: (Long, Boolean) -> Unit,
+) {
+    SharpCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionHeader("Muscle groups")
+
+            if (muscleGroups.isEmpty()) {
+                Text("No muscle groups yet.")
+            } else {
+                Row(
+                    modifier = Modifier.horizontalScroll(
+                        rememberScrollState(),
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    muscleGroups.forEach { muscleGroup ->
+                        val selected = selectedMuscleGroupIds.contains(muscleGroup.id)
+
+                        FilterChip(
+                            selected = selected,
+                            onClick = {
+                                onToggleMuscleGroup(
+                                    muscleGroup.id,
+                                    selected,
+                                )
+                            },
+                            label = {
+                                Text(muscleGroup.name)
+                            },
+                        )
+                    }
+                }
             }
         }
     }
@@ -314,6 +484,78 @@ private fun ScheduleDayChip(
             Text(label)
         },
     )
+}
+
+@Composable
+private fun CardioTargetEditorRow(
+    splitExercise: SplitTemplateExerciseEntity,
+    onUpdateCardioTargets: (SplitTemplateExerciseEntity, Double?, String?, Int?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var distanceText by remember(splitExercise.id) {
+        mutableStateOf(splitExercise.targetDistance?.toString() ?: "")
+    }
+    var distanceUnitText by remember(splitExercise.id) {
+        mutableStateOf(splitExercise.targetDistanceUnit ?: "mi")
+    }
+    var durationText by remember(splitExercise.id) {
+        mutableStateOf(splitExercise.targetDurationMinutes?.toString() ?: "")
+    }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TargetNumberField(
+                label = "Distance",
+                value = distanceText,
+                onValueChange = { value ->
+                    distanceText = value
+                    onUpdateCardioTargets(
+                        splitExercise,
+                        distanceText.toDoubleOrNull(),
+                        distanceUnitText,
+                        durationText.toIntOrNull(),
+                    )
+                },
+                modifier = Modifier.weight(1f),
+            )
+
+            OutlinedTextField(
+                value = distanceUnitText,
+                onValueChange = { value ->
+                    distanceUnitText = value
+                    onUpdateCardioTargets(
+                        splitExercise,
+                        distanceText.toDoubleOrNull(),
+                        distanceUnitText,
+                        durationText.toIntOrNull(),
+                    )
+                },
+                label = { Text("Unit") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        TargetNumberField(
+            label = "Duration minutes",
+            value = durationText,
+            onValueChange = { value ->
+                durationText = value
+                onUpdateCardioTargets(
+                    splitExercise,
+                    distanceText.toDoubleOrNull(),
+                    distanceUnitText,
+                    durationText.toIntOrNull(),
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 @Composable

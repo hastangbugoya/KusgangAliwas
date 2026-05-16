@@ -2,6 +2,7 @@ package com.example.kusgangaliwas.domain.repository
 
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -62,4 +63,21 @@ interface SplitTemplateRepository {
     suspend fun deleteSplitExercise(id: Long)
 
     suspend fun deleteAllExercisesForSplit(splitTemplateId: Long)
+
+    // ----------------------------
+    // Split Muscle Groups
+    // ----------------------------
+
+    fun observeMuscleGroupsForSplit(
+        splitTemplateId: Long,
+    ): Flow<List<SplitTemplateMuscleGroupCrossRef>>
+
+    suspend fun upsertSplitMuscleGroup(
+        crossRef: SplitTemplateMuscleGroupCrossRef,
+    )
+
+    suspend fun deleteSplitMuscleGroup(
+        splitTemplateId: Long,
+        muscleGroupId: Long,
+    )
 }

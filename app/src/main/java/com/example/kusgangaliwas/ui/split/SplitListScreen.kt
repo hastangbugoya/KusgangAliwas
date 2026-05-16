@@ -24,27 +24,21 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.TopAppBar
 
-@Composable
-fun SplitListRoute(
-    onBackClick: () -> Unit,
-    onOverflowClick: () -> Unit,
-    onSplitClick: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: SplitListViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsState()
 
-    SplitListScreen(
-        uiState = uiState,
-        onBackClick = onBackClick,
-        onOverflowClick = onOverflowClick,
-        onCreateSplit = viewModel::createSplit,
-        onSplitClick = onSplitClick,
-        modifier = modifier,
-    )
-}
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SplitListScreen(
     uiState: SplitListUiState,
@@ -55,14 +49,66 @@ fun SplitListScreen(
     onSplitClick: (Long) -> Unit,
 ) {
     var newSplitName by remember { mutableStateOf("") }
+    var localSearchQuery by remember { mutableStateOf("") }
+    var showAddSplitSheet by remember { mutableStateOf(false) }
+
+    if (showAddSplitSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showAddSplitSheet = false
+            },
+        ) {
+            AddSplitSheetContent(
+                splitName = newSplitName,
+                onSplitNameChange = {
+                    newSplitName = it
+                },
+                onSave = {
+                    val cleaned = newSplitName
+                        .trim()
+                        .replaceFirstChar { character ->
+                            character.uppercase()
+                        }
+
+                    if (cleaned.isNotBlank()) {
+                        onCreateSplit(cleaned)
+
+                        newSplitName = ""
+                        showAddSplitSheet = false
+                    }
+                },
+            )
+        }
+    }
 
     Scaffold(
         modifier = modifier,
         topBar = {
-            KusgangTopBar(
-                title = "Splits",
-                onBackClick = onBackClick,
-                onOverflowClick = onOverflowClick,
+            TopAppBar(
+                title = {
+                    Text("Splits")
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            showAddSplitSheet = true
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add split",
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onOverflowClick,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                        )
+                    }
+                },
             )
         },
     ) { innerPadding ->
@@ -73,31 +119,17 @@ fun SplitListScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SharpCard {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SectionHeader("Add split")
-
-                    OutlinedTextField(
-                        value = newSplitName,
-                        onValueChange = { newSplitName = it },
-                        label = { Text("Split name") },
-                        singleLine = true,
-                    )
-
-                    OutlinedButton(
-                        onClick = {
-                            val cleaned = newSplitName.trim()
-                            if (cleaned.isNotBlank()) {
-                                onCreateSplit(cleaned)
-                                newSplitName = ""
-                            }
-                        },
-                    ) {
-                        Text("Add")
-                    }
-                }
-            }
-
+            OutlinedTextField(
+                value = localSearchQuery,
+                onValueChange = {
+                    localSearchQuery = it
+                },
+                label = {
+                    Text("Search splits")
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp),
@@ -111,7 +143,16 @@ fun SplitListScreen(
                     }
                 } else {
                     items(
-                        items = uiState.splits,
+                        items = uiState.splits.filter { split ->
+                            if (localSearchQuery.isBlank()) {
+                                true
+                            } else {
+                                split.name.contains(
+                                    localSearchQuery.trim(),
+                                    ignoreCase = true,
+                                )
+                            }
+                        },
                         key = { it.id },
                     ) { split ->
                         SharpCard(
@@ -130,6 +171,41 @@ fun SplitListScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AddSplitSheetContent(
+    splitName: String,
+    onSplitNameChange: (String) -> Unit,
+    onSave: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Add split",
+        )
+
+        OutlinedTextField(
+            value = splitName,
+            onValueChange = onSplitNameChange,
+            label = {
+                Text("Split name")
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        androidx.compose.material3.OutlinedButton(
+            onClick = onSave,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Save split")
         }
     }
 }

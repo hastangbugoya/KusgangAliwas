@@ -22,6 +22,7 @@ import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
 import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
+import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
 import com.example.kusgangaliwas.data.local.db.KusgangAliwasDatabase
 import dagger.Module
 import dagger.Provides
@@ -258,6 +259,61 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+            CREATE TABLE IF NOT EXISTS split_template_muscle_group (
+                splitTemplateId INTEGER NOT NULL,
+                muscleGroupId INTEGER NOT NULL,
+                PRIMARY KEY(splitTemplateId, muscleGroupId),
+                FOREIGN KEY(splitTemplateId)
+                    REFERENCES split_template(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY(muscleGroupId)
+                    REFERENCES muscle_group(id)
+                    ON DELETE CASCADE
+            )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+            CREATE INDEX IF NOT EXISTS index_split_template_muscle_group_splitTemplateId
+            ON split_template_muscle_group(splitTemplateId)
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+            CREATE INDEX IF NOT EXISTS index_split_template_muscle_group_muscleGroupId
+            ON split_template_muscle_group(muscleGroupId)
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+    ALTER TABLE split_template_exercise
+    ADD COLUMN targetDistance REAL
+    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+    ALTER TABLE split_template_exercise
+    ADD COLUMN targetDistanceUnit TEXT
+    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+    ALTER TABLE split_template_exercise
+    ADD COLUMN targetDurationMinutes INTEGER
+    """.trimIndent()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(
@@ -275,7 +331,8 @@ object DatabaseModule {
                 MIGRATION_4_5,
                 MIGRATION_5_6,
                 MIGRATION_6_7,
-                MIGRATION_7_8
+                MIGRATION_7_8,
+                MIGRATION_8_9
             )
             .build()
     }
@@ -351,4 +408,8 @@ object DatabaseModule {
     @Provides
     fun provideExercisePrDao(database: KusgangAliwasDatabase): ExercisePrDao =
         database.exercisePrDao()
+
+    @Provides
+    fun provideSplitTemplateMuscleGroupDao(database: KusgangAliwasDatabase): SplitTemplateMuscleGroupDao =
+        database.splitTemplateMuscleGroupDao()
 }

@@ -61,6 +61,10 @@ data class SplitTemplateExerciseEntity(
     val targetRepsMin: Int? = null,
     val targetRepsMax: Int? = null,
 
+    val targetDistance: Double? = null,
+    val targetDistanceUnit: String? = null,
+    val targetDurationMinutes: Int? = null,
+
     /**
      * Allows marking optional exercises (e.g. accessories).
      */
