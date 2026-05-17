@@ -23,6 +23,12 @@ class TrainingCycleRepositoryImpl @Inject constructor(
         return trainingCycleDao.observeActiveCycles()
     }
 
+    override suspend fun getActiveCycles():
+            List<TrainingCycleEntity> {
+
+        return trainingCycleDao.getActiveCycles()
+    }
+
     override fun observeAllCycles(): Flow<List<TrainingCycleEntity>> {
         return trainingCycleDao.observeAllCycles()
     }

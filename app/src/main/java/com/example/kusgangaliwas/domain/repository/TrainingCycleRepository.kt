@@ -22,6 +22,8 @@ interface TrainingCycleRepository {
 
     fun observeActiveCycles(): Flow<List<TrainingCycleEntity>>
 
+    suspend fun getActiveCycles(): List<TrainingCycleEntity>
+
     fun observeAllCycles(): Flow<List<TrainingCycleEntity>>
 
     fun observeMostRecentlyUpdatedActiveCycle(): Flow<TrainingCycleEntity?>

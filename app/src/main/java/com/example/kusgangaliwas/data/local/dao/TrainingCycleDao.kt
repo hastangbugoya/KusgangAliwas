@@ -36,6 +36,16 @@ interface TrainingCycleDao {
 
     @Query(
         """
+    SELECT *
+    FROM training_cycle
+    WHERE isActive = 1
+    ORDER BY name COLLATE NOCASE ASC
+    """
+    )
+    suspend fun getActiveCycles(): List<TrainingCycleEntity>
+
+    @Query(
+        """
         SELECT *
         FROM training_cycle
         ORDER BY name COLLATE NOCASE ASC

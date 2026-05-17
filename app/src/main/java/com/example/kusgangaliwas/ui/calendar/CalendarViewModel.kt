@@ -14,7 +14,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import com.example.kusgangaliwas.domain.model.WeeklyTrainingProgress
 import com.example.kusgangaliwas.domain.usecase.session.GetWeeklyTrainingProgressUseCase
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.time.LocalDate
+import com.example.kusgangaliwas.domain.model.cycle.CycleDayContext
+import com.example.kusgangaliwas.domain.usecase.cycle.GetActiveCycleContextsUseCase
 
 /**
  * ViewModel for the monthly calendar screen.
@@ -54,10 +57,12 @@ import java.time.LocalDate
 class CalendarViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val getWeeklyTrainingProgressUseCase: GetWeeklyTrainingProgressUseCase,
+    private val getActiveCycleContextsUseCase: GetActiveCycleContextsUseCase,
 ) : ViewModel() {
 
     private val visibleMonth = MutableStateFlow(YearMonth.now())
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<CalendarUiState> =
         visibleMonth
             .flatMapLatest { month ->
@@ -97,31 +102,24 @@ class CalendarViewModel @Inject constructor(
                             val logged = actualCounts[epochDay] ?: 0
 
                             when {
-                                epochDay > todayEpochDay -> {
-                                    CalendarDayStatus.NEUTRAL
+                                logged > 0 -> {
+                                    CalendarDayStatus.LOGGED
                                 }
 
-                                epochDay == todayEpochDay && logged == 0 -> {
+                                planned > 0 -> {
+                                    CalendarDayStatus.PLANNED
+                                }
+
+                                epochDay == todayEpochDay -> {
                                     CalendarDayStatus.TODAY
                                 }
 
-                                planned == 0 && logged == 0 -> {
-                                    CalendarDayStatus.NEUTRAL
-                                }
-
-                                logged >= planned -> {
-                                    CalendarDayStatus.GREEN
-                                }
-
-                                logged > 0 -> {
-                                    CalendarDayStatus.YELLOW
-                                }
-
                                 else -> {
-                                    CalendarDayStatus.RED
+                                    CalendarDayStatus.NEUTRAL
                                 }
                             }
                         }
+
                     val anchorDate = if (YearMonth.now() == month) {
                         LocalDate.now()
                     } else {
@@ -132,10 +130,13 @@ class CalendarViewModel @Inject constructor(
                         anchorDate = anchorDate,
                     )
 
+                    val activeCycleContexts = getActiveCycleContextsUseCase()
+
                     CalendarUiState(
                         month = month,
                         dayStatusByEpochDay = statusMap,
                         weeklyProgress = weeklyProgress,
+                        activeCycleContexts = activeCycleContexts,
                     )
                 }
             }
@@ -175,6 +176,7 @@ data class CalendarUiState(
     val month: YearMonth = YearMonth.now(),
     val dayStatusByEpochDay: Map<Long, CalendarDayStatus> = emptyMap(),
     val weeklyProgress: WeeklyTrainingProgress? = null,
+    val activeCycleContexts: List<CycleDayContext> = emptyList(),
 )
 
 /**
@@ -185,8 +187,7 @@ data class CalendarUiState(
  */
 enum class CalendarDayStatus {
     NEUTRAL,
-    GREEN,
-    YELLOW,
-    RED,
+    PLANNED,
+    LOGGED,
     TODAY,
 }

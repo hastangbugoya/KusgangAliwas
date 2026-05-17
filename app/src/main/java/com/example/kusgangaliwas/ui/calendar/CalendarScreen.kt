@@ -10,9 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,14 +23,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.domain.model.WeeklyTrainingProgress
+import com.example.kusgangaliwas.domain.model.cycle.CycleDayContext
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SharpCard
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
-import java.util.Locale
 import java.time.temporal.WeekFields
+import java.util.Locale
 
 @Composable
 fun CalendarScreen(
@@ -56,37 +56,103 @@ fun CalendarScreen(
             )
         },
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 12.dp),
+            contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            MonthHeader(
-                month = uiState.month,
-            )
-
-            uiState.weeklyProgress?.let { progress ->
-                WeeklyProgressCard(
-                    progress = progress,
+            item {
+                MonthHeader(
+                    month = uiState.month,
                 )
             }
 
-            WeekdayHeaderRow()
+            item {
+                WeekdayHeaderRow()
+            }
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                items(days) { day ->
-                    DayCell(
-                        day = day,
-                        onClick = onDayClick,
+            items(items = days.chunked(7)) { week ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    week.forEach { day ->
+                        DayCell(
+                            day = day,
+                            onClick = onDayClick,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+
+            item {
+                ActiveCyclesCard(
+                    cycles = uiState.activeCycleContexts,
+                )
+            }
+
+            uiState.weeklyProgress?.let { progress ->
+                item {
+                    WeeklyProgressCard(
+                        progress = progress,
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActiveCyclesCard(
+    cycles: List<CycleDayContext>,
+    modifier: Modifier = Modifier,
+) {
+    SharpCard(
+        modifier = modifier,
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Active cycles",
+                style = MaterialTheme.typography.titleMedium,
+            )
+
+            if (cycles.isEmpty()) {
+                Text(
+                    text = "No active cycles.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                cycles.forEach { cycle ->
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = cycle.trainingCycleName,
+                        )
+
+                        cycle.lastCompletedStepName?.let { last ->
+                            Text(
+                                text = "Last: $last",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        cycle.nextStepName?.let { next ->
+                            Text(
+                                text = "Next: $next",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -117,11 +183,6 @@ private fun WeeklyProgressCard(
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-//            Text(
-//                text = "Weekly progress",
-//                style = MaterialTheme.typography.titleMedium,
-//            )
-
             WeeklyMetricBarRow(
                 label = "Strength",
                 dayLabels = progress.days.map {

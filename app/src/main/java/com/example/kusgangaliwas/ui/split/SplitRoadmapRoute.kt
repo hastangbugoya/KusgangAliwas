@@ -12,6 +12,7 @@ fun SplitRoadmapRoute(
     onOverflowClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SplitRoadmapViewModel = hiltViewModel(),
+    onOpenExercisePicker: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -31,5 +32,6 @@ fun SplitRoadmapRoute(
         onRenameSplit = viewModel::renameSplit,
         onToggleMuscleGroupForSplit = viewModel::toggleMuscleGroupForSplit,
         onUpdateCardioTargets = viewModel::updateCardioTargets,
+        onOpenExercisePicker = onOpenExercisePicker,
     )
 }

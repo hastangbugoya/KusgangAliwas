@@ -19,11 +19,14 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -62,24 +65,25 @@ fun SplitRoadmapScreen(
     onRenameSplit: (String) -> Unit,
     onToggleMuscleGroupForSplit: (Long, Boolean) -> Unit,
     onUpdateCardioTargets: (SplitTemplateExerciseEntity, Double?, String?, Int?) -> Unit,
+    onOpenExercisePicker: (Long) -> Unit,
 ) {
-    var showAddExerciseSheet by remember { mutableStateOf(false) }
+//    var showAddExerciseSheet by remember { mutableStateOf(false) }
 
-    if (showAddExerciseSheet) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                showAddExerciseSheet = false
-            },
-        ) {
-            AddExerciseToSplitSheetContent(
-                availableExercises = uiState.availableExercises,
-                onAddExercise = { exerciseId ->
-                    onAddExercise(exerciseId)
-                    showAddExerciseSheet = false
-                },
-            )
-        }
-    }
+//    if (showAddExerciseSheet) {
+//        ModalBottomSheet(
+//            onDismissRequest = {
+//                showAddExerciseSheet = false
+//            },
+//        ) {
+//            AddExerciseToSplitSheetContent(
+//                availableExercises = uiState.availableExercises,
+//                onAddExercise = { exerciseId ->
+//                    onAddExercise(exerciseId)
+//                    showAddExerciseSheet = false
+//                },
+//            )
+//        }
+//    }
 
     Scaffold(
         modifier = modifier,
@@ -98,9 +102,7 @@ fun SplitRoadmapScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            showAddExerciseSheet = true
-                        },
+                        onClick = { onOpenExercisePicker(uiState.splitId) }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -170,11 +172,13 @@ fun SplitRoadmapScreen(
                                         verticalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
                                         Text(
-                                            text = "${index + 1}. ${item.exerciseName}",
+                                            text = item.exerciseName,
                                         )
 
                                         Text(
-                                            text = "Type: ${exerciseType?.displayText() ?: "Unknown"}",
+                                            text = exerciseType?.displayText() ?: "Unknown",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
 
                                         buildTargetText(
@@ -202,6 +206,8 @@ fun SplitRoadmapScreen(
                                                 null ->
                                                     "Previous workout values will be suggested during logging."
                                             },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
 
                                         if (exerciseType == ExerciseType.CARDIO) {
@@ -241,67 +247,10 @@ fun SplitRoadmapScreen(
                                         }
                                     }
                                 }
+                                HorizontalDivider()
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AddExerciseToSplitSheetContent(
-    availableExercises: List<ExerciseEntity>,
-    onAddExercise: (Long) -> Unit,
-) {
-    var searchText by remember { mutableStateOf("") }
-
-    val filteredExercises = availableExercises.filter { exercise ->
-        if (searchText.isBlank()) {
-            true
-        } else {
-            exercise.name.contains(
-                searchText.trim(),
-                ignoreCase = true,
-            )
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text("Add exercise")
-
-        OutlinedTextField(
-            value = searchText,
-            onValueChange = {
-                searchText = it
-            },
-            label = {
-                Text("Search exercises")
-            },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        if (availableExercises.isEmpty()) {
-            Text("Add exercises in the Exercises tab first.")
-        } else if (filteredExercises.isEmpty()) {
-            Text("No matching exercises.")
-        } else {
-            filteredExercises.forEach { exercise ->
-                OutlinedButton(
-                    onClick = {
-                        onAddExercise(exercise.id)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(exercise.name)
                 }
             }
         }
@@ -635,11 +584,14 @@ private fun TargetNumberField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        label = {
+            Text(label)
+        },
         singleLine = true,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number,
         ),
+        textStyle = MaterialTheme.typography.bodySmall,
         modifier = modifier,
     )
 }

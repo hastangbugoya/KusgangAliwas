@@ -24,6 +24,7 @@ import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
 import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleProgressEventDao
+import com.example.kusgangaliwas.data.local.db.DatabaseSeedCallback
 import com.example.kusgangaliwas.data.local.db.KusgangAliwasDatabase
 import dagger.Module
 import dagger.Provides
@@ -589,6 +590,7 @@ object DatabaseModule {
             KusgangAliwasDatabase::class.java,
             "kusgang_aliwas.db",
         )
+            .addCallback(DatabaseSeedCallback())
             .addMigrations(
                 MIGRATION_1_2,
                 MIGRATION_2_3,

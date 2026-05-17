@@ -62,6 +62,15 @@ sealed class Destination(
         label = "Cycles",
         icon = R.drawable.arrows_retweet__1_,
     )
+
+    data object ExercisePicker : Destination(
+        route = "exercise_picker/{splitId}",
+        label = "Exercise Picker",
+        icon = R.drawable.list,
+    ) {
+        fun createRoute(splitId: Long): String =
+            "exercise_picker/$splitId"
+    }
 }
 
 val bottomNavDestinations = listOf(

@@ -17,6 +17,7 @@ import com.example.kusgangaliwas.ui.session.SessionDetailRoute
 import com.example.kusgangaliwas.ui.split.SplitListRoute
 import com.example.kusgangaliwas.ui.split.SplitRoadmapRoute
 import com.example.kusgangaliwas.ui.cycle.TrainingCycleRoute
+import com.example.kusgangaliwas.ui.split.ExercisePickerRoute
 
 @Composable
 fun NavHost(
@@ -72,6 +73,27 @@ fun NavHost(
         )
         ) {
             SplitRoadmapRoute(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onOverflowClick = {},
+                onOpenExercisePicker = { splitId ->
+                    navController.navigate(
+                        Destination.ExercisePicker.createRoute(splitId)
+                    )
+                },
+            )
+        }
+
+        composable(
+            route = Destination.ExercisePicker.route,
+            arguments = listOf(
+                navArgument("splitId") {
+                    type = NavType.LongType
+                }
+            )
+        ) {
+            ExercisePickerRoute(
                 onBackClick = {
                     navController.popBackStack()
                 },

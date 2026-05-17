@@ -101,29 +101,25 @@ fun DayCell(
 
 private val CalendarDayStatus.tempDrawableRes: Int
     get() = when (this) {
-        CalendarDayStatus.GREEN -> R.drawable.check_circle
-        CalendarDayStatus.YELLOW -> R.drawable.interrogation
-        CalendarDayStatus.RED -> R.drawable.exclamation
+        CalendarDayStatus.LOGGED -> R.drawable.check_circle
+        CalendarDayStatus.PLANNED -> R.drawable.daily_calendar
         CalendarDayStatus.NEUTRAL -> R.drawable.empty_set
         CalendarDayStatus.TODAY -> R.drawable.target
     }
 
 private val CalendarDayStatus.contentDescription: String
     get() = when (this) {
-        CalendarDayStatus.GREEN -> "Complete"
-        CalendarDayStatus.YELLOW -> "Partially complete"
-        CalendarDayStatus.RED -> "Missed planned session"
+        CalendarDayStatus.LOGGED -> "Session logged"
+        CalendarDayStatus.PLANNED -> "Planned session"
         CalendarDayStatus.NEUTRAL -> "No planned or logged session"
         CalendarDayStatus.TODAY -> "Today"
     }
 
 @Composable
-private fun iconTint(status: CalendarDayStatus) : Color
-{
+private fun iconTint(status: CalendarDayStatus): Color {
     return when (status) {
-        CalendarDayStatus.GREEN -> SuccessGreen
-        CalendarDayStatus.YELLOW -> PartialYellow
-        CalendarDayStatus.RED -> MissedSessionsRed
+        CalendarDayStatus.LOGGED -> SuccessGreen
+        CalendarDayStatus.PLANNED -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.primary
     }
 }
