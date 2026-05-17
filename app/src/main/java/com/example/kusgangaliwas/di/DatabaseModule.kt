@@ -408,53 +408,128 @@ object DatabaseModule {
             )
 
             // -----------------------------------------------------------------
-            // actual_session cycle linkage
-            // -----------------------------------------------------------------
+// actual_session cycle linkage
+// -----------------------------------------------------------------
 
             db.execSQL(
                 """
-                    ALTER TABLE actual_session
-                    ADD COLUMN trainingCycleId INTEGER
-                    """.trimIndent()
+    CREATE TABLE IF NOT EXISTS actual_session_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        plannedSessionId INTEGER,
+        performedDateEpochDay INTEGER NOT NULL,
+        splitTemplateId INTEGER,
+        trainingCycleId INTEGER,
+        trainingCycleStepId INTEGER,
+        trainingCycleStepOrderSnapshot INTEGER,
+        title TEXT NOT NULL,
+        status TEXT NOT NULL,
+        startedAtEpochMillis INTEGER,
+        completedAtEpochMillis INTEGER,
+        notes TEXT,
+        rating INTEGER,
+        createdAtEpochMillis INTEGER NOT NULL,
+        updatedAtEpochMillis INTEGER NOT NULL,
+        FOREIGN KEY(plannedSessionId)
+            REFERENCES planned_session(id)
+            ON DELETE SET NULL,
+        FOREIGN KEY(splitTemplateId)
+            REFERENCES split_template(id)
+            ON DELETE SET NULL,
+        FOREIGN KEY(trainingCycleId)
+            REFERENCES training_cycle(id)
+            ON DELETE SET NULL
+    )
+    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                    ALTER TABLE actual_session
-                    ADD COLUMN trainingCycleStepId INTEGER
-                    """.trimIndent()
+    INSERT INTO actual_session_new (
+        id,
+        plannedSessionId,
+        performedDateEpochDay,
+        splitTemplateId,
+        trainingCycleId,
+        trainingCycleStepId,
+        trainingCycleStepOrderSnapshot,
+        title,
+        status,
+        startedAtEpochMillis,
+        completedAtEpochMillis,
+        notes,
+        rating,
+        createdAtEpochMillis,
+        updatedAtEpochMillis
+    )
+    SELECT
+        id,
+        plannedSessionId,
+        performedDateEpochDay,
+        splitTemplateId,
+        NULL,
+        NULL,
+        NULL,
+        title,
+        status,
+        startedAtEpochMillis,
+        completedAtEpochMillis,
+        notes,
+        rating,
+        createdAtEpochMillis,
+        updatedAtEpochMillis
+    FROM actual_session
+    """.trimIndent()
+            )
+
+            db.execSQL("DROP TABLE actual_session")
+
+            db.execSQL(
+                """
+    ALTER TABLE actual_session_new
+    RENAME TO actual_session
+    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                    ALTER TABLE actual_session
-                    ADD COLUMN trainingCycleStepOrderSnapshot INTEGER
-                    """.trimIndent()
+    CREATE INDEX IF NOT EXISTS index_actual_session_plannedSessionId
+    ON actual_session(plannedSessionId)
+    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId
-                    ON actual_session(trainingCycleId)
-                    """.trimIndent()
+    CREATE INDEX IF NOT EXISTS index_actual_session_performedDateEpochDay
+    ON actual_session(performedDateEpochDay)
+    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleStepId
-                    ON actual_session(trainingCycleStepId)
-                    """.trimIndent()
+    CREATE INDEX IF NOT EXISTS index_actual_session_splitTemplateId
+    ON actual_session(splitTemplateId)
+    """.trimIndent()
             )
 
             db.execSQL(
                 """
-                    CREATE INDEX IF NOT EXISTS
-                    index_actual_session_trainingCycleId_performedDateEpochDay
-                    ON actual_session(
-                        trainingCycleId,
-                        performedDateEpochDay
-                    )
-                    """.trimIndent()
+    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId
+    ON actual_session(trainingCycleId)
+    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleStepId
+    ON actual_session(trainingCycleStepId)
+    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId_performedDateEpochDay
+    ON actual_session(trainingCycleId, performedDateEpochDay)
+    """.trimIndent()
             )
         }
     }

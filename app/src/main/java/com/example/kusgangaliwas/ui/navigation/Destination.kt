@@ -57,11 +57,16 @@ sealed class Destination(
         fun createRoute(actualSessionId: Long): String = "session_detail/$actualSessionId"
     }
 
-
+    data object TrainingCycles : Destination(
+        route = "training_cycles",
+        label = "Cycles",
+        icon = R.drawable.arrows_retweet__1_,
+    )
 }
 
 val bottomNavDestinations = listOf(
     Destination.Calendar,
     Destination.Splits,
+    Destination.TrainingCycles,
     Destination.Exercises,
 )

@@ -16,6 +16,7 @@ import com.example.kusgangaliwas.ui.session.SessionDayRoute
 import com.example.kusgangaliwas.ui.session.SessionDetailRoute
 import com.example.kusgangaliwas.ui.split.SplitListRoute
 import com.example.kusgangaliwas.ui.split.SplitRoadmapRoute
+import com.example.kusgangaliwas.ui.cycle.TrainingCycleRoute
 
 @Composable
 fun NavHost(
@@ -45,6 +46,13 @@ fun NavHost(
                 onSplitClick = { splitId ->
                     navController.navigate(Destination.SplitRoadmap.createRoute(splitId))
                 },
+            )
+        }
+
+        composable(Destination.TrainingCycles.route) {
+            TrainingCycleRoute(
+                onBackClick = {},
+                onOverflowClick = {},
             )
         }
 
