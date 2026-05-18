@@ -9,14 +9,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +33,7 @@ import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrainingCycleScreen(
     uiState: TrainingCycleUiState,
@@ -49,10 +56,20 @@ fun TrainingCycleScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            KusgangTopBar(
-                title = "Training Cycles",
-                onBackClick = onBackClick,
-                onOverflowClick = onOverflowClick,
+            TopAppBar(
+                title = {
+                    Text("Training Cycle")
+                },
+                actions = {
+                    IconButton(
+                        onClick = onOverflowClick,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                        )
+                    }
+                }
             )
         },
     ) { innerPadding ->
@@ -73,16 +90,14 @@ fun TrainingCycleScreen(
                             Text("No cycles yet.")
                         } else {
                             uiState.cycles.forEach { cycle ->
-                                SharpCard(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            onSelectCycle(cycle.id)
-                                        },
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Column(
-                                        verticalArrangement =
-                                            Arrangement.spacedBy(4.dp),
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
                                     ) {
                                         Text(
                                             if (cycle.id == uiState.selectedCycleId) {
@@ -95,26 +110,14 @@ fun TrainingCycleScreen(
                                         if (!cycle.notes.isNullOrBlank()) {
                                             Text(cycle.notes)
                                         }
-
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        ) {
-                                            Text(
-                                                if (cycle.isActive) {
-                                                    "Active"
-                                                } else {
-                                                    "Inactive"
-                                                }
-                                            )
-
-                                            Switch(
-                                                checked = cycle.isActive,
-                                                onCheckedChange = { checked ->
-                                                    onSetCycleActive(cycle.id, checked)
-                                                },
-                                            )
-                                        }
                                     }
+
+                                    Switch(
+                                        checked = cycle.isActive,
+                                        onCheckedChange = { checked ->
+                                            onSetCycleActive(cycle.id, checked)
+                                        },
+                                    )
                                 }
                             }
                         }
@@ -162,20 +165,33 @@ fun TrainingCycleScreen(
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Selected Cycle")
-
                         if (uiState.selectedCycleId == null) {
                             Text("Select or create a cycle.")
                         } else {
-                            Text(uiState.selectedCycleName)
-
-                            if (uiState.selectedCycleNotes.isNotBlank()) {
-                                Text(uiState.selectedCycleNotes)
-                            }
-
-                            OutlinedButton(
-                                onClick = onDeleteSelectedCycleClick,
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("Archive cycle")
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Text(uiState.selectedCycleName)
+
+                                    if (uiState.selectedCycleNotes.isNotBlank()) {
+                                        Text(uiState.selectedCycleNotes)
+                                    }
+                                }
+
+                                IconButton(
+                                    onClick = onDeleteSelectedCycleClick,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.folder_xmark),
+                                        contentDescription = "Archive cycle",
+                                    )
+                                }
                             }
                         }
                     }
@@ -211,7 +227,7 @@ fun TrainingCycleScreen(
 
                                             Row(
                                                 horizontalArrangement =
-                                                    Arrangement.spacedBy(2.dp),
+                                                    Arrangement.spacedBy(-2.dp),
                                                 verticalAlignment =
                                                     Alignment.CenterVertically,
                                             ) {
@@ -264,7 +280,7 @@ fun TrainingCycleScreen(
 
                                         Row(
                                             horizontalArrangement =
-                                                Arrangement.spacedBy(8.dp),
+                                                Arrangement.spacedBy(4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             Checkbox(
@@ -278,7 +294,8 @@ fun TrainingCycleScreen(
                                             )
 
                                             Text(
-                                                "Warn before mark done"
+                                                "Warn before mark done",
+                                                style = MaterialTheme.typography.bodySmall
                                             )
                                         }
                                     }
