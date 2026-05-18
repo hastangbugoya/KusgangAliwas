@@ -38,8 +38,9 @@ fun SessionDayScreen(
     onActualSessionClick: (Long) -> Unit,
     onStartSplitSession: (Long) -> Unit,
     onStartCycleSession: (Long) -> Unit,
-    onMarkCycleSplitDone: (Long) -> Unit,
+    onCompleteActualSession: (Long) -> Unit,
     onStartPlannedSession: (Long) -> Unit,
+    onResumeCompletedSession: (Long) -> Unit,
 ) {
 
     val inProgressSessions = uiState.actualSessions.filter {
@@ -94,20 +95,18 @@ fun SessionDayScreen(
                                             modifier = Modifier.weight(1f),
                                         )
 
-                                        if (session.trainingCycleId != null) {
-                                            IconButton(
-                                                onClick = {
-                                                    onMarkCycleSplitDone(session.id)
-                                                },
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(
-                                                        R.drawable.stop
-                                                    ),
-                                                    contentDescription =
-                                                        "Mark cycle split done",
-                                                )
-                                            }
+                                        IconButton(
+                                            onClick = {
+                                                onCompleteActualSession(session.id)
+                                            },
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(
+                                                    R.drawable.stop
+                                                ),
+                                                contentDescription =
+                                                    "Complete session",
+                                            )
                                         }
                                     }
                                 }
@@ -231,9 +230,30 @@ fun SessionDayScreen(
                                         onActualSessionClick(session.id)
                                     }
                                 ) {
-                                    SessionSourceRow(
-                                        session = session,
-                                    )
+                                    // In Logged section, replace SessionSourceRow block with row + resume icon:
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        SessionSourceRow(
+                                            session = session,
+                                            modifier = Modifier.weight(1f),
+                                        )
+
+                                        if (session.status == ActualSessionStatus.COMPLETED) {
+                                            IconButton(
+                                                onClick = {
+                                                    onResumeCompletedSession(session.id)
+                                                },
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.play_pause),
+                                                    contentDescription = "Resume session",
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -278,12 +298,32 @@ fun SessionDayScreen(
                             Text("No saved splits yet.")
                         } else {
                             uiState.availableSplits.forEach { split ->
-                                OutlinedButton(
-                                    onClick = {
-                                        onStartSplitSession(split.id)
-                                    },
-                                ) {
-                                    Text(split.name)
+                                SharpCard {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement =
+                                            Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = split.name,
+                                            modifier = Modifier.weight(1f),
+                                        )
+
+                                        IconButton(
+                                            onClick = {
+                                                onStartSplitSession(split.id)
+                                            },
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(
+                                                    R.drawable.plus
+                                                ),
+                                                contentDescription =
+                                                    "Start split session",
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

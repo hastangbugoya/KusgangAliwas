@@ -7,10 +7,12 @@ import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.domain.model.cycle.CycleDayContext
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import com.example.kusgangaliwas.domain.usecase.cycle.GetActiveCycleContextsUseCase
 import com.example.kusgangaliwas.domain.usecase.cycle.MarkCycleSplitDoneUseCase
+import com.example.kusgangaliwas.domain.usecase.session.ChangeActualSessionStatusUseCase
 import com.example.kusgangaliwas.domain.usecase.session.CreateActualSessionFromPlannedSessionUseCase
 import com.example.kusgangaliwas.domain.usecase.session.CreateQuickSessionForDayUseCase
 import com.example.kusgangaliwas.domain.usecase.session.CreateSessionFromSplitUseCase
@@ -37,13 +39,14 @@ data class SessionDayUiState(
 @HiltViewModel
 class SessionDayViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    sessionRepository: SessionRepository,
     private val createQuickSessionForDayUseCase: CreateQuickSessionForDayUseCase,
     splitTemplateRepository: SplitTemplateRepository,
     private val createSessionFromSplitUseCase: CreateSessionFromSplitUseCase,
     private val getActiveCycleContextsUseCase: GetActiveCycleContextsUseCase,
     private val markCycleSplitDoneUseCase: MarkCycleSplitDoneUseCase,
     private val createActualSessionFromPlannedSessionUseCase: CreateActualSessionFromPlannedSessionUseCase,
+    private val changeActualSessionStatusUseCase: ChangeActualSessionStatusUseCase,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
     private val epochDay: Long = checkNotNull(
@@ -149,33 +152,67 @@ class SessionDayViewModel @Inject constructor(
     }
 
     /**
-     * Marks the specific in-progress cycle session's step as completed.
+     * Completes any actual workout session.
      *
-     * Important:
-     * - Uses the session's own snapshotted cycle step.
-     * - Does NOT rely on current cycle queue state.
-     * - Allows multiple simultaneous active sessions/cycles safely.
+     * KA treats completed sessions as success, even if the workout was short,
+     * modified, improvised, or different from the original plan.
+     *
+     * Cycle sessions also advance their snapshotted cycle step.
      */
-    fun markInProgressCycleSessionDone(actualSessionId: Long) {
+    fun completeActualSession(actualSessionId: Long) {
         val session = uiState.value.actualSessions
             .firstOrNull { it.id == actualSessionId }
             ?: return
 
-        val trainingCycleId = session.trainingCycleId
-            ?: return
-
-        val trainingCycleStepId = session.trainingCycleStepId
-            ?: return
+        val now = System.currentTimeMillis()
 
         viewModelScope.launch {
             runCatching {
-                markCycleSplitDoneUseCase(
-                    trainingCycleId = trainingCycleId,
-                    trainingCycleStepId = trainingCycleStepId,
-                    eventDateEpochDay = epochDay,
-                    createdAtEpochMillis = System.currentTimeMillis(),
+                val changed = changeActualSessionStatusUseCase(
+                    actualSessionId = actualSessionId,
+                    fromStatus = ActualSessionStatus.IN_PROGRESS,
+                    toStatus = ActualSessionStatus.COMPLETED,
+                    updatedAtEpochMillis = now,
                 )
+
+                if (!changed) {
+                    return@runCatching
+                }
+                if (
+                    session.trainingCycleId != null &&
+                    session.trainingCycleStepId != null
+                ) {
+                    markCycleSplitDoneUseCase(
+                        trainingCycleId = session.trainingCycleId,
+                        trainingCycleStepId = session.trainingCycleStepId,
+                        eventDateEpochDay = epochDay,
+                        createdAtEpochMillis = now,
+                    )
+                }
+
                 refreshCycleDayContexts()
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * Reopens a previously completed workout session.
+     *
+     * Important:
+     * - Does NOT currently undo cycle progression.
+     * - Only reopens the session for further editing/logging.
+     */
+    fun resumeCompletedSession(actualSessionId: Long) {
+        viewModelScope.launch {
+            runCatching {
+                changeActualSessionStatusUseCase(
+                    actualSessionId = actualSessionId,
+                    fromStatus = ActualSessionStatus.COMPLETED,
+                    toStatus = ActualSessionStatus.IN_PROGRESS,
+                    updatedAtEpochMillis = System.currentTimeMillis(),
+                )
             }.onFailure { error ->
                 error.printStackTrace()
             }
