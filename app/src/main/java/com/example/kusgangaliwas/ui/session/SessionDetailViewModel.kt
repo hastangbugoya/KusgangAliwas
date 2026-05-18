@@ -479,13 +479,7 @@ class SessionDetailViewModel @Inject constructor(
                 val exerciseLogs = sessionRepository.getLogsForSession(actualSessionId)
                 val cardioLogs = sessionRepository.getCardioLogsForSession(actualSessionId)
 
-                val nextOrder = (
-                        exerciseLogs.map { it.logOrder } +
-                                cardioLogs.map { it.logOrder }
-                        )
-                    .maxOrNull()
-                    ?.plus(1)
-                    ?: 1
+                val nextOrder = getNextSessionItemLogOrder()
 
                 val suggestion =
                     exerciseId?.let {
@@ -522,12 +516,28 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    // In addExercise(), stop using AddExerciseLogToSessionUseCase.
+// Insert directly with next bottom logOrder.
+
     fun addExercise(exerciseId: Long) {
         viewModelScope.launch {
             runCatching {
-                addExerciseLogToSessionUseCase(
-                    actualSessionId = actualSessionId,
-                    exerciseId = exerciseId,
+                val nextOrder = getNextSessionItemLogOrder()
+
+                val exerciseName = uiState.value.availableExercises
+                    .firstOrNull { it.id == exerciseId }
+                    ?.name
+
+                sessionRepository.insertActualExerciseLog(
+                    ActualExerciseLogEntity(
+                        actualSessionId = actualSessionId,
+                        exerciseId = exerciseId,
+                        logOrder = nextOrder,
+                        logType = "plannedExercise",
+                        freeTextName = exerciseName,
+                        notes = null,
+                        performedAtEpochMillis = System.currentTimeMillis(),
+                    )
                 )
             }.onFailure { error ->
                 error.printStackTrace()
@@ -535,6 +545,18 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    private suspend fun getNextSessionItemLogOrder(): Int {
+        val exerciseLogs = sessionRepository.getLogsForSession(actualSessionId)
+        val cardioLogs = sessionRepository.getCardioLogsForSession(actualSessionId)
+
+        return (
+                exerciseLogs.map { it.logOrder } +
+                        cardioLogs.map { it.logOrder }
+                )
+            .maxOrNull()
+            ?.plus(1)
+            ?: 1
+    }
     fun updateCardioLog(
         cardioLog: ActualCardioLogEntity,
     ) {

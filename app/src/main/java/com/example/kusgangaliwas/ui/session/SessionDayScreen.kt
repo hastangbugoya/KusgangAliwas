@@ -334,7 +334,7 @@ private fun SessionSourceRow(
         ) {
             Icon(
                 painter = painterResource(
-                    R.drawable.gym
+                    R.drawable.time_fast
                 ),
                 contentDescription =
                     "Quick session",
