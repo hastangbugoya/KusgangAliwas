@@ -5,6 +5,7 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
@@ -22,6 +23,7 @@ class CreateSessionFromSplitUseCase @Inject constructor(
         splitTemplateId: Long,
         epochDay: Long,
         trainingCycleId: Long? = null,
+        plannedSessionId: Long? = null,
     ): Long {
         val split = splitTemplateRepository.getSplitById(splitTemplateId)
             ?: error("Split not found.")
@@ -38,7 +40,7 @@ class CreateSessionFromSplitUseCase @Inject constructor(
 
         val actualSessionId = sessionRepository.insertActualSession(
             ActualSessionEntity(
-                plannedSessionId = null,
+                plannedSessionId = plannedSessionId,
                 performedDateEpochDay = epochDay,
                 splitTemplateId = splitTemplateId,
 
@@ -48,7 +50,7 @@ class CreateSessionFromSplitUseCase @Inject constructor(
                     cycleStep?.stepOrder,
 
                 title = split.name,
-                status = "inProgress",
+                status = ActualSessionStatus.IN_PROGRESS,
                 startedAtEpochMillis = now,
                 completedAtEpochMillis = null,
                 notes = null,

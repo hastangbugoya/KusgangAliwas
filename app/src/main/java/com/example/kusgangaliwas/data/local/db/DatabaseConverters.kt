@@ -1,9 +1,10 @@
 package com.example.kusgangaliwas.data.local.db
 
 import androidx.room.TypeConverter
-import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleEmphasis
 import com.example.kusgangaliwas.data.local.entity.ExercisePrType
+import com.example.kusgangaliwas.data.local.entity.ExerciseType
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 
 /**
  * Central Room converters for KusgangAliwas.
@@ -56,5 +57,35 @@ class DatabaseConverters {
         return value
             ?.uppercase()
             ?.let(ExercisePrType::valueOf)
+    }
+
+    @TypeConverter
+    fun fromActualSessionStatus(
+        value: ActualSessionStatus?,
+    ): String? {
+        return when (value) {
+            ActualSessionStatus.IN_PROGRESS -> "inProgress"
+            ActualSessionStatus.COMPLETED -> "completed"
+            ActualSessionStatus.ABANDONED -> "abandoned"
+            null -> null
+        }
+    }
+
+    @TypeConverter
+    fun toActualSessionStatus(
+        value: String?,
+    ): ActualSessionStatus? {
+        return when (value) {
+            "inProgress" -> ActualSessionStatus.IN_PROGRESS
+            "completed" -> ActualSessionStatus.COMPLETED
+            "abandoned" -> ActualSessionStatus.ABANDONED
+
+            /*
+             * Backward/forward safety fallback.
+             *
+             * Prevent crashes if older or unexpected values exist.
+             */
+            else -> ActualSessionStatus.IN_PROGRESS
+        }
     }
 }

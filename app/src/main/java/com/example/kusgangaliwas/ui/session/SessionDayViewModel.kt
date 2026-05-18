@@ -9,7 +9,7 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.domain.model.cycle.CycleDayContext
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
-import com.example.kusgangaliwas.domain.usecase.cycle.GetCycleDayContextUseCase
+import com.example.kusgangaliwas.domain.usecase.cycle.GetActiveCycleContextsUseCase
 import com.example.kusgangaliwas.domain.usecase.session.CreateQuickSessionForDayUseCase
 import com.example.kusgangaliwas.domain.usecase.session.CreateSessionFromSplitUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import com.example.kusgangaliwas.domain.usecase.cycle.MarkCycleSplitDoneUseCase
+import com.example.kusgangaliwas.domain.usecase.session.CreateActualSessionFromPlannedSessionUseCase
 
 data class SessionDayUiState(
     val epochDay: Long = 0L,
@@ -30,7 +31,7 @@ data class SessionDayUiState(
     val plannedSessions: List<PlannedSessionEntity> = emptyList(),
     val actualSessions: List<ActualSessionEntity> = emptyList(),
     val availableSplits: List<SplitTemplateEntity> = emptyList(),
-    val cycleDayContext: CycleDayContext? = null,
+    val activeCycleContexts: List<CycleDayContext> = emptyList(),
 )
 
 @HiltViewModel
@@ -40,8 +41,9 @@ class SessionDayViewModel @Inject constructor(
     private val createQuickSessionForDayUseCase: CreateQuickSessionForDayUseCase,
     splitTemplateRepository: SplitTemplateRepository,
     private val createSessionFromSplitUseCase: CreateSessionFromSplitUseCase,
-    private val getCycleDayContextUseCase: GetCycleDayContextUseCase,
+    private val getActiveCycleContextsUseCase: GetActiveCycleContextsUseCase,
     private val markCycleSplitDoneUseCase: MarkCycleSplitDoneUseCase,
+    private val createActualSessionFromPlannedSessionUseCase: CreateActualSessionFromPlannedSessionUseCase,
 ) : ViewModel() {
 
     private val epochDay: Long = checkNotNull(
@@ -52,8 +54,8 @@ class SessionDayViewModel @Inject constructor(
 
     private val date: LocalDate = LocalDate.ofEpochDay(epochDay)
 
-    private val cycleDayContext =
-        MutableStateFlow<CycleDayContext?>(null)
+    private val activeCycleContexts =
+        MutableStateFlow<List<CycleDayContext>>(emptyList())
 
     val uiState: StateFlow<SessionDayUiState> =
         combine(
@@ -63,15 +65,15 @@ class SessionDayViewModel @Inject constructor(
                 endEpochDay = epochDay + 1,
             ),
             splitTemplateRepository.observeActiveSplits(),
-            cycleDayContext,
-        ) { planned, actual, splits, cycleContext ->
+            activeCycleContexts,
+        ) { planned, actual, splits, cycleContexts ->
             SessionDayUiState(
                 epochDay = epochDay,
                 title = date.format(DateTimeFormatter.ofPattern("MMM d, yyyy")),
                 plannedSessions = planned,
                 actualSessions = actual,
                 availableSplits = splits,
-                cycleDayContext = cycleContext,
+                activeCycleContexts = cycleContexts,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -83,13 +85,27 @@ class SessionDayViewModel @Inject constructor(
         )
 
     init {
-        refreshCycleDayContext()
+        refreshCycleDayContexts()
     }
 
     fun startQuickSession() {
         viewModelScope.launch {
             runCatching {
                 createQuickSessionForDayUseCase(epochDay)
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun startPlannedSession(plannedSessionId: Long) {
+        viewModelScope.launch {
+            runCatching {
+                createActualSessionFromPlannedSessionUseCase(
+                    plannedSessionId = plannedSessionId,
+                    performedDateEpochDay = epochDay,
+                )
+                refreshCycleDayContexts()
             }.onFailure { error ->
                 error.printStackTrace()
             }
@@ -103,15 +119,16 @@ class SessionDayViewModel @Inject constructor(
                     splitTemplateId = splitTemplateId,
                     epochDay = epochDay,
                 )
-                refreshCycleDayContext()
+                refreshCycleDayContexts()
             }.onFailure { error ->
                 error.printStackTrace()
             }
         }
     }
 
-    fun startCycleSession() {
-        val context = cycleDayContext.value
+    fun startCycleSession(trainingCycleId: Long) {
+        val context = activeCycleContexts.value
+            .firstOrNull { it.trainingCycleId == trainingCycleId }
             ?: return
 
         val splitTemplateId = context.nextSplitTemplateId
@@ -124,15 +141,16 @@ class SessionDayViewModel @Inject constructor(
                     epochDay = epochDay,
                     trainingCycleId = context.trainingCycleId,
                 )
-                refreshCycleDayContext()
+                refreshCycleDayContexts()
             }.onFailure { error ->
                 error.printStackTrace()
             }
         }
     }
 
-    fun markCycleSplitDone() {
-        val context = cycleDayContext.value
+    fun markCycleSplitDone(trainingCycleId: Long) {
+        val context = activeCycleContexts.value
+            .firstOrNull { it.trainingCycleId == trainingCycleId }
             ?: return
 
         val nextStepId = context.nextStepId
@@ -146,19 +164,19 @@ class SessionDayViewModel @Inject constructor(
                     eventDateEpochDay = epochDay,
                     createdAtEpochMillis = System.currentTimeMillis(),
                 )
-                refreshCycleDayContext()
+                refreshCycleDayContexts()
             }.onFailure { error ->
                 error.printStackTrace()
             }
         }
     }
 
-    fun refreshCycleDayContext() {
+    fun refreshCycleDayContexts() {
         viewModelScope.launch {
             runCatching {
-                getCycleDayContextUseCase()
-            }.onSuccess { context ->
-                cycleDayContext.value = context
+                getActiveCycleContextsUseCase()
+            }.onSuccess { contexts ->
+                activeCycleContexts.value = contexts
             }.onFailure { error ->
                 error.printStackTrace()
             }

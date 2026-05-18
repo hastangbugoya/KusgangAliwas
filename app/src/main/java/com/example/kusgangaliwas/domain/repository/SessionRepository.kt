@@ -6,9 +6,10 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
-import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
-import kotlinx.coroutines.flow.Flow
 import com.example.kusgangaliwas.data.local.model.CardioSuggestion
+import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Repository boundary for planning + execution of sessions.
@@ -128,7 +129,7 @@ interface SessionRepository {
 
     suspend fun updateActualSessionStatus(
         actualSessionId: Long,
-        status: String,
+        status: ActualSessionStatus,
         updatedAtEpochMillis: Long,
     )
 

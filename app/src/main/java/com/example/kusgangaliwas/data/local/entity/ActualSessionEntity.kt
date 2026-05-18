@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 
 /**
  * Represents an actual performed workout session.
@@ -100,12 +101,14 @@ data class ActualSessionEntity(
     val title: String,
 
     /**
-     * Suggested values:
+     * Session lifecycle state.
+     *
+     * Existing DB string values should remain converter-compatible:
      * - "inProgress"
      * - "completed"
      * - "abandoned"
      */
-    val status: String = "inProgress",
+    val status: ActualSessionStatus = ActualSessionStatus.IN_PROGRESS,
 
     /**
      * Optional real-world timestamps for audit/history/UI display.

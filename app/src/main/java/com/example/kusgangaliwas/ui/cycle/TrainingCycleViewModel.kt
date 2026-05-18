@@ -238,6 +238,27 @@ class TrainingCycleViewModel @Inject constructor(
         moveStep(stepId = stepId, direction = 1)
     }
 
+    fun setCycleActive(
+        cycleId: Long,
+        isActive: Boolean,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                val cycle = trainingCycleRepository.getCycleById(cycleId)
+                    ?: return@runCatching
+
+                trainingCycleRepository.updateCycle(
+                    cycle.copy(
+                        isActive = isActive,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
     fun toggleWarnBeforeMarkDone(stepId: Long) {
         viewModelScope.launch {
             runCatching {

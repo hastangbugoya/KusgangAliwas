@@ -16,6 +16,14 @@ import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
+import com.example.kusgangaliwas.R
 
 @Composable
 fun SessionDayScreen(
@@ -26,8 +34,9 @@ fun SessionDayScreen(
     onStartQuickSession: () -> Unit,
     onActualSessionClick: (Long) -> Unit,
     onStartSplitSession: (Long) -> Unit,
-    onStartCycleSession: () -> Unit,
-    onMarkCycleSplitDone: () -> Unit,
+    onStartCycleSession: (Long) -> Unit,
+    onMarkCycleSplitDone: (Long) -> Unit,
+    onStartPlannedSession: (Long) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -56,7 +65,24 @@ fun SessionDayScreen(
                             Text("No planned sessions for this day.")
                         } else {
                             uiState.plannedSessions.forEach { session ->
-                                Text(session.title)
+                                SharpCard {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement =
+                                            Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Text(session.title)
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                onStartPlannedSession(session.id)
+                                            },
+                                        ) {
+                                            Text("Start")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -64,39 +90,39 @@ fun SessionDayScreen(
             }
 
             item {
-                SharpCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Cycle")
+                if (uiState.activeCycleContexts.isEmpty()) {
+                    Text("No active cycles.")
+                } else {
+                    uiState.activeCycleContexts.forEach { cycleContext ->
+                        SharpCard {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(cycleContext.trainingCycleName)
 
-                        val cycleContext = uiState.cycleDayContext
-
-                        if (cycleContext == null) {
-                            Text("No active cycle.")
-                        } else {
-                            Text(cycleContext.trainingCycleName)
-
-                            if (cycleContext.lastCompletedStepName != null) {
-                                Text(
-                                    "Last: ${cycleContext.lastCompletedStepName}"
-                                )
-                            }
-
-                            if (cycleContext.nextStepName != null) {
-                                Text("Next: ${cycleContext.nextStepName}")
-
-                                OutlinedButton(
-                                    onClick = onStartCycleSession,
-                                ) {
-                                    Text("Start cycle split")
+                                cycleContext.lastCompletedStepName?.let { last ->
+                                    Text("Last: $last")
                                 }
 
-                                OutlinedButton(
-                                    onClick = onMarkCycleSplitDone,
-                                ) {
-                                    Text("Mark done")
+                                if (cycleContext.nextStepName != null) {
+                                    Text("Next: ${cycleContext.nextStepName}")
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            onStartCycleSession(cycleContext.trainingCycleId)
+                                        },
+                                    ) {
+                                        Text("Start cycle split")
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            onMarkCycleSplitDone(cycleContext.trainingCycleId)
+                                        },
+                                    ) {
+                                        Text("Mark done")
+                                    }
+                                } else {
+                                    Text("No cycle split available.")
                                 }
-                            } else {
-                                Text("No cycle split available.")
                             }
                         }
                     }
@@ -117,7 +143,53 @@ fun SessionDayScreen(
                                         onActualSessionClick(session.id)
                                     }
                                 ) {
-                                    Text(session.title)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement =
+                                            Arrangement.spacedBy(6.dp),
+                                    ) {
+
+                                        if (session.plannedSessionId != null) {
+                                            Icon(
+                                                painter = painterResource(
+                                                    R.drawable.daily_calendar
+                                                ),
+                                                contentDescription =
+                                                    "Planned session",
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                        }
+
+                                        if (session.trainingCycleId != null) {
+                                            Icon(
+                                                painter = painterResource(
+                                                    R.drawable.arrows_retweet__1_
+                                                ),
+                                                contentDescription =
+                                                    "Cycle session",
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                        }
+
+                                        if (
+                                            session.plannedSessionId == null &&
+                                            session.trainingCycleId == null
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(
+                                                    R.drawable.gym
+                                                ),
+                                                contentDescription =
+                                                    "Quick session",
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                        }
+
+                                        Text(
+                                            text = session.title,
+                                            fontSize = 14.sp,
+                                        )
+                                    }
                                 }
                             }
                         }

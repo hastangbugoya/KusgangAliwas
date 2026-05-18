@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -128,7 +129,7 @@ interface ActualSessionDao {
     )
     suspend fun updateStatus(
         actualSessionId: Long,
-        status: String,
+        status: ActualSessionStatus,
         updatedAtEpochMillis: Long,
     )
 

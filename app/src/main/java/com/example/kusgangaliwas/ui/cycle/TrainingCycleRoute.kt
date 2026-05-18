@@ -34,5 +34,6 @@ fun TrainingCycleRoute(
         onDeleteSelectedCycleClick =
             viewModel::softDeleteSelectedCycle,
         modifier = modifier,
+        onSetCycleActive = viewModel::setCycleActive,
     )
 }

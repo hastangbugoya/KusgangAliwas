@@ -1,6 +1,7 @@
 package com.example.kusgangaliwas.domain.usecase.session
 
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import javax.inject.Inject
 
@@ -19,7 +20,7 @@ class CreateQuickSessionForDayUseCase @Inject constructor(
                 performedDateEpochDay = epochDay,
                 splitTemplateId = null,
                 title = "Quick Session",
-                status = "inProgress",
+                status = ActualSessionStatus.IN_PROGRESS,
                 startedAtEpochMillis = now,
                 completedAtEpochMillis = null,
                 notes = null,

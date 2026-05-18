@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
+import androidx.compose.material3.Switch
 
 @Composable
 fun TrainingCycleScreen(
@@ -38,6 +39,7 @@ fun TrainingCycleScreen(
     onToggleWarnBeforeMarkDoneClick: (Long) -> Unit,
     onDeleteSelectedCycleClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onSetCycleActive: (Long, Boolean) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -89,8 +91,23 @@ fun TrainingCycleScreen(
                                             Text(cycle.notes)
                                         }
 
-                                        if (!cycle.isActive) {
-                                            Text("Inactive")
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        ) {
+                                            Text(
+                                                if (cycle.isActive) {
+                                                    "Active"
+                                                } else {
+                                                    "Inactive"
+                                                }
+                                            )
+
+                                            Switch(
+                                                checked = cycle.isActive,
+                                                onCheckedChange = { checked ->
+                                                    onSetCycleActive(cycle.id, checked)
+                                                },
+                                            )
                                         }
                                     }
                                 }

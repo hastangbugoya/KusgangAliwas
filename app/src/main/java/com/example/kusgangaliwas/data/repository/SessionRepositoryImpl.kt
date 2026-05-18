@@ -14,6 +14,7 @@ import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
 import com.example.kusgangaliwas.data.local.model.CardioSuggestion
 import com.example.kusgangaliwas.data.local.model.ExerciseWeightSuggestion
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -186,7 +187,7 @@ class SessionRepositoryImpl @Inject constructor(
 
     override suspend fun updateActualSessionStatus(
         actualSessionId: Long,
-        status: String,
+        status: ActualSessionStatus,
         updatedAtEpochMillis: Long,
     ) {
         actualSessionDao.updateStatus(

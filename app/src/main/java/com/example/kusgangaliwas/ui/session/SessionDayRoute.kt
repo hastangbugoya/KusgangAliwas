@@ -21,6 +21,7 @@ fun SessionDayRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         onStartQuickSession = viewModel::startQuickSession,
+        onStartPlannedSession = viewModel::startPlannedSession,
         onActualSessionClick = onActualSessionClick,
         modifier = modifier,
         onStartSplitSession = viewModel::startSessionFromSplit,
