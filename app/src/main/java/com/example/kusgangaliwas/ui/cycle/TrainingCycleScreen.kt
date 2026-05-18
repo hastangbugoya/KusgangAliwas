@@ -10,17 +10,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.kusgangaliwas.R
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
-import androidx.compose.material3.Switch
 
 @Composable
 fun TrainingCycleScreen(
@@ -193,45 +198,74 @@ fun TrainingCycleScreen(
                                         verticalArrangement =
                                             Arrangement.spacedBy(6.dp),
                                     ) {
-                                        Text(
-                                            "${index + 1}. ${step.splitName}"
-                                        )
-
                                         Row(
+                                            modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement =
-                                                Arrangement.spacedBy(8.dp),
+                                                Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            OutlinedButton(
-                                                onClick = {
-                                                    onMoveStepUpClick(step.id)
-                                                },
-                                                enabled = index > 0,
-                                            ) {
-                                                Text("Up")
-                                            }
+                                            Text(
+                                                text = "${index + 1}. ${step.splitName}",
+                                                modifier = Modifier.weight(1f),
+                                            )
 
-                                            OutlinedButton(
-                                                onClick = {
-                                                    onMoveStepDownClick(step.id)
-                                                },
-                                                enabled =
-                                                    index < uiState.steps.lastIndex,
+                                            Row(
+                                                horizontalArrangement =
+                                                    Arrangement.spacedBy(2.dp),
+                                                verticalAlignment =
+                                                    Alignment.CenterVertically,
                                             ) {
-                                                Text("Down")
-                                            }
+                                                IconButton(
+                                                    onClick = {
+                                                        onMoveStepUpClick(step.id)
+                                                    },
+                                                    enabled = index > 0,
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(
+                                                            R.drawable.angle_up
+                                                        ),
+                                                        contentDescription =
+                                                            "Move split up",
+                                                    )
+                                                }
 
-                                            OutlinedButton(
-                                                onClick = {
-                                                    onRemoveStepClick(step.id)
-                                                },
-                                            ) {
-                                                Text("Remove")
+                                                IconButton(
+                                                    onClick = {
+                                                        onRemoveStepClick(step.id)
+                                                    },
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(
+                                                            R.drawable.trash
+                                                        ),
+                                                        contentDescription =
+                                                            "Remove split",
+                                                    )
+                                                }
+
+                                                IconButton(
+                                                    onClick = {
+                                                        onMoveStepDownClick(step.id)
+                                                    },
+                                                    enabled =
+                                                        index < uiState.steps.lastIndex,
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(
+                                                            R.drawable.angle_down
+                                                        ),
+                                                        contentDescription =
+                                                            "Move split down",
+                                                    )
+                                                }
                                             }
                                         }
 
                                         Row(
                                             horizontalArrangement =
                                                 Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             Checkbox(
                                                 checked =
