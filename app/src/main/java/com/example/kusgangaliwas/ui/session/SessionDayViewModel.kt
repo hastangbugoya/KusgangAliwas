@@ -10,6 +10,8 @@ import com.example.kusgangaliwas.domain.model.cycle.CycleDayContext
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import com.example.kusgangaliwas.domain.usecase.cycle.GetActiveCycleContextsUseCase
+import com.example.kusgangaliwas.domain.usecase.cycle.MarkCycleSplitDoneUseCase
+import com.example.kusgangaliwas.domain.usecase.session.CreateActualSessionFromPlannedSessionUseCase
 import com.example.kusgangaliwas.domain.usecase.session.CreateQuickSessionForDayUseCase
 import com.example.kusgangaliwas.domain.usecase.session.CreateSessionFromSplitUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,8 +24,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.example.kusgangaliwas.domain.usecase.cycle.MarkCycleSplitDoneUseCase
-import com.example.kusgangaliwas.domain.usecase.session.CreateActualSessionFromPlannedSessionUseCase
 
 data class SessionDayUiState(
     val epochDay: Long = 0L,
@@ -140,6 +140,40 @@ class SessionDayViewModel @Inject constructor(
                     splitTemplateId = splitTemplateId,
                     epochDay = epochDay,
                     trainingCycleId = context.trainingCycleId,
+                )
+                refreshCycleDayContexts()
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * Marks the specific in-progress cycle session's step as completed.
+     *
+     * Important:
+     * - Uses the session's own snapshotted cycle step.
+     * - Does NOT rely on current cycle queue state.
+     * - Allows multiple simultaneous active sessions/cycles safely.
+     */
+    fun markInProgressCycleSessionDone(actualSessionId: Long) {
+        val session = uiState.value.actualSessions
+            .firstOrNull { it.id == actualSessionId }
+            ?: return
+
+        val trainingCycleId = session.trainingCycleId
+            ?: return
+
+        val trainingCycleStepId = session.trainingCycleStepId
+            ?: return
+
+        viewModelScope.launch {
+            runCatching {
+                markCycleSplitDoneUseCase(
+                    trainingCycleId = trainingCycleId,
+                    trainingCycleStepId = trainingCycleStepId,
+                    eventDateEpochDay = epochDay,
+                    createdAtEpochMillis = System.currentTimeMillis(),
                 )
                 refreshCycleDayContexts()
             }.onFailure { error ->

@@ -4,26 +4,29 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.kusgangaliwas.R
+import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.sp
-import com.example.kusgangaliwas.R
 
 @Composable
 fun SessionDayScreen(
@@ -38,6 +41,15 @@ fun SessionDayScreen(
     onMarkCycleSplitDone: (Long) -> Unit,
     onStartPlannedSession: (Long) -> Unit,
 ) {
+
+    val inProgressSessions = uiState.actualSessions.filter {
+        it.status == ActualSessionStatus.IN_PROGRESS
+    }
+
+    val loggedSessions = uiState.actualSessions.filter {
+        it.status != ActualSessionStatus.IN_PROGRESS
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -56,6 +68,55 @@ fun SessionDayScreen(
             contentPadding = PaddingValues(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+
+            item {
+                SharpCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionHeader("In Progress")
+
+                        if (inProgressSessions.isEmpty()) {
+                            Text("No active workout sessions.")
+                        } else {
+                            inProgressSessions.forEach { session ->
+                                SharpCard(
+                                    modifier = Modifier.clickable {
+                                        onActualSessionClick(session.id)
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement =
+                                            Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        SessionSourceRow(
+                                            session = session,
+                                            modifier = Modifier.weight(1f),
+                                        )
+
+                                        if (session.trainingCycleId != null) {
+                                            IconButton(
+                                                onClick = {
+                                                    onMarkCycleSplitDone(session.id)
+                                                },
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(
+                                                        R.drawable.stop
+                                                    ),
+                                                    contentDescription =
+                                                        "Mark cycle split done",
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -72,14 +133,23 @@ fun SessionDayScreen(
                                             Arrangement.SpaceBetween,
                                         modifier = Modifier.fillMaxWidth(),
                                     ) {
-                                        Text(session.title)
+                                        Text(
+                                            text = session.title,
+                                            modifier = Modifier.weight(1f),
+                                        )
 
-                                        OutlinedButton(
+                                        IconButton(
                                             onClick = {
                                                 onStartPlannedSession(session.id)
                                             },
                                         ) {
-                                            Text("Start")
+                                            Icon(
+                                                painter = painterResource(
+                                                    R.drawable.play
+                                                ),
+                                                contentDescription =
+                                                    "Start planned session",
+                                            )
                                         }
                                     }
                                 }
@@ -90,38 +160,56 @@ fun SessionDayScreen(
             }
 
             item {
-                if (uiState.activeCycleContexts.isEmpty()) {
-                    Text("No active cycles.")
-                } else {
-                    uiState.activeCycleContexts.forEach { cycleContext ->
-                        SharpCard {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(cycleContext.trainingCycleName)
+                SharpCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionHeader("Cycle Queue")
 
-                                cycleContext.lastCompletedStepName?.let { last ->
-                                    Text("Last: $last")
-                                }
+                        if (uiState.activeCycleContexts.isEmpty()) {
+                            Text("No active cycles.")
+                        } else {
+                            uiState.activeCycleContexts.forEach { cycleContext ->
+                                SharpCard {
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement =
+                                                Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Text(
+                                                text = cycleContext.trainingCycleName,
+                                                modifier = Modifier.weight(1f),
+                                            )
 
-                                if (cycleContext.nextStepName != null) {
-                                    Text("Next: ${cycleContext.nextStepName}")
+                                            if (cycleContext.nextStepName != null) {
+                                                IconButton(
+                                                    onClick = {
+                                                        onStartCycleSession(
+                                                            cycleContext.trainingCycleId
+                                                        )
+                                                    },
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(
+                                                            R.drawable.play
+                                                        ),
+                                                        contentDescription =
+                                                            "Start cycle split",
+                                                    )
+                                                }
+                                            }
+                                        }
 
-                                    OutlinedButton(
-                                        onClick = {
-                                            onStartCycleSession(cycleContext.trainingCycleId)
-                                        },
-                                    ) {
-                                        Text("Start cycle split")
+                                        cycleContext.lastCompletedStepName?.let { last ->
+                                            Text("Last: $last")
+                                        }
+
+                                        if (cycleContext.nextStepName != null) {
+                                            Text("Next: ${cycleContext.nextStepName}")
+                                        } else {
+                                            Text("No cycle split available.")
+                                        }
                                     }
-
-                                    OutlinedButton(
-                                        onClick = {
-                                            onMarkCycleSplitDone(cycleContext.trainingCycleId)
-                                        },
-                                    ) {
-                                        Text("Mark done")
-                                    }
-                                } else {
-                                    Text("No cycle split available.")
                                 }
                             }
                         }
@@ -134,62 +222,18 @@ fun SessionDayScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Logged")
 
-                        if (uiState.actualSessions.isEmpty()) {
-                            Text("No sessions logged yet.")
+                        if (loggedSessions.isEmpty()) {
+                            Text("No completed sessions yet.")
                         } else {
-                            uiState.actualSessions.forEach { session ->
+                            loggedSessions.forEach { session ->
                                 SharpCard(
                                     modifier = Modifier.clickable {
                                         onActualSessionClick(session.id)
                                     }
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement =
-                                            Arrangement.spacedBy(6.dp),
-                                    ) {
-
-                                        if (session.plannedSessionId != null) {
-                                            Icon(
-                                                painter = painterResource(
-                                                    R.drawable.daily_calendar
-                                                ),
-                                                contentDescription =
-                                                    "Planned session",
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-
-                                        if (session.trainingCycleId != null) {
-                                            Icon(
-                                                painter = painterResource(
-                                                    R.drawable.arrows_retweet__1_
-                                                ),
-                                                contentDescription =
-                                                    "Cycle session",
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-
-                                        if (
-                                            session.plannedSessionId == null &&
-                                            session.trainingCycleId == null
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(
-                                                    R.drawable.gym
-                                                ),
-                                                contentDescription =
-                                                    "Quick session",
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-
-                                        Text(
-                                            text = session.title,
-                                            fontSize = 14.sp,
-                                        )
-                                    }
+                                    SessionSourceRow(
+                                        session = session,
+                                    )
                                 }
                             }
                         }
@@ -200,12 +244,26 @@ fun SessionDayScreen(
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Quick Session")
 
-                        OutlinedButton(
-                            onClick = onStartQuickSession,
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("Start quick session")
+                            SectionHeader("Quick Actions")
+
+                            IconButton(
+                                onClick = onStartQuickSession,
+                            ) {
+                                Icon(
+                                    painter = painterResource(
+                                        R.drawable.play
+                                    ),
+                                    contentDescription =
+                                        "Start quick session",
+                                )
+                            }
                         }
                     }
                 }
@@ -233,5 +291,60 @@ fun SessionDayScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SessionSourceRow(
+    session: ActualSessionEntity,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement =
+            Arrangement.spacedBy(6.dp),
+    ) {
+
+        if (session.plannedSessionId != null) {
+            Icon(
+                painter = painterResource(
+                    R.drawable.daily_calendar
+                ),
+                contentDescription =
+                    "Planned session",
+                modifier = Modifier.size(16.dp),
+            )
+        }
+
+        if (session.trainingCycleId != null) {
+            Icon(
+                painter = painterResource(
+                    R.drawable.arrows_retweet__1_
+                ),
+                contentDescription =
+                    "Cycle session",
+                modifier = Modifier.size(16.dp),
+            )
+        }
+
+        if (
+            session.plannedSessionId == null &&
+            session.trainingCycleId == null
+        ) {
+            Icon(
+                painter = painterResource(
+                    R.drawable.gym
+                ),
+                contentDescription =
+                    "Quick session",
+                modifier = Modifier.size(16.dp),
+            )
+        }
+
+        Text(
+            text = session.title,
+            fontSize = 14.sp,
+        )
     }
 }

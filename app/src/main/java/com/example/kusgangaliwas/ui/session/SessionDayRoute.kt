@@ -26,6 +26,6 @@ fun SessionDayRoute(
         modifier = modifier,
         onStartSplitSession = viewModel::startSessionFromSplit,
         onStartCycleSession = viewModel::startCycleSession,
-        onMarkCycleSplitDone = viewModel::markCycleSplitDone,
+        onMarkCycleSplitDone = viewModel::markInProgressCycleSessionDone,
     )
 }
