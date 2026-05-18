@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.R
-import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
 
@@ -61,6 +59,20 @@ fun TrainingCycleScreen(
                     Text("Training Cycle")
                 },
                 actions = {
+
+                    IconButton(
+                        onClick = {
+                            onCreateCycleExpandedChange(
+                                !uiState.isCreateCycleExpanded
+                            )
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.plus),
+                            contentDescription = "New cycle",
+                        )
+                    }
+
                     IconButton(
                         onClick = onOverflowClick,
                     ) {
@@ -91,7 +103,11 @@ fun TrainingCycleScreen(
                         } else {
                             uiState.cycles.forEach { cycle ->
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onSelectCycle(cycle.id)
+                                        },
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
@@ -121,17 +137,6 @@ fun TrainingCycleScreen(
                                 }
                             }
                         }
-
-                        OutlinedButton(
-                            onClick = {
-                                onCreateCycleExpandedChange(
-                                    !uiState.isCreateCycleExpanded
-                                )
-                            },
-                        ) {
-                            Text("New cycle")
-                        }
-
                         if (uiState.isCreateCycleExpanded) {
                             OutlinedTextField(
                                 value = uiState.newCycleName,

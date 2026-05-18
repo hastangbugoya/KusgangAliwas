@@ -174,7 +174,7 @@ fun ExerciseListScreen(
                         },
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            painter = painterResource(R.drawable.plus),
                             contentDescription = "Add exercise",
                         )
                     }
