@@ -44,4 +44,8 @@ data class TrainingCycleSplitOption(
     val splitTemplateId: Long,
     val splitName: String,
     val alreadyInSelectedCycle: Boolean,
+    val muscleGroupsText: String = "",
+    val strengthExerciseCount: Int = 0,
+    val cardioExerciseCount: Int = 0,
+    val totalExerciseCount: Int = 0,
 )

@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
+import com.example.kusgangaliwas.data.local.model.SplitTemplateSummaryRow
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -45,6 +46,54 @@ interface SplitTemplateDao {
         """
     )
     suspend fun getSplitById(splitId: Long): SplitTemplateEntity?
+
+    @Query(
+        """
+    SELECT
+        st.id AS splitTemplateId,
+        st.name AS splitName,
+
+        COALESCE(
+            GROUP_CONCAT(DISTINCT mg.name),
+            ''
+        ) AS muscleGroupsText,
+
+        COUNT(
+            DISTINCT CASE
+                WHEN e.exerciseType = 'STRENGTH'
+                THEN e.id
+            END
+        ) AS strengthExerciseCount,
+
+        COUNT(
+            DISTINCT CASE
+                WHEN e.exerciseType = 'CARDIO'
+                THEN e.id
+            END
+        ) AS cardioExerciseCount
+
+    FROM split_template st
+
+    LEFT JOIN split_template_exercise ste
+        ON ste.splitTemplateId = st.id
+
+    LEFT JOIN exercise e
+        ON e.id = ste.exerciseId
+
+    LEFT JOIN split_template_muscle_group stmg
+        ON stmg.splitTemplateId = st.id
+
+    LEFT JOIN muscle_group mg
+        ON mg.id = stmg.muscleGroupId
+
+    WHERE st.isActive = 1
+
+    GROUP BY st.id
+
+    ORDER BY st.name COLLATE NOCASE ASC
+    """
+    )
+    suspend fun getActiveSplitSummaries(): List<SplitTemplateSummaryRow>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSplit(entity: SplitTemplateEntity): Long

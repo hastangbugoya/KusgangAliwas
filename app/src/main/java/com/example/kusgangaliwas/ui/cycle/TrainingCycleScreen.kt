@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -22,8 +24,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -31,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.R
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
+import com.example.kusgangaliwas.ui.common.selection.SplitPickerScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +60,43 @@ fun TrainingCycleScreen(
     modifier: Modifier = Modifier,
     onSetCycleActive: (Long, Boolean) -> Unit,
 ) {
+    var showSplitPicker by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var selectedSplitIdsToAdd by rememberSaveable {
+        mutableStateOf(setOf<Long>())
+    }
+
+    if (showSplitPicker) {
+        SplitPickerScreen(
+            title = "Add splits",
+            splits = uiState.availableSplits,
+            selectedSplitIds = selectedSplitIdsToAdd,
+            onToggleSplit = { splitId ->
+                selectedSplitIdsToAdd =
+                    if (splitId in selectedSplitIdsToAdd) {
+                        selectedSplitIdsToAdd - splitId
+                    } else {
+                        selectedSplitIdsToAdd + splitId
+                    }
+            },
+            onBackClick = {
+                selectedSplitIdsToAdd = emptySet()
+                showSplitPicker = false
+            },
+            onConfirmClick = {
+                selectedSplitIdsToAdd.forEach { splitTemplateId ->
+                    onAddSplitClick(splitTemplateId)
+                }
+
+                selectedSplitIdsToAdd = emptySet()
+                showSplitPicker = false
+            },
+        )
+        return
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -60,7 +105,6 @@ fun TrainingCycleScreen(
                     Text("Training Cycle")
                 },
                 actions = {
-
                     IconButton(
                         onClick = {
                             onCreateCycleExpandedChange(
@@ -154,6 +198,7 @@ fun TrainingCycleScreen(
                                 }
                             }
                         }
+
                         if (uiState.isCreateCycleExpanded) {
                             OutlinedTextField(
                                 value = uiState.newCycleName,
@@ -187,6 +232,7 @@ fun TrainingCycleScreen(
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Selected Cycle")
+
                         if (uiState.selectedCycleId == null) {
                             Text("Select or create a cycle.")
                         } else {
@@ -223,7 +269,26 @@ fun TrainingCycleScreen(
             item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        SectionHeader("Cycle Order")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SectionHeader("Cycle Order")
+
+                            IconButton(
+                                onClick = {
+                                    selectedSplitIdsToAdd = emptySet()
+                                    showSplitPicker = true
+                                },
+                                enabled = uiState.selectedCycleId != null,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.plus),
+                                    contentDescription = "Add split to cycle",
+                                )
+                            }
+                        }
 
                         if (uiState.selectedCycleId == null) {
                             Text("No cycle selected.")
@@ -249,7 +314,9 @@ fun TrainingCycleScreen(
                                             Text("${index + 1}. ${step.splitName}")
 
                                             IconButton(
-                                                onClick = { onRemoveStepClick(step.id) },
+                                                onClick = {
+                                                    onRemoveStepClick(step.id)
+                                                },
                                                 modifier = Modifier.size(28.dp),
                                             ) {
                                                 Icon(
@@ -300,7 +367,9 @@ fun TrainingCycleScreen(
                                         verticalArrangement = Arrangement.spacedBy(-6.dp),
                                     ) {
                                         IconButton(
-                                            onClick = { onMoveStepUpClick(step.id) },
+                                            onClick = {
+                                                onMoveStepUpClick(step.id)
+                                            },
                                             enabled = index > 0,
                                         ) {
                                             Icon(
@@ -310,7 +379,9 @@ fun TrainingCycleScreen(
                                         }
 
                                         IconButton(
-                                            onClick = { onMoveStepDownClick(step.id) },
+                                            onClick = {
+                                                onMoveStepDownClick(step.id)
+                                            },
                                             enabled = index < uiState.steps.lastIndex,
                                         ) {
                                             Icon(
@@ -325,39 +396,7 @@ fun TrainingCycleScreen(
                     }
                 }
             }
-
-            item {
-                SharpCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Add Splits")
-
-                        if (uiState.selectedCycleId == null) {
-                            Text("Select or create a cycle first.")
-                        } else if (uiState.availableSplits.isEmpty()) {
-                            Text("No saved splits available.")
-                        } else {
-                            uiState.availableSplits.forEach { split ->
-                                OutlinedButton(
-                                    onClick = {
-                                        onAddSplitClick(split.splitTemplateId)
-                                    },
-                                    enabled =
-                                        !split.alreadyInSelectedCycle,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Text(
-                                        if (split.alreadyInSelectedCycle) {
-                                            "${split.splitName} already added"
-                                        } else {
-                                            "Add ${split.splitName}"
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
+
 }

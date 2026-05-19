@@ -3,6 +3,7 @@ package com.example.kusgangaliwas.domain.repository
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
+import com.example.kusgangaliwas.data.local.model.SplitTemplateSummaryRow
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -31,6 +32,8 @@ interface SplitTemplateRepository {
         splitId: Long,
         updatedAtEpochMillis: Long,
     )
+
+    suspend fun getActiveSplitSummaries(): List<SplitTemplateSummaryRow>
 
     // ----------------------------
     // Split Exercises (Roadmap)

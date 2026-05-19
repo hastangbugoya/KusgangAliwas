@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
+import com.example.kusgangaliwas.data.local.model.SplitTemplateSummaryRow
 
 /**
  * Room-backed implementation of SplitTemplateRepository.
@@ -25,6 +26,12 @@ class SplitTemplateRepositoryImpl @Inject constructor(
 
     override fun observeAllSplits(): Flow<List<SplitTemplateEntity>> {
         return splitTemplateDao.observeAllSplits()
+    }
+
+    override suspend fun getActiveSplitSummaries():
+            List<SplitTemplateSummaryRow> {
+
+        return splitTemplateDao.getActiveSplitSummaries()
     }
 
     override suspend fun getSplitById(splitId: Long): SplitTemplateEntity? {

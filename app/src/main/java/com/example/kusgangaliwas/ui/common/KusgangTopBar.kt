@@ -23,7 +23,7 @@ import androidx.compose.runtime.Composable
 fun KusgangTopBar(
     title: String,
     onBackClick: () -> Unit,
-    onOverflowClick: () -> Unit,
+    onOverflowClick: (() -> Unit)?,
 ) {
     TopAppBar(
         title = {
@@ -38,11 +38,13 @@ fun KusgangTopBar(
             }
         },
         actions = {
-            IconButton(onClick = onOverflowClick) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More options",
-                )
+            if (onOverflowClick != null) {
+                IconButton(onClick = onOverflowClick) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More options",
+                    )
+                }
             }
         },
     )
