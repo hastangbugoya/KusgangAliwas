@@ -221,7 +221,7 @@ fun TrainingCycleScreen(
 
             item {
                 SharpCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         SectionHeader("Cycle Order")
 
                         if (uiState.selectedCycleId == null) {
@@ -230,93 +230,82 @@ fun TrainingCycleScreen(
                             Text("No splits in this cycle yet.")
                         } else {
                             uiState.steps.forEachIndexed { index, step ->
-                                SharpCard {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
                                     Column(
-                                        verticalArrangement =
-                                            Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp),
                                     ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement =
-                                                Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
+                                        Text("${index + 1}. ${step.splitName}")
+
+                                        if (step.muscleGroupsText.isNotBlank()) {
                                             Text(
-                                                text = "${index + 1}. ${step.splitName}",
-                                                modifier = Modifier.weight(1f),
+                                                text = step.muscleGroupsText,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.secondary,
                                             )
-
-                                            Row(
-                                                horizontalArrangement =
-                                                    Arrangement.spacedBy(-2.dp),
-                                                verticalAlignment =
-                                                    Alignment.CenterVertically,
-                                            ) {
-                                                IconButton(
-                                                    onClick = {
-                                                        onMoveStepUpClick(step.id)
-                                                    },
-                                                    enabled = index > 0,
-                                                ) {
-                                                    Icon(
-                                                        painter = painterResource(
-                                                            R.drawable.angle_up
-                                                        ),
-                                                        contentDescription =
-                                                            "Move split up",
-                                                    )
-                                                }
-
-                                                IconButton(
-                                                    onClick = {
-                                                        onRemoveStepClick(step.id)
-                                                    },
-                                                ) {
-                                                    Icon(
-                                                        painter = painterResource(
-                                                            R.drawable.trash
-                                                        ),
-                                                        contentDescription =
-                                                            "Remove split",
-                                                    )
-                                                }
-
-                                                IconButton(
-                                                    onClick = {
-                                                        onMoveStepDownClick(step.id)
-                                                    },
-                                                    enabled =
-                                                        index < uiState.steps.lastIndex,
-                                                ) {
-                                                    Icon(
-                                                        painter = painterResource(
-                                                            R.drawable.angle_down
-                                                        ),
-                                                        contentDescription =
-                                                            "Move split down",
-                                                    )
-                                                }
-                                            }
                                         }
 
+                                        Text(
+                                            text = "${step.strengthExerciseCount} strength • " +
+                                                    "${step.cardioExerciseCount} cardio • " +
+                                                    "${step.totalExerciseCount} total",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.secondary,
+                                        )
+
                                         Row(
-                                            horizontalArrangement =
-                                                Arrangement.spacedBy(4.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
                                             Checkbox(
-                                                checked =
-                                                    step.warnBeforeMarkDone,
+                                                checked = step.warnBeforeMarkDone,
                                                 onCheckedChange = {
-                                                    onToggleWarnBeforeMarkDoneClick(
-                                                        step.id
-                                                    )
+                                                    onToggleWarnBeforeMarkDoneClick(step.id)
                                                 },
                                             )
 
                                             Text(
                                                 "Warn before mark done",
-                                                style = MaterialTheme.typography.bodySmall
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.secondary,
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(-2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        IconButton(
+                                            onClick = { onMoveStepUpClick(step.id) },
+                                            enabled = index > 0,
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.angle_up),
+                                                contentDescription = "Move split up",
+                                            )
+                                        }
+
+                                        IconButton(
+                                            onClick = { onRemoveStepClick(step.id) },
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.trash),
+                                                contentDescription = "Remove split",
+                                            )
+                                        }
+
+                                        IconButton(
+                                            onClick = { onMoveStepDownClick(step.id) },
+                                            enabled = index < uiState.steps.lastIndex,
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.angle_down),
+                                                contentDescription = "Move split down",
                                             )
                                         }
                                     }

@@ -6,6 +6,7 @@ import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
+import com.example.kusgangaliwas.data.local.model.TrainingCycleStepSummaryRow
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import com.example.kusgangaliwas.domain.repository.TrainingCycleRepository
@@ -29,7 +30,7 @@ class TrainingCycleViewModel @Inject constructor(
 
     private val selectedCycleId = MutableStateFlow<Long?>(null)
     private val selectedCycleSteps =
-        MutableStateFlow<List<TrainingCycleStepEntity>>(emptyList())
+        MutableStateFlow<List<TrainingCycleStepSummaryRow>>(emptyList())
 
     private val newCycleName = MutableStateFlow("")
     private val newCycleNotes = MutableStateFlow("")
@@ -79,18 +80,18 @@ class TrainingCycleViewModel @Inject constructor(
                 selectedCycleNotes = selectedCycle?.notes.orEmpty(),
                 steps = base.steps
                     .sortedBy { it.stepOrder }
-                    .mapNotNull { step ->
-                        val split = base.splits.firstOrNull {
-                            it.id == step.splitTemplateId
-                        } ?: return@mapNotNull null
-
+                    .map { step ->
                         TrainingCycleStepListItem(
-                            id = step.id,
+                            id = step.stepId,
                             splitTemplateId = step.splitTemplateId,
-                            splitName = split.name,
+                            splitName = step.splitName,
                             stepOrder = step.stepOrder,
                             warnBeforeMarkDone = step.warnBeforeMarkDone,
-                            notes = step.notes,
+                            notes = null,
+                            muscleGroupsText = step.muscleGroupsText,
+                            strengthExerciseCount = step.strengthExerciseCount,
+                            cardioExerciseCount = step.cardioExerciseCount,
+                            totalExerciseCount = step.totalExerciseCount,
                         )
                     },
                 availableSplits = base.splits.map { split ->
@@ -462,7 +463,7 @@ class TrainingCycleViewModel @Inject constructor(
 
         viewModelScope.launch {
             selectedCycleSteps.value = trainingCycleRepository
-                .getStepsForCycle(cycleId)
+                .getStepSummariesForCycle(cycleId)
         }
     }
 }
@@ -471,5 +472,5 @@ private data class CycleBaseState(
     val cycles: List<TrainingCycleEntity>,
     val splits: List<SplitTemplateEntity>,
     val selectedId: Long?,
-    val steps: List<TrainingCycleStepEntity>,
+    val steps: List<TrainingCycleStepSummaryRow>,
 )

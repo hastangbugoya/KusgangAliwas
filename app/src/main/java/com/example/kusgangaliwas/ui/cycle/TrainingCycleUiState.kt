@@ -28,6 +28,16 @@ data class TrainingCycleStepListItem(
     val stepOrder: Int,
     val warnBeforeMarkDone: Boolean,
     val notes: String?,
+
+    /**
+     * Example:
+     * "Chest, Shoulders, Triceps"
+     */
+    val muscleGroupsText: String,
+
+    val strengthExerciseCount: Int,
+    val cardioExerciseCount: Int,
+    val totalExerciseCount: Int,
 )
 
 data class TrainingCycleSplitOption(

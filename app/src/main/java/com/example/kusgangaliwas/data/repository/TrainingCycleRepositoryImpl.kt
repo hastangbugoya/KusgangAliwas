@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleActivationDao
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
+import com.example.kusgangaliwas.data.local.model.TrainingCycleStepSummaryRow
 
 /**
  * Room-backed implementation of TrainingCycleRepository.
@@ -81,6 +82,12 @@ class TrainingCycleRepositoryImpl @Inject constructor(
         cycleId: Long,
     ): List<TrainingCycleStepEntity> {
         return trainingCycleStepDao.getStepsForCycle(cycleId)
+    }
+
+    override suspend fun getStepSummariesForCycle(
+        cycleId: Long,
+    ): List<TrainingCycleStepSummaryRow> {
+        return trainingCycleStepDao.getStepSummariesForCycle(cycleId)
     }
 
     override suspend fun getStepById(

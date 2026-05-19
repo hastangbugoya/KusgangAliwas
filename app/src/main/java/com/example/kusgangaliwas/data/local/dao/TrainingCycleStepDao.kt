@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
+import com.example.kusgangaliwas.data.local.model.TrainingCycleStepSummaryRow
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -66,6 +67,63 @@ interface TrainingCycleStepDao {
         cycleId: Long,
         splitTemplateId: Long,
     ): TrainingCycleStepEntity?
+
+    @Query(
+        """
+    SELECT
+        tcs.id AS stepId,
+        tcs.cycleId AS cycleId,
+        tcs.splitTemplateId AS splitTemplateId,
+        st.name AS splitName,
+        tcs.stepOrder AS stepOrder,
+        tcs.warnBeforeMarkDone AS warnBeforeMarkDone,
+
+        COALESCE(
+            GROUP_CONCAT(DISTINCT mg.name),
+            ''
+        ) AS muscleGroupsText,
+
+        COUNT(
+            DISTINCT CASE
+                WHEN e.exerciseType = 'STRENGTH'
+                THEN e.id
+            END
+        ) AS strengthExerciseCount,
+
+        COUNT(
+            DISTINCT CASE
+                WHEN e.exerciseType = 'CARDIO'
+                THEN e.id
+            END
+        ) AS cardioExerciseCount
+
+    FROM training_cycle_step tcs
+
+    INNER JOIN split_template st
+        ON st.id = tcs.splitTemplateId
+
+    LEFT JOIN split_template_exercise ste
+        ON ste.splitTemplateId = st.id
+
+    LEFT JOIN exercise e
+        ON e.id = ste.exerciseId
+
+    LEFT JOIN split_template_muscle_group stmg
+        ON stmg.splitTemplateId = st.id
+
+    LEFT JOIN muscle_group mg
+        ON mg.id = stmg.muscleGroupId
+
+    WHERE tcs.cycleId = :cycleId
+
+    GROUP BY tcs.id
+
+    ORDER BY tcs.stepOrder ASC
+    """
+    )
+    suspend fun getStepSummariesForCycle(
+        cycleId: Long,
+    ): List<TrainingCycleStepSummaryRow>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStep(entity: TrainingCycleStepEntity): Long

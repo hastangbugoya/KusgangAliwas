@@ -5,6 +5,7 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
 import kotlinx.coroutines.flow.Flow
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
+import com.example.kusgangaliwas.data.local.model.TrainingCycleStepSummaryRow
 
 /**
  * Repository boundary for training cycles.
@@ -80,6 +81,10 @@ interface TrainingCycleRepository {
 
     suspend fun deleteAllStepsForCycle(cycleId: Long)
 
+    suspend fun getStepSummariesForCycle(
+        cycleId: Long,
+    ): List<TrainingCycleStepSummaryRow>
+
     // ----------------------------
     // Calendar Anchors
     // ----------------------------
@@ -101,8 +106,8 @@ interface TrainingCycleRepository {
     suspend fun deleteAllAnchorsForCycle(cycleId: Long)
 
     // ----------------------------
-// Cycle Activations
-// ----------------------------
+    // Cycle Activations
+    // ----------------------------
 
     suspend fun getActiveActivationForCycle(
         cycleId: Long,
