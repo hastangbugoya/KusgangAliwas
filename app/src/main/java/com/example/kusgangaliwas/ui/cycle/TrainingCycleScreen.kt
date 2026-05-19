@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -231,7 +232,9 @@ fun TrainingCycleScreen(
                         } else {
                             uiState.steps.forEachIndexed { index, step ->
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
@@ -239,11 +242,27 @@ fun TrainingCycleScreen(
                                         modifier = Modifier.weight(1f),
                                         verticalArrangement = Arrangement.spacedBy(2.dp),
                                     ) {
-                                        Text("${index + 1}. ${step.splitName}")
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        ) {
+                                            Text("${index + 1}. ${step.splitName}")
+
+                                            IconButton(
+                                                onClick = { onRemoveStepClick(step.id) },
+                                                modifier = Modifier.size(28.dp),
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.trash),
+                                                    contentDescription = "Remove split",
+                                                    modifier = Modifier.size(18.dp),
+                                                )
+                                            }
+                                        }
 
                                         if (step.muscleGroupsText.isNotBlank()) {
                                             Text(
-                                                text = step.muscleGroupsText,
+                                                text = step.muscleGroupsText.replace(",", ", "),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.secondary,
                                             )
@@ -276,9 +295,9 @@ fun TrainingCycleScreen(
                                         }
                                     }
 
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(-2.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(-6.dp),
                                     ) {
                                         IconButton(
                                             onClick = { onMoveStepUpClick(step.id) },
@@ -287,15 +306,6 @@ fun TrainingCycleScreen(
                                             Icon(
                                                 painter = painterResource(R.drawable.angle_up),
                                                 contentDescription = "Move split up",
-                                            )
-                                        }
-
-                                        IconButton(
-                                            onClick = { onRemoveStepClick(step.id) },
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.trash),
-                                                contentDescription = "Remove split",
                                             )
                                         }
 
