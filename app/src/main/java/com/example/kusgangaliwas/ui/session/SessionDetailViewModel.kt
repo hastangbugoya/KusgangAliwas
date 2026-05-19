@@ -112,7 +112,7 @@ class SessionDetailViewModel @Inject constructor(
     private val updateSplitTemplateFromActualSessionUseCase: UpdateSplitTemplateFromActualSessionUseCase,
 ) : ViewModel() {
 
-    private val actualSessionId: Long = checkNotNull(
+    val actualSessionId: Long = checkNotNull(
         savedStateHandle.get<Long>("actualSessionId")
     ) {
         "Missing actualSessionId."

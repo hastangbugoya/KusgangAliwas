@@ -10,6 +10,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 fun SessionDetailRoute(
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
+    onOpenExercisePicker: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SessionDetailViewModel = hiltViewModel(),
 ) {
@@ -19,8 +20,8 @@ fun SessionDetailRoute(
         uiState = uiState,
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
-        onAddExercise = viewModel::addExercise,
-        onAddCardio = viewModel::addCardio,
+//        onAddExercise = viewModel::addExercise,
+//        onAddCardio = viewModel::addCardio,
         onUpdateCardioLog = viewModel::updateCardioLog,
         onDeleteCardioLog = viewModel::deleteCardioLog,
         onAddSet = viewModel::addSet,
@@ -39,5 +40,8 @@ fun SessionDetailRoute(
         onToggleRemoteFocus = viewModel::toggleRemoteFocus,
         onUpdateSavedSplit = viewModel::updateSavedSplitFromSession,
         onCreateSavedSplit = viewModel::createSavedSplitFromSession,
+        onOpenExercisePicker = {
+            onOpenExercisePicker(viewModel.actualSessionId)
+        },
     )
 }

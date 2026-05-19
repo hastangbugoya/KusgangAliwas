@@ -71,6 +71,15 @@ sealed class Destination(
         fun createRoute(splitId: Long): String =
             "exercise_picker/$splitId"
     }
+
+    data object SessionExercisePicker : Destination(
+        route = "session_exercise_picker/{actualSessionId}",
+        label = "Session Exercise Picker",
+        icon = R.drawable.list,
+    ) {
+        fun createRoute(actualSessionId: Long): String =
+            "session_exercise_picker/$actualSessionId"
+    }
 }
 
 val bottomNavDestinations = listOf(

@@ -47,8 +47,6 @@ fun SessionDetailScreen(
     uiState: SessionDetailUiState,
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
-    onAddExercise: (Long) -> Unit,
-    onAddCardio: (Long?) -> Unit,
     onUpdateCardioLog: (ActualCardioLogEntity) -> Unit,
     onDeleteCardioLog: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
@@ -64,6 +62,7 @@ fun SessionDetailScreen(
     onToggleRemoteFocus: (Long) -> Unit,
     onUpdateSavedSplit: () -> Unit,
     onCreateSavedSplit: (String, String?) -> Unit,
+    onOpenExercisePicker: () -> Unit,
 ) {
     var reorderMode by rememberSaveable {
         mutableStateOf(false)
@@ -144,6 +143,15 @@ fun SessionDetailScreen(
                                 SectionHeader("Session timeline")
                             }
 
+                            IconButton(
+                                onClick = onOpenExercisePicker,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.plus),
+                                    contentDescription = "Add session item",
+                                )
+                            }
+
                             TextButton(
                                 onClick = { reorderMode = !reorderMode },
                             ) {
@@ -221,46 +229,6 @@ fun SessionDetailScreen(
                             onClick = onDeleteSession,
                         ) {
                             Text("Delete session")
-                        }
-                    }
-                }
-            }
-
-            item {
-                SharpCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Add session item")
-
-                        val cardioExercises = uiState.availableExercises
-                            .filter { it.exerciseType == ExerciseType.CARDIO }
-
-                        val strengthExercises = uiState.availableExercises
-                            .filter { it.exerciseType == ExerciseType.STRENGTH }
-
-                        OutlinedButton(
-                            onClick = { onAddCardio(null) },
-                        ) {
-                            Text("Add generic cardio")
-                        }
-
-                        cardioExercises.forEach { exercise ->
-                            OutlinedButton(
-                                onClick = { onAddCardio(exercise.id) },
-                            ) {
-                                Text("Add cardio: ${exercise.name}")
-                            }
-                        }
-
-                        if (strengthExercises.isEmpty()) {
-                            Text("Add strength exercises in the Exercises tab first.")
-                        } else {
-                            strengthExercises.forEach { exercise ->
-                                OutlinedButton(
-                                    onClick = { onAddExercise(exercise.id) },
-                                ) {
-                                    Text("Add strength: ${exercise.name}")
-                                }
-                            }
                         }
                     }
                 }
@@ -719,9 +687,9 @@ private fun CompactSessionItemControls(
             ControlIconButton(
                 drawableResId =
                     if (expanded) {
-                        R.drawable.compress
+                        R.drawable.chevron_double_up
                     } else {
-                        R.drawable.expand
+                        R.drawable.chevron_double_down
                     },
                 contentDescription =
                     if (expanded) {

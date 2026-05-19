@@ -104,6 +104,7 @@ private val CalendarDayStatus.tempDrawableRes: Int
         CalendarDayStatus.LOGGED -> R.drawable.check_circle
         CalendarDayStatus.PLANNED -> R.drawable.daily_calendar
         CalendarDayStatus.NEUTRAL -> R.drawable.empty_set
+        CalendarDayStatus.IN_PROGRESS -> R.drawable.play
         CalendarDayStatus.TODAY -> R.drawable.target
     }
 
@@ -112,13 +113,14 @@ private val CalendarDayStatus.contentDescription: String
         CalendarDayStatus.LOGGED -> "Session logged"
         CalendarDayStatus.PLANNED -> "Planned session"
         CalendarDayStatus.NEUTRAL -> "No planned or logged session"
+        CalendarDayStatus.IN_PROGRESS -> "Session in Progress"
         CalendarDayStatus.TODAY -> "Today"
     }
 
 @Composable
 private fun iconTint(status: CalendarDayStatus): Color {
     return when (status) {
-        CalendarDayStatus.LOGGED -> SuccessGreen
+        CalendarDayStatus.LOGGED, CalendarDayStatus.IN_PROGRESS -> SuccessGreen
         CalendarDayStatus.PLANNED -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.primary
     }

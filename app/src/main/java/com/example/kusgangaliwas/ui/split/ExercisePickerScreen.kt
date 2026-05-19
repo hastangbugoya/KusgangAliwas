@@ -37,7 +37,7 @@ fun ExercisePickerScreen(
         modifier = modifier,
         topBar = {
             KusgangTopBar(
-                title = "Add to ${uiState.splitName.ifBlank { "Split" }}",
+                title = uiState.title,
                 onBackClick = onBackClick,
                 onOverflowClick = onOverflowClick,
             )
@@ -91,7 +91,7 @@ fun ExercisePickerScreen(
                             ) { index ->
                                 val exercise = uiState.exercises[index]
                                 val checked =
-                                    exercise.alreadyInSplit ||
+                                    exercise.alreadySelected ||
                                             exercise.exerciseId in
                                             uiState.selectedExerciseIds
 
@@ -100,7 +100,7 @@ fun ExercisePickerScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable(
-                                                enabled = !exercise.alreadyInSplit,
+                                                enabled = !exercise.alreadySelected,
                                             ) {
                                                 onToggleExercise(exercise.exerciseId)
                                             }
@@ -112,7 +112,7 @@ fun ExercisePickerScreen(
                                             onCheckedChange = {
                                                 onToggleExercise(exercise.exerciseId)
                                             },
-                                            enabled = !exercise.alreadyInSplit,
+                                            enabled = !exercise.alreadySelected,
                                         )
 
                                         Column(
@@ -125,10 +125,16 @@ fun ExercisePickerScreen(
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
-
-                                            if (exercise.alreadyInSplit) {
+                                            if (exercise.supportingText.isNotBlank()) {
                                                 Text(
-                                                    text = "Already in split",
+                                                    text = exercise.supportingText,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                            if (exercise.alreadySelected) {
+                                                Text(
+                                                    text = "Already selected",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )

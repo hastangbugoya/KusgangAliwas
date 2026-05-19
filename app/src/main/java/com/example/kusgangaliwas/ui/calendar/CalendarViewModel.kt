@@ -18,6 +18,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.time.LocalDate
 import com.example.kusgangaliwas.domain.model.cycle.CycleDayContext
 import com.example.kusgangaliwas.domain.usecase.cycle.GetActiveCycleContextsUseCase
+import com.example.kusgangaliwas.domain.model.session.ActualSessionStatus
 
 /**
  * ViewModel for the monthly calendar screen.
@@ -85,24 +86,32 @@ class CalendarViewModel @Inject constructor(
                             it.scheduledDateEpochDay
                         }.eachCount()
 
-                    val actualCounts =
-                        actualSessions.groupingBy {
+                    val actualSessionsByDay =
+                        actualSessions.groupBy {
                             it.performedDateEpochDay
-                        }.eachCount()
+                        }
 
                     val todayEpochDay = LocalDate.now().toEpochDay()
 
                     val allDays =
-                        plannedCounts.keys + actualCounts.keys + todayEpochDay
+                        plannedCounts.keys + actualSessionsByDay.keys + todayEpochDay
 
                     val statusMap =
                         allDays.associateWith { epochDay ->
 
                             val planned = plannedCounts[epochDay] ?: 0
-                            val logged = actualCounts[epochDay] ?: 0
+                            val dayActualSessions = actualSessionsByDay[epochDay].orEmpty()
+                            val hasActualSession = dayActualSessions.isNotEmpty()
+                            val hasInProgressSession = dayActualSessions.any {
+                                it.status == ActualSessionStatus.IN_PROGRESS
+                            }
 
                             when {
-                                logged > 0 -> {
+                                hasInProgressSession -> {
+                                    CalendarDayStatus.IN_PROGRESS
+                                }
+
+                                hasActualSession -> {
                                     CalendarDayStatus.LOGGED
                                 }
 
@@ -190,4 +199,5 @@ enum class CalendarDayStatus {
     PLANNED,
     LOGGED,
     TODAY,
+    IN_PROGRESS
 }

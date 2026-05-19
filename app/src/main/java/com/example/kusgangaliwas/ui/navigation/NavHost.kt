@@ -2,7 +2,6 @@ package com.example.kusgangaliwas.ui.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -18,6 +17,7 @@ import com.example.kusgangaliwas.ui.split.SplitListRoute
 import com.example.kusgangaliwas.ui.split.SplitRoadmapRoute
 import com.example.kusgangaliwas.ui.cycle.TrainingCycleRoute
 import com.example.kusgangaliwas.ui.split.ExercisePickerRoute
+import com.example.kusgangaliwas.ui.session.SessionExercisePickerRoute
 
 @Composable
 fun NavHost(
@@ -121,22 +121,40 @@ fun NavHost(
         }
 
         composable(
-                route = Destination.SessionDetail.route,
-        arguments = listOf(
-            navArgument("actualSessionId") {
-                type = NavType.LongType
-            }
-        )
+            route = Destination.SessionDetail.route,
+            arguments = listOf(
+                navArgument("actualSessionId") {
+                    type = NavType.LongType
+                }
+            )
         ) {
-        SessionDetailRoute(
-            onBackClick = {
-                navController.popBackStack()
-            },
-            onOverflowClick = {},
-        )
-    }
+            SessionDetailRoute(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onOverflowClick = {},
+                onOpenExercisePicker = { actualSessionId ->
+                    navController.navigate(
+                        Destination.SessionExercisePicker.createRoute(actualSessionId)
+                    )
+                },
+            )
+        }
 
-
+        composable(
+            route = Destination.SessionExercisePicker.route,
+            arguments = listOf(
+                navArgument("actualSessionId") {
+                    type = NavType.LongType
+                }
+            )
+        ) {
+            SessionExercisePickerRoute(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+            )
+        }
 
     }
 }

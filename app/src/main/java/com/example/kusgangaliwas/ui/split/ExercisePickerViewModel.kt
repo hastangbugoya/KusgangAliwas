@@ -31,7 +31,7 @@ class ExercisePickerViewModel @Inject constructor(
     private val searchText = MutableStateFlow("")
     private val selectedExerciseIds = MutableStateFlow<Set<Long>>(emptySet())
 
-    private val splitName = MutableStateFlow("")
+    private val title = MutableStateFlow("")
 
     val uiState: StateFlow<ExercisePickerUiState> =
         combine(
@@ -39,8 +39,8 @@ class ExercisePickerViewModel @Inject constructor(
             splitTemplateRepository.observeExercisesForSplit(splitId),
             searchText,
             selectedExerciseIds,
-            splitName,
-        ) { exercises, splitExercises, search, selectedIds, currentSplitName  ->
+            title,
+        ) { exercises, splitExercises, search, selectedIds, currentTitle ->
 
             val existingExerciseIds = splitExercises
                 .map { it.exerciseId }
@@ -59,7 +59,7 @@ class ExercisePickerViewModel @Inject constructor(
                 .sortedBy { it.name.lowercase() }
 
             ExercisePickerUiState(
-                splitId = splitId,
+                title = currentTitle,
                 searchText = search,
                 exercises = filteredExercises.map { exercise ->
                     ExercisePickerItem(
@@ -67,19 +67,29 @@ class ExercisePickerViewModel @Inject constructor(
                         exerciseName = exercise.name,
                         exerciseTypeLabel =
                             exercise.exerciseType.displayText(),
-                        alreadyInSplit =
+                        supportingText = when (exercise.exerciseType) {
+                            ExerciseType.STRENGTH ->
+                                "Strength exercise"
+
+                            ExerciseType.CARDIO ->
+                                "Cardio exercise"
+
+                            ExerciseType.MOBILITY ->
+                                "Mobility exercise"
+
+                            ExerciseType.OTHER ->
+                                "General exercise"
+                        },
+                        alreadySelected =
                             exercise.id in existingExerciseIds,
                     )
                 },
                 selectedExerciseIds = selectedIds,
-                splitName = currentSplitName
             )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = ExercisePickerUiState(
-                splitId = splitId,
-            ),
+            initialValue = ExercisePickerUiState(),
         )
 
     fun onSearchTextChange(value: String) {
@@ -92,7 +102,7 @@ class ExercisePickerViewModel @Inject constructor(
             it.exerciseId == exerciseId
         } ?: return
 
-        if (item.alreadyInSplit) {
+        if (item.alreadySelected) {
             return
         }
 
@@ -150,7 +160,7 @@ class ExercisePickerViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val split = splitTemplateRepository.getSplitById(splitId)
-            splitName.value = split?.name.orEmpty()
+            title.value = "Add to ${split?.name.orEmpty().ifBlank { "Split" }}"
         }
     }
 }
