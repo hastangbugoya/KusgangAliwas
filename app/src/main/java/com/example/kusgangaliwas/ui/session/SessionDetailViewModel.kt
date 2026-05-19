@@ -21,6 +21,8 @@ import com.example.kusgangaliwas.domain.gymremote.debugLabel
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.usecase.session.AddExerciseLogToSessionUseCase
+import com.example.kusgangaliwas.domain.usecase.session.CreateSplitTemplateFromActualSessionUseCase
+import com.example.kusgangaliwas.domain.usecase.session.UpdateSplitTemplateFromActualSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
@@ -106,6 +108,8 @@ class SessionDetailViewModel @Inject constructor(
     private val addExerciseLogToSessionUseCase: AddExerciseLogToSessionUseCase,
     private val gymRemoteInputBus: GymRemoteInputBus,
     private val gymVoiceBus: GymVoiceBus,
+    private val createSplitTemplateFromActualSessionUseCase: CreateSplitTemplateFromActualSessionUseCase,
+    private val updateSplitTemplateFromActualSessionUseCase: UpdateSplitTemplateFromActualSessionUseCase,
 ) : ViewModel() {
 
     private val actualSessionId: Long = checkNotNull(
@@ -671,6 +675,46 @@ class SessionDetailViewModel @Inject constructor(
 
             is SessionDetailItemUiState.Cardio -> {
                 "cardio:${item.log.id}"
+            }
+        }
+    }
+
+    fun updateSavedSplitFromSession() {
+        viewModelScope.launch {
+            runCatching {
+                updateSplitTemplateFromActualSessionUseCase(
+                    actualSessionId = actualSessionId,
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun createSavedSplitFromSession(
+        splitName: String,
+        splitNotes: String? = null,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                val splitId = createSplitTemplateFromActualSessionUseCase(
+                    actualSessionId = actualSessionId,
+                    splitName = splitName,
+                    splitNotes = splitNotes,
+                )
+
+                val session = sessionRepository.getActualSessionById(actualSessionId)
+                    ?: return@runCatching
+
+                sessionRepository.updateActualSession(
+                    session.copy(
+                        splitTemplateId = splitId,
+                        title = splitName,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
             }
         }
     }

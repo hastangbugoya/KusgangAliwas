@@ -126,6 +126,22 @@ fun TrainingCycleScreen(
                                         if (!cycle.notes.isNullOrBlank()) {
                                             Text(cycle.notes)
                                         }
+
+                                        cycle.startedDateText?.let { text ->
+                                            Text(
+                                                text = text,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.secondary,
+                                            )
+                                        }
+
+                                        cycle.lastLoggedSessionDateText?.let { text ->
+                                            Text(
+                                                text = text,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.secondary,
+                                            )
+                                        }
                                     }
 
                                     Switch(

@@ -9,6 +9,8 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
 import com.example.kusgangaliwas.domain.repository.TrainingCycleRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import com.example.kusgangaliwas.data.local.dao.TrainingCycleActivationDao
+import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
 
 /**
  * Room-backed implementation of TrainingCycleRepository.
@@ -17,6 +19,7 @@ class TrainingCycleRepositoryImpl @Inject constructor(
     private val trainingCycleDao: TrainingCycleDao,
     private val trainingCycleStepDao: TrainingCycleStepDao,
     private val cycleCalendarAnchorDao: CycleCalendarAnchorDao,
+    private val trainingCycleActivationDao: TrainingCycleActivationDao,
 ) : TrainingCycleRepository {
 
     override fun observeActiveCycles(): Flow<List<TrainingCycleEntity>> {
@@ -129,6 +132,53 @@ class TrainingCycleRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAllStepsForCycle(cycleId: Long) {
         trainingCycleStepDao.deleteAllStepsForCycle(cycleId)
+    }
+
+    override suspend fun getActiveActivationForCycle(
+        cycleId: Long,
+    ): TrainingCycleActivationEntity? {
+        return trainingCycleActivationDao
+            .getActiveActivationForCycle(cycleId)
+    }
+
+    override suspend fun getLatestActivationForCycle(
+        cycleId: Long,
+    ): TrainingCycleActivationEntity? {
+        return trainingCycleActivationDao
+            .getLatestActivationForCycle(cycleId)
+    }
+
+    override suspend fun getActivationsForCycle(
+        cycleId: Long,
+    ): List<TrainingCycleActivationEntity> {
+        return trainingCycleActivationDao
+            .getActivationsForCycle(cycleId)
+    }
+
+    override suspend fun insertActivation(
+        entity: TrainingCycleActivationEntity,
+    ): Long {
+        return trainingCycleActivationDao
+            .insertActivation(entity)
+    }
+
+    override suspend fun updateActivation(
+        entity: TrainingCycleActivationEntity,
+    ) {
+        trainingCycleActivationDao.updateActivation(entity)
+    }
+
+    override suspend fun deactivateActiveActivationForCycle(
+        cycleId: Long,
+        deactivatedDateEpochDay: Long,
+        updatedAtEpochMillis: Long,
+    ) {
+        trainingCycleActivationDao
+            .deactivateActiveActivationForCycle(
+                cycleId = cycleId,
+                deactivatedDateEpochDay = deactivatedDateEpochDay,
+                updatedAtEpochMillis = updatedAtEpochMillis,
+            )
     }
 
     override fun observeAnchorsForCycle(

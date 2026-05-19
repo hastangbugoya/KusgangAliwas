@@ -37,6 +37,10 @@ import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 
 @Composable
 fun SessionDetailScreen(
@@ -58,19 +62,66 @@ fun SessionDetailScreen(
     onMoveSessionItemUp: (SessionDetailItemUiState) -> Unit,
     onMoveSessionItemDown: (SessionDetailItemUiState) -> Unit,
     onToggleRemoteFocus: (Long) -> Unit,
+    onUpdateSavedSplit: () -> Unit,
+    onCreateSavedSplit: (String, String?) -> Unit,
 ) {
     var reorderMode by rememberSaveable {
         mutableStateOf(false)
     }
 
+    var showSessionActions by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var showSaveAsSplitDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var newSplitName by rememberSaveable {
+        mutableStateOf(uiState.session?.title ?: "")
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
-            KusgangTopBar(
-                title = uiState.titleText,
-                onBackClick = onBackClick,
-                onOverflowClick = onOverflowClick,
-            )
+            Box {
+                KusgangTopBar(
+                    title = uiState.titleText,
+                    onBackClick = onBackClick,
+                    onOverflowClick = {
+                        showSessionActions = true
+                    },
+                )
+
+                DropdownMenu(
+                    expanded = showSessionActions,
+                    onDismissRequest = {
+                        showSessionActions = false
+                    },
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("Update saved split")
+                        },
+                        enabled = uiState.session?.splitTemplateId != null,
+                        onClick = {
+                            showSessionActions = false
+                            onUpdateSavedSplit()
+                        },
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("Save as new split")
+                        },
+                        onClick = {
+                            showSessionActions = false
+                            newSplitName = uiState.session?.title ?: ""
+                            showSaveAsSplitDialog = true
+                        },
+                    )
+                }
+            }
         },
     ) { innerPadding ->
         LazyColumn(
@@ -215,6 +266,52 @@ fun SessionDetailScreen(
                 }
             }
         }
+    }
+
+    if (showSaveAsSplitDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showSaveAsSplitDialog = false
+            },
+            title = {
+                Text("Save as new split")
+            },
+            text = {
+                OutlinedTextField(
+                    value = newSplitName,
+                    onValueChange = {
+                        newSplitName = it
+                    },
+                    label = {
+                        Text("Split name")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val trimmedName = newSplitName.trim()
+
+                        if (trimmedName.isNotBlank()) {
+                            onCreateSavedSplit(trimmedName, null)
+                            showSaveAsSplitDialog = false
+                        }
+                    },
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showSaveAsSplitDialog = false
+                    },
+                ) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 }
 

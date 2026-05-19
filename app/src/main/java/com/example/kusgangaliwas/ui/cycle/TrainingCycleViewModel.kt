@@ -3,11 +3,15 @@ package com.example.kusgangaliwas.ui.cycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
+import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
+import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import com.example.kusgangaliwas.domain.repository.TrainingCycleRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,6 +24,7 @@ import kotlinx.coroutines.launch
 class TrainingCycleViewModel @Inject constructor(
     private val trainingCycleRepository: TrainingCycleRepository,
     private val splitTemplateRepository: SplitTemplateRepository,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
     private val selectedCycleId = MutableStateFlow<Long?>(null)
@@ -65,6 +70,8 @@ class TrainingCycleViewModel @Inject constructor(
                         name = cycle.name,
                         notes = cycle.notes,
                         isActive = cycle.isActive,
+                        startedDateText = buildStartedDateText(cycle),
+                        lastLoggedSessionDateText = buildLastLoggedSessionText(cycle),
                     )
                 },
                 selectedCycleId = selectedCycle?.id,
@@ -152,6 +159,7 @@ class TrainingCycleViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val now = System.currentTimeMillis()
+                val today = LocalDate.now().toEpochDay()
 
                 val cycleId = trainingCycleRepository.insertCycle(
                     TrainingCycleEntity(
@@ -159,6 +167,17 @@ class TrainingCycleViewModel @Inject constructor(
                         notes = newCycleNotes.value.trim()
                             .takeIf { it.isNotBlank() },
                         isActive = true,
+                        createdAtEpochMillis = now,
+                        updatedAtEpochMillis = now,
+                    )
+                )
+
+                trainingCycleRepository.insertActivation(
+                    TrainingCycleActivationEntity(
+                        cycleId = cycleId,
+                        activatedDateEpochDay = today,
+                        deactivatedDateEpochDay = null,
+                        notes = null,
                         createdAtEpochMillis = now,
                         updatedAtEpochMillis = now,
                     )
@@ -247,12 +266,39 @@ class TrainingCycleViewModel @Inject constructor(
                 val cycle = trainingCycleRepository.getCycleById(cycleId)
                     ?: return@runCatching
 
+                val now = System.currentTimeMillis()
+                val today = LocalDate.now().toEpochDay()
+
                 trainingCycleRepository.updateCycle(
                     cycle.copy(
                         isActive = isActive,
-                        updatedAtEpochMillis = System.currentTimeMillis(),
+                        updatedAtEpochMillis = now,
                     )
                 )
+
+                if (isActive) {
+                    val activeActivation =
+                        trainingCycleRepository.getActiveActivationForCycle(cycleId)
+
+                    if (activeActivation == null) {
+                        trainingCycleRepository.insertActivation(
+                            TrainingCycleActivationEntity(
+                                cycleId = cycleId,
+                                activatedDateEpochDay = today,
+                                deactivatedDateEpochDay = null,
+                                notes = null,
+                                createdAtEpochMillis = now,
+                                updatedAtEpochMillis = now,
+                            )
+                        )
+                    }
+                } else {
+                    trainingCycleRepository.deactivateActiveActivationForCycle(
+                        cycleId = cycleId,
+                        deactivatedDateEpochDay = today,
+                        updatedAtEpochMillis = now,
+                    )
+                }
             }.onFailure { error ->
                 error.printStackTrace()
             }
@@ -295,6 +341,46 @@ class TrainingCycleViewModel @Inject constructor(
                 error.printStackTrace()
             }
         }
+    }
+
+    private suspend fun buildStartedDateText(
+        cycle: TrainingCycleEntity,
+    ): String? {
+        if (!cycle.isActive) {
+            return null
+        }
+
+        val activation = trainingCycleRepository
+            .getActiveActivationForCycle(cycle.id)
+            ?: trainingCycleRepository.getLatestActivationForCycle(cycle.id)
+            ?: return null
+
+        return "Started: ${formatEpochDay(activation.activatedDateEpochDay)}"
+    }
+
+    private suspend fun buildLastLoggedSessionText(
+        cycle: TrainingCycleEntity,
+    ): String? {
+        if (cycle.isActive) {
+            return null
+        }
+
+        val latestSession = sessionRepository
+            .getLatestCompletedCycleSession(cycle.id)
+
+        return latestSession
+            ?.let {
+                "Last session: ${formatEpochDay(it.performedDateEpochDay)}"
+            }
+            ?: "No logged sessions yet"
+    }
+
+    private fun formatEpochDay(
+        epochDay: Long,
+    ): String {
+        return LocalDate
+            .ofEpochDay(epochDay)
+            .format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
     }
 
     private fun moveStep(
@@ -387,4 +473,3 @@ private data class CycleBaseState(
     val selectedId: Long?,
     val steps: List<TrainingCycleStepEntity>,
 )
-

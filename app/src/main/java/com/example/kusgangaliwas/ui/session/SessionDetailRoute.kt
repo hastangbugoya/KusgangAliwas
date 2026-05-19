@@ -37,5 +37,7 @@ fun SessionDetailRoute(
         onMoveSessionItemUp = viewModel::moveSessionItemUp,
         onMoveSessionItemDown = viewModel::moveSessionItemDown,
         onToggleRemoteFocus = viewModel::toggleRemoteFocus,
+        onUpdateSavedSplit = viewModel::updateSavedSplitFromSession,
+        onCreateSavedSplit = viewModel::createSavedSplitFromSession,
     )
 }

@@ -17,6 +17,8 @@ data class TrainingCycleListItem(
     val name: String,
     val notes: String?,
     val isActive: Boolean,
+    val startedDateText: String? = null,
+    val lastLoggedSessionDateText: String? = null,
 )
 
 data class TrainingCycleStepListItem(

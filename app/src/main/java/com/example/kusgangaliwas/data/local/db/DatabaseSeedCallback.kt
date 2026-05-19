@@ -22,187 +22,175 @@ class DatabaseSeedCallback : RoomDatabase.Callback() {
 
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Barbell Bicep Curls','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Bench Press','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Cable Row','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Calf Raise','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Chest Fly Machine','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Dips','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Dumbbell Bench Press','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Dumbbell Bicep Alternating Curls','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Dumbbell Inclined Press','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Dumbbell Lateral Raises','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Dumbbell Romanian Deadlift','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Lat Pulldown Narrow','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Lat Pulldown Wide','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Leg Curl Machine','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Leg Extension','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Leg Press Machine High Narrow','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Leg Press Machine High Wide','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Leg Press Machine Low Narrow','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Leg Press Machine Low Wide','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Leg Press Machine Middle','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Push-Ups','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
-            VALUES ('Chest Fly Machine','STRENGTH',1,$now,$now)
-            """.trimIndent()
-        )
-        db.execSQL(
-            """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Tricep Pushdowns Bar','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Tricep Pushdowns Rope','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
-            VALUES ('Cable Overhead Tricep Extension','STRENGTH',1,$now,$now)
-            """.trimIndent()
-        )
-        db.execSQL(
-            """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Dumbbell Tricep Extensions','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Cable Overhead Tricep Extension','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Shrugs','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Face Pulls','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Front Raises Plates','STRENGTH',1,$now,$now)
             """.trimIndent()
         )
         db.execSQL(
             """
-            INSERT INTO exercise (name,exerciseType,sActive,createdAtEpochMillis,updatedAtEpochMillis)
+            INSERT INTO exercise (name,exerciseType,isActive,createdAtEpochMillis,updatedAtEpochMillis)
             VALUES ('Alternating Dumbbell Front Raises','STRENGTH',1,$now,$now)
             """.trimIndent()
         )

@@ -4,6 +4,7 @@ import com.example.kusgangaliwas.data.local.entity.CycleCalendarAnchorEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
 import kotlinx.coroutines.flow.Flow
+import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
 
 /**
  * Repository boundary for training cycles.
@@ -98,4 +99,34 @@ interface TrainingCycleRepository {
     suspend fun deleteAnchor(anchorId: Long)
 
     suspend fun deleteAllAnchorsForCycle(cycleId: Long)
+
+    // ----------------------------
+// Cycle Activations
+// ----------------------------
+
+    suspend fun getActiveActivationForCycle(
+        cycleId: Long,
+    ): TrainingCycleActivationEntity?
+
+    suspend fun getLatestActivationForCycle(
+        cycleId: Long,
+    ): TrainingCycleActivationEntity?
+
+    suspend fun getActivationsForCycle(
+        cycleId: Long,
+    ): List<TrainingCycleActivationEntity>
+
+    suspend fun insertActivation(
+        entity: TrainingCycleActivationEntity,
+    ): Long
+
+    suspend fun updateActivation(
+        entity: TrainingCycleActivationEntity,
+    )
+
+    suspend fun deactivateActiveActivationForCycle(
+        cycleId: Long,
+        deactivatedDateEpochDay: Long,
+        updatedAtEpochMillis: Long,
+    )
 }
