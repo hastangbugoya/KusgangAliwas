@@ -1,25 +1,29 @@
 package com.example.kusgangaliwas
 
+import android.Manifest
 import android.annotation.SuppressLint
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.kusgangaliwas.domain.gymremote.GymRemoteInput
 import com.example.kusgangaliwas.domain.gymremote.GymRemoteInputBus
-import com.example.kusgangaliwas.domain.gymremote.GymVoiceBus
 import com.example.kusgangaliwas.domain.usecase.planning.RefreshPlannedSessionsUseCase
+import com.example.kusgangaliwas.service.GymRemoteService
+import com.example.kusgangaliwas.ui.navigation.NavShell
 import com.example.kusgangaliwas.ui.theme.KusgangAliwasTheme
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 
@@ -32,48 +36,45 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var gymRemoteInputBus: GymRemoteInputBus
 
-    @Inject
-    lateinit var gymVoiceBus: GymVoiceBus
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            Log.d(REMOTE_LOG_TAG, "POST_NOTIFICATIONS granted=$granted")
+            startGymRemoteService()
+        }
 
     private var remoteCaptureEnabled: Boolean = true
 
-    private var tts: TextToSpeech? = null
-    private var ttsReady: Boolean = false
-
-    private lateinit var audioManager: AudioManager
-    private var audioFocusRequest: AudioFocusRequest? = null
+    private var initialSessionDetailId by mutableStateOf<Long?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
 
-        audioManager = getSystemService(AudioManager::class.java)
+        initialSessionDetailId = intent.extractInitialSessionDetailId()
 
-        initializeTextToSpeech()
-        collectGymVoice()
+        requestNotificationPermissionThenStartGymRemoteService()
         refreshPlannedSessions()
 
         setContent {
             KusgangAliwasTheme {
-                KusgangAliwasApp()
+                NavShell(
+                    initialSessionDetailId = initialSessionDetailId,
+                )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        setIntent(intent)
+        initialSessionDetailId = intent.extractInitialSessionDetailId()
     }
 
     override fun onResume() {
         super.onResume()
         refreshPlannedSessions()
-    }
-
-    override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
-        tts = null
-
-        abandonGymAudioFocus()
-
-        super.onDestroy()
     }
 
     @SuppressLint("RestrictedApi")
@@ -83,7 +84,7 @@ class MainActivity : ComponentActivity() {
         if (input != null && remoteCaptureEnabled) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                 logRemoteKeyEvent(event)
-                Log.d(REMOTE_LOG_TAG, "Emitting gym remote input: $input")
+                Log.d(REMOTE_LOG_TAG, "Emitting gym remote input from activity: $input")
                 gymRemoteInputBus.emit(input)
             }
 
@@ -93,12 +94,47 @@ class MainActivity : ComponentActivity() {
         return super.dispatchKeyEvent(event)
     }
 
-    private fun collectGymVoice() {
-        lifecycleScope.launch {
-            gymVoiceBus.messages.collect { message ->
-                Log.d(TTS_LOG_TAG, "Speaking: $message")
-                speakForGym(message)
-            }
+    private fun Intent.extractInitialSessionDetailId(): Long? {
+        if (action != ACTION_OPEN_SESSION_DETAIL_FROM_WIDGET) {
+            return null
+        }
+
+        val sessionId = getLongExtra(
+            EXTRA_ACTUAL_SESSION_ID,
+            INVALID_SESSION_ID,
+        )
+
+        return sessionId.takeIf { it != INVALID_SESSION_ID }
+    }
+
+    private fun requestNotificationPermissionThenStartGymRemoteService() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            startGymRemoteService()
+            return
+        }
+
+        val permission = Manifest.permission.POST_NOTIFICATIONS
+
+        val hasPermission = ContextCompat.checkSelfPermission(
+            this,
+            permission,
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            startGymRemoteService()
+            return
+        }
+
+        notificationPermissionLauncher.launch(permission)
+    }
+
+    private fun startGymRemoteService() {
+        val intent = GymRemoteService.startIntent(this)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
         }
     }
 
@@ -123,80 +159,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun initializeTextToSpeech() {
-        tts = TextToSpeech(this) { status ->
-            ttsReady = status == TextToSpeech.SUCCESS
-
-            if (ttsReady) {
-                tts?.language = Locale.getDefault()
-
-                tts?.setOnUtteranceProgressListener(
-                    object : UtteranceProgressListener() {
-
-                        override fun onStart(utteranceId: String?) = Unit
-
-                        override fun onDone(utteranceId: String?) {
-                            abandonGymAudioFocus()
-                        }
-
-                        @Deprecated("Deprecated in Java")
-                        override fun onError(utteranceId: String?) {
-                            abandonGymAudioFocus()
-                        }
-                    }
-                )
-
-                Log.d(TTS_LOG_TAG, "TTS ready")
-            } else {
-                Log.w(TTS_LOG_TAG, "TTS initialization failed")
-            }
-        }
-    }
-
-    private fun speakForGym(text: String) {
-        if (!ttsReady) {
-            Log.d(TTS_LOG_TAG, "TTS not ready. Dropping speech: $text")
-            return
-        }
-
-        requestGymAudioFocus()
-
-        tts?.speak(
-            text,
-            TextToSpeech.QUEUE_FLUSH,
-            null,
-            "ka_gym_voice_${System.currentTimeMillis()}",
-        )
-    }
-
-    private fun requestGymAudioFocus() {
-        audioFocusRequest =
-            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                .setAcceptsDelayedFocusGain(false)
-                .setOnAudioFocusChangeListener { }
-                .build()
-
-        audioFocusRequest?.let {
-            audioManager.requestAudioFocus(it)
-        }
-    }
-
-    private fun abandonGymAudioFocus() {
-        audioFocusRequest?.let {
-            audioManager.abandonAudioFocusRequest(it)
-        }
-    }
-
     private fun logRemoteKeyEvent(event: KeyEvent) {
         Log.d(
             REMOTE_LOG_TAG,
-            "keyCode=${event.keyCode}, " +
+            "activity keyCode=${event.keyCode}, " +
                     "keyName=${KeyEvent.keyCodeToString(event.keyCode)}, " +
                     "scanCode=${event.scanCode}, " +
                     "deviceId=${event.deviceId}, " +
@@ -214,8 +180,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private companion object {
-        const val REMOTE_LOG_TAG = "KA_REMOTE"
-        const val TTS_LOG_TAG = "KA_TTS"
+    companion object {
+        const val ACTION_OPEN_SESSION_DETAIL_FROM_WIDGET =
+            "com.example.kusgangaliwas.action.OPEN_SESSION_DETAIL_FROM_WIDGET"
+
+        const val EXTRA_ACTUAL_SESSION_ID =
+            "com.example.kusgangaliwas.extra.ACTUAL_SESSION_ID"
+
+        private const val INVALID_SESSION_ID = -1L
+        private const val REMOTE_LOG_TAG = "KA_REMOTE"
     }
 }

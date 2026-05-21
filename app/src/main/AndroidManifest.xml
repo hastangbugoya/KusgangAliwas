@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".KusgangAliwasApplication"
         android:allowBackup="true"
@@ -12,6 +16,31 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.KusgangAliwas">
+
+        <service
+            android:name=".service.GymRemoteService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <receiver
+            android:name=".widget.GymSessionWidgetProvider"
+            android:exported="false">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+
+                <action android:name="com.example.kusgangaliwas.widget.ACTION_PREVIOUS" />
+                <action android:name="com.example.kusgangaliwas.widget.ACTION_CONFIRM" />
+                <action android:name="com.example.kusgangaliwas.widget.ACTION_NEXT" />
+                <action android:name="com.example.kusgangaliwas.widget.ACTION_ADD_SET" />
+                <action android:name="com.example.kusgangaliwas.widget.ACTION_REFRESH" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/gym_session_widget_info" />
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

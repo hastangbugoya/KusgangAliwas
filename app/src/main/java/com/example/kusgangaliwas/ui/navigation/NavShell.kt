@@ -6,6 +6,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -15,14 +16,24 @@ import androidx.navigation.compose.rememberNavController
 /**
  * Temporary navigation shell.
  *
- * This is scaffolding only. We can change the app flow once the main
- * features are visible and easier to reason about.
+ * initialSessionDetailId allows external entry points such as the gym widget
+ * to open directly into a session detail screen.
  */
 @Composable
 fun NavShell(
+    initialSessionDetailId: Long? = null,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
+
+    LaunchedEffect(initialSessionDetailId) {
+        initialSessionDetailId?.let { sessionId ->
+            navController.navigate(
+                Destination.SessionDetail.createRoute(sessionId)
+            )
+        }
+    }
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
