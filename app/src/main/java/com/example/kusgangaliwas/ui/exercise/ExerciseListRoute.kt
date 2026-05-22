@@ -35,5 +35,10 @@ fun ExerciseListRoute(
         onRenameMuscleGroup = viewModel::renameMuscleGroup,
         onDeleteMuscleGroup = viewModel::deleteMuscleGroup,
         onRenameExercise = viewModel::renameExercise,
+        onCreatePaceProfile = viewModel::createPaceProfile,
+        onUpdatePaceProfile = viewModel::updatePaceProfile,
+        onSetPaceProfileAsDefault = viewModel::setPaceProfileAsDefault,
+        onTogglePaceProfileEnabled = viewModel::togglePaceProfileEnabled,
+        onDeletePaceProfile = viewModel::deletePaceProfile,
     )
 }

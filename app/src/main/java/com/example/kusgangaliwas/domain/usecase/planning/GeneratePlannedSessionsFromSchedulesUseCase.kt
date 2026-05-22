@@ -1,8 +1,11 @@
 package com.example.kusgangaliwas.domain.usecase.planning
 
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
+import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.SplitScheduleEntity
 import com.example.kusgangaliwas.domain.repository.PlannedSessionRepository
+import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
+import com.example.kusgangaliwas.domain.usecase.pace.ResolveExercisePaceProfileUseCase
 import kotlinx.coroutines.flow.first
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -25,6 +28,8 @@ import javax.inject.Inject
  */
 class GeneratePlannedSessionsFromSchedulesUseCase @Inject constructor(
     private val plannedSessionRepository: PlannedSessionRepository,
+    private val splitTemplateRepository: SplitTemplateRepository,
+    private val resolveExercisePaceProfileUseCase: ResolveExercisePaceProfileUseCase,
 ) {
 
     suspend operator fun invoke(
@@ -68,6 +73,9 @@ class GeneratePlannedSessionsFromSchedulesUseCase @Inject constructor(
             "${it.scheduledDateEpochDay}_${it.splitTemplateId}"
         }.toSet()
 
+        val splitExercises = splitTemplateRepository
+            .getExercisesForSplit(schedule.splitTemplateId)
+
         var currentDate = startDate
 
         while (!currentDate.isAfter(endDate)) {
@@ -78,8 +86,7 @@ class GeneratePlannedSessionsFromSchedulesUseCase @Inject constructor(
                     "${currentDate.toEpochDay()}_${schedule.splitTemplateId}"
 
                 if (!existingKeys.contains(key)) {
-
-                    plannedSessionRepository.upsertPlannedSession(
+                    val plannedSessionId = plannedSessionRepository.upsertPlannedSession(
                         PlannedSessionEntity(
                             scheduledDateEpochDay = currentDate.toEpochDay(),
                             title = schedule.title,
@@ -91,11 +98,46 @@ class GeneratePlannedSessionsFromSchedulesUseCase @Inject constructor(
                             updatedAtEpochMillis = currentEpochMillis,
                         )
                     )
+
+                    createPlannedExercisesForSession(
+                        plannedSessionId = plannedSessionId,
+                        splitExercises = splitExercises,
+                    )
                 }
             }
 
             currentDate = currentDate.plusDays(1)
         }
+    }
+
+    private suspend fun createPlannedExercisesForSession(
+        plannedSessionId: Long,
+        splitExercises: List<com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity>,
+    ) {
+        if (plannedSessionId <= 0L || splitExercises.isEmpty()) {
+            return
+        }
+
+        val plannedExercises = splitExercises.map { splitExercise ->
+            val resolvedPaceProfile = resolveExercisePaceProfileUseCase(
+                exerciseId = splitExercise.exerciseId,
+                paceProfileId = splitExercise.paceProfileId,
+            )
+
+            PlannedSessionExerciseEntity(
+                plannedSessionId = plannedSessionId,
+                plannedExerciseId = splitExercise.exerciseId,
+                paceProfileId = resolvedPaceProfile?.id,
+                sourceSplitTemplateExerciseId = splitExercise.id,
+                sourcePlannedSessionExerciseId = null,
+                originType = "template",
+                suggestedOrder = splitExercise.suggestedOrder,
+                status = "suggested",
+                notes = splitExercise.notes,
+            )
+        }
+
+        plannedSessionRepository.upsertPlannedSessionExercises(plannedExercises)
     }
 
     /**

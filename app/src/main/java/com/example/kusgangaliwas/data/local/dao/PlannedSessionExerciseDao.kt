@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -72,6 +73,16 @@ interface PlannedSessionExerciseDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPlannedSessionExercises(
+        entities: List<PlannedSessionExerciseEntity>,
+    )
+
+    @Upsert
+    suspend fun upsertPlannedSessionExercise(
+        entity: PlannedSessionExerciseEntity,
+    ): Long
+
+    @Upsert
+    suspend fun upsertPlannedSessionExercises(
         entities: List<PlannedSessionExerciseEntity>,
     )
 

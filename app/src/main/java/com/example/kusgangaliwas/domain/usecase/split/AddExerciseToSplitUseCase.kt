@@ -15,6 +15,7 @@ class AddExerciseToSplitUseCase(
     suspend operator fun invoke(
         splitTemplateId: Long,
         exerciseId: Long,
+        paceProfileId: Long? = null,
         notes: String? = null,
         isOptional: Boolean = false,
     ): Long {
@@ -39,6 +40,7 @@ class AddExerciseToSplitUseCase(
             SplitTemplateExerciseEntity(
                 splitTemplateId = splitTemplateId,
                 exerciseId = exerciseId,
+                paceProfileId = paceProfileId,
                 suggestedOrder = nextOrder,
                 notes = notes?.trim()?.takeIf { it.isNotBlank() },
                 isOptional = isOptional,

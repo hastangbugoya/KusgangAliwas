@@ -47,6 +47,10 @@ interface SplitTemplateRepository {
         splitTemplateId: Long,
     ): List<SplitTemplateExerciseEntity>
 
+    suspend fun getSplitExerciseById(
+        id: Long,
+    ): SplitTemplateExerciseEntity?
+
     suspend fun insertSplitExercise(
         entity: SplitTemplateExerciseEntity,
     ): Long
@@ -57,6 +61,11 @@ interface SplitTemplateRepository {
 
     suspend fun updateSplitExercise(
         entity: SplitTemplateExerciseEntity,
+    )
+
+    suspend fun updatePaceProfileForSplitExercise(
+        splitTemplateExerciseId: Long,
+        paceProfileId: Long?,
     )
 
     suspend fun updateSplitExercises(

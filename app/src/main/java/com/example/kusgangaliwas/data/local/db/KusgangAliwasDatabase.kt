@@ -10,6 +10,8 @@ import com.example.kusgangaliwas.data.local.dao.ActualSessionDao
 import com.example.kusgangaliwas.data.local.dao.CycleCalendarAnchorDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseMuscleGroupDao
+import com.example.kusgangaliwas.data.local.dao.ExercisePaceProfileDao
+import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseSubstitutionDao
 import com.example.kusgangaliwas.data.local.dao.MuscleGroupDao
 import com.example.kusgangaliwas.data.local.dao.PlannedSessionDao
@@ -18,10 +20,11 @@ import com.example.kusgangaliwas.data.local.dao.ProgramDao
 import com.example.kusgangaliwas.data.local.dao.SplitScheduleDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
+import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
+import com.example.kusgangaliwas.data.local.dao.TrainingCycleActivationDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
+import com.example.kusgangaliwas.data.local.dao.TrainingCycleProgressEventDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
-import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
-import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
 import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
@@ -29,6 +32,8 @@ import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.CycleCalendarAnchorEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleGroupCrossRef
+import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
+import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseSubstitutionEntity
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
@@ -37,14 +42,11 @@ import com.example.kusgangaliwas.data.local.entity.ProgramEntity
 import com.example.kusgangaliwas.data.local.entity.SplitScheduleEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
-import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
-import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
-import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
-import com.example.kusgangaliwas.data.local.dao.TrainingCycleActivationDao
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
-import com.example.kusgangaliwas.data.local.dao.TrainingCycleProgressEventDao
-import com.example.kusgangaliwas.data.local.entity.TrainingCycleProgressEventEntity
 import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
+import com.example.kusgangaliwas.data.local.entity.TrainingCycleEntity
+import com.example.kusgangaliwas.data.local.entity.TrainingCycleProgressEventEntity
+import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
 
 /**
  * Main Room database for Kusgang Aliwas.
@@ -81,6 +83,17 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
  * - active cycles remain active until manually deactivated
  * - restarting as a new run creates a new activation window
  *
+ * DB-13 adds exercise pace profiles:
+ * - each exercise can have multiple named pace profiles
+ * - one profile may be marked as the default for that exercise
+ * - split exercises can later select a specific profile for that exercise
+ * - pace profiles power optional gentle timing nudges during focused exercise work
+ *
+ * DB-14 adds planned-session pace profile snapshots:
+ * - planned session exercises can carry a resolved paceProfileId
+ * - resolution happens when the planned exercise is created
+ * - runtime logging can use the planned pace directly without re-reading the split
+ *
  */
 @Database(
     entities = [
@@ -88,6 +101,7 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
         MuscleGroupEntity::class,
         ExerciseMuscleGroupCrossRef::class,
         ExerciseSubstitutionEntity::class,
+        ExercisePaceProfileEntity::class,
         SplitTemplateEntity::class,
         SplitTemplateExerciseEntity::class,
         SplitTemplateMuscleGroupCrossRef::class,
@@ -106,7 +120,7 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleActivationEntity
         ExercisePrEntity::class,
         TrainingCycleActivationEntity::class,
     ],
-    version = 12,
+    version = 14,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -115,6 +129,7 @@ abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun muscleGroupDao(): MuscleGroupDao
     abstract fun exerciseMuscleGroupDao(): ExerciseMuscleGroupDao
     abstract fun exerciseSubstitutionDao(): ExerciseSubstitutionDao
+    abstract fun exercisePaceProfileDao(): ExercisePaceProfileDao
     abstract fun splitTemplateDao(): SplitTemplateDao
     abstract fun splitTemplateExerciseDao(): SplitTemplateExerciseDao
     abstract fun splitTemplateMuscleGroupDao(): SplitTemplateMuscleGroupDao

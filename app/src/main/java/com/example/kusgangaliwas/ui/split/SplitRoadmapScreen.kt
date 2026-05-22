@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -23,10 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -40,7 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
@@ -65,26 +61,10 @@ fun SplitRoadmapScreen(
     onRenameSplit: (String) -> Unit,
     onToggleMuscleGroupForSplit: (Long, Boolean) -> Unit,
     onUpdateCardioTargets: (SplitTemplateExerciseEntity, Double?, String?, Int?) -> Unit,
+    onUpdatePaceProfileForSplitExercise: (SplitTemplateExerciseEntity, Long?) -> Unit,
+    onApplyPaceProfileNameToSplit: (String) -> Unit,
     onOpenExercisePicker: (Long) -> Unit,
 ) {
-//    var showAddExerciseSheet by remember { mutableStateOf(false) }
-
-//    if (showAddExerciseSheet) {
-//        ModalBottomSheet(
-//            onDismissRequest = {
-//                showAddExerciseSheet = false
-//            },
-//        ) {
-//            AddExerciseToSplitSheetContent(
-//                availableExercises = uiState.availableExercises,
-//                onAddExercise = { exerciseId ->
-//                    onAddExercise(exerciseId)
-//                    showAddExerciseSheet = false
-//                },
-//            )
-//        }
-//    }
-
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -102,7 +82,7 @@ fun SplitRoadmapScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { onOpenExercisePicker(uiState.splitId) }
+                        onClick = { onOpenExercisePicker(uiState.splitId) },
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -155,6 +135,13 @@ fun SplitRoadmapScreen(
             }
 
             item {
+                ApplyPaceProfileNameCard(
+                    uiState = uiState,
+                    onApplyPaceProfileNameToSplit = onApplyPaceProfileNameToSplit,
+                )
+            }
+
+            item {
                 SharpCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionHeader("Roadmap")
@@ -162,7 +149,7 @@ fun SplitRoadmapScreen(
                         if (uiState.roadmapItems.isEmpty()) {
                             Text("No exercises in this split yet.")
                         } else {
-                            uiState.roadmapItems.forEachIndexed { index, item ->
+                            uiState.roadmapItems.forEach { item ->
                                 val splitExercise = item.splitTemplateExercise
                                 val exerciseType = item.exerciseType
 
@@ -179,6 +166,13 @@ fun SplitRoadmapScreen(
                                             text = exerciseType?.displayText() ?: "Unknown",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+
+                                        PaceProfileSelectorRow(
+                                            splitExercise = splitExercise,
+                                            paceProfiles = item.paceProfiles,
+                                            onUpdatePaceProfileForSplitExercise =
+                                                onUpdatePaceProfileForSplitExercise,
                                         )
 
                                         buildTargetText(
@@ -416,6 +410,93 @@ private fun ScheduleCard(
 }
 
 @Composable
+private fun ApplyPaceProfileNameCard(
+    uiState: SplitRoadmapUiState,
+    onApplyPaceProfileNameToSplit: (String) -> Unit,
+) {
+    var paceNameText by remember(uiState.splitId) {
+        mutableStateOf("")
+    }
+
+    val reusablePaceNames = remember(uiState.roadmapItems) {
+        uiState.roadmapItems
+            .flatMap { item -> item.paceProfiles }
+            .map { profile -> profile.name.trim() }
+            .filter { name -> name.isNotBlank() }
+            .distinctBy { name -> name.lowercase() }
+            .sortedWith(String.CASE_INSENSITIVE_ORDER)
+    }
+
+    SharpCard {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SectionHeader("Apply pace name")
+
+            Text(
+                text = "Applies a matching enabled pace profile by name. Exercises without that pace are skipped.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (reusablePaceNames.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    reusablePaceNames.forEach { paceName ->
+                        FilterChip(
+                            selected = paceNameText.equals(
+                                paceName,
+                                ignoreCase = true,
+                            ),
+                            onClick = {
+                                paceNameText = paceName
+                            },
+                            label = {
+                                Text(paceName)
+                            },
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = "No pace profile names found in this split yet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = paceNameText,
+                    onValueChange = { value ->
+                        paceNameText = value
+                    },
+                    label = {
+                        Text("Pace name")
+                    },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+
+                Button(
+                    onClick = {
+                        onApplyPaceProfileNameToSplit(paceNameText)
+                    },
+                    enabled = paceNameText.isNotBlank(),
+                ) {
+                    Text("Apply")
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ScheduleDayChip(
     label: String,
     bitIndex: Int,
@@ -433,6 +514,100 @@ private fun ScheduleDayChip(
             Text(label)
         },
     )
+}
+
+@Composable
+private fun PaceProfileSelectorRow(
+    splitExercise: SplitTemplateExerciseEntity,
+    paceProfiles: List<ExercisePaceProfileEntity>,
+    onUpdatePaceProfileForSplitExercise: (SplitTemplateExerciseEntity, Long?) -> Unit,
+) {
+    val selectedProfile = paceProfiles.firstOrNull { profile ->
+        profile.id == splitExercise.paceProfileId
+    }
+    val defaultProfile = paceProfiles.firstOrNull { profile ->
+        profile.isDefault
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = buildPaceSelectionText(
+                selectedProfile = selectedProfile,
+                defaultProfile = defaultProfile,
+                profileCount = paceProfiles.size,
+                hasExplicitSelection = splitExercise.paceProfileId != null,
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (paceProfiles.isNotEmpty()) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = splitExercise.paceProfileId == null,
+                    onClick = {
+                        onUpdatePaceProfileForSplitExercise(
+                            splitExercise,
+                            null,
+                        )
+                    },
+                    label = {
+                        Text("Exercise default")
+                    },
+                )
+
+                paceProfiles.forEach { profile ->
+                    FilterChip(
+                        selected = splitExercise.paceProfileId == profile.id,
+                        onClick = {
+                            onUpdatePaceProfileForSplitExercise(
+                                splitExercise,
+                                profile.id,
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = if (profile.isDefault) {
+                                    "${profile.name} default"
+                                } else {
+                                    profile.name
+                                },
+                            )
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun buildPaceSelectionText(
+    selectedProfile: ExercisePaceProfileEntity?,
+    defaultProfile: ExercisePaceProfileEntity?,
+    profileCount: Int,
+    hasExplicitSelection: Boolean,
+): String {
+    return when {
+        selectedProfile != null ->
+            "Split pace: ${selectedProfile.name}"
+
+        hasExplicitSelection ->
+            "Split pace: selected profile missing"
+
+        defaultProfile != null ->
+            "Split pace: exercise default ${defaultProfile.name}"
+
+        profileCount > 0 ->
+            "Split pace: this exercise has pace profiles, but no default is set"
+
+        else ->
+            "Split pace: none"
+    }
 }
 
 @Composable

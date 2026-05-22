@@ -37,12 +37,19 @@ import androidx.room.PrimaryKey
             childColumns = ["sourceSplitTemplateExerciseId"],
             onDelete = ForeignKey.SET_NULL,
         ),
+        ForeignKey(
+            entity = ExercisePaceProfileEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["paceProfileId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
     indices = [
         Index(value = ["plannedSessionId"]),
         Index(value = ["plannedExerciseId"]),
         Index(value = ["sourceSplitTemplateExerciseId"]),
         Index(value = ["sourcePlannedSessionExerciseId"]),
+        Index(value = ["paceProfileId"]),
     ],
 )
 data class PlannedSessionExerciseEntity(
@@ -52,6 +59,20 @@ data class PlannedSessionExerciseEntity(
     val plannedSessionId: Long,
 
     val plannedExerciseId: Long,
+
+    /**
+     * Optional planned-session pace profile.
+     *
+     * This should be resolved when the planned session exercise is created:
+     * - split exercise selected pace profile
+     * - else exercise default pace profile
+     * - else null
+     *
+     * Runtime logging can use this value directly without re-resolving from
+     * the split template. If the profile is deleted later, Room sets this to
+     * null and the session simply has no pace nudges.
+     */
+    val paceProfileId: Long? = null,
 
     /**
      * Optional reference to the split-template roadmap item this came from.

@@ -6,10 +6,12 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleEmphasis
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleGroupCrossRef
+import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
 import com.example.kusgangaliwas.data.local.entity.ExercisePrType
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
+import com.example.kusgangaliwas.domain.repository.ExercisePaceProfileRepository
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.usecase.exercise.CreateExerciseUseCase
@@ -47,6 +49,7 @@ data class ExerciseListItemUiState(
     val actualOneRepMaxDateText: String? = null,
     val latestMaxWeightText: String? = null,
     val selectedMuscleGroupIds: Set<Long> = emptySet(),
+    val paceProfiles: List<ExercisePaceProfileEntity> = emptyList(),
     val historyPoints: List<ExerciseHistoryPointUiState> = emptyList(),
     val historyTrendText: String? = null,
 )
@@ -59,6 +62,7 @@ data class ExerciseHistoryPointUiState(
 @HiltViewModel
 class ExerciseListViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
+    private val exercisePaceProfileRepository: ExercisePaceProfileRepository,
     private val sessionRepository: SessionRepository,
     private val createExerciseUseCase: CreateExerciseUseCase,
     private val getEstimatedOneRepMaxUseCase: GetEstimatedOneRepMaxUseCase,
@@ -66,56 +70,65 @@ class ExerciseListViewModel @Inject constructor(
 
     private val refreshSignal = MutableStateFlow(0)
 
+    private val errorMessage = MutableStateFlow<String?>(null)
+
     private val selectedFilterMuscleGroupIds = MutableStateFlow<Set<Long>>(emptySet())
 
     private val searchQuery = MutableStateFlow("")
 
     val uiState: StateFlow<ExerciseListUiState> =
         combine(
-            exerciseRepository.observeActiveExercises(),
-            exerciseRepository.observeActiveMuscleGroups(),
-            selectedFilterMuscleGroupIds,
-            searchQuery,
-            refreshSignal,
-        ) { exercises, muscleGroups, selectedFilters, query, _ ->
-            val listItems = exercises.map { exercise ->
-                buildExerciseListItem(exercise)
-            }
+            combine(
+                exerciseRepository.observeActiveExercises(),
+                exerciseRepository.observeActiveMuscleGroups(),
+                selectedFilterMuscleGroupIds,
+                searchQuery,
+                refreshSignal,
+            ) { exercises, muscleGroups, selectedFilters, query, _ ->
+                val listItems = exercises.map { exercise ->
+                    buildExerciseListItem(exercise)
+                }
 
-            val filteredItems =
-                if (selectedFilters.isEmpty()) {
-                    listItems
-                } else {
-                    listItems.filter { item ->
-                        item.selectedMuscleGroupIds.any { id ->
-                            selectedFilters.contains(id)
+                val filteredItems =
+                    if (selectedFilters.isEmpty()) {
+                        listItems
+                    } else {
+                        listItems.filter { item ->
+                            item.selectedMuscleGroupIds.any { id ->
+                                selectedFilters.contains(id)
+                            }
                         }
                     }
-                }
 
-            val searchFilteredItems =
-                if (query.isBlank()) {
-                    filteredItems
-                } else {
-                    filteredItems.filter { item ->
-                        item.exercise.name.contains(
-                            query.trim(),
-                            ignoreCase = true,
-                        )
+                val searchFilteredItems =
+                    if (query.isBlank()) {
+                        filteredItems
+                    } else {
+                        filteredItems.filter { item ->
+                            item.exercise.name.contains(
+                                query.trim(),
+                                ignoreCase = true,
+                            )
+                        }
                     }
-                }
 
-            ExerciseListUiState(
-                exercises = searchFilteredItems,
-                availableMuscleGroups = muscleGroups,
-                selectedFilterMuscleGroupIds = selectedFilters,
-                searchQuery = query,
+                ExerciseListUiState(
+                    exercises = searchFilteredItems,
+                    availableMuscleGroups = muscleGroups,
+                    selectedFilterMuscleGroupIds = selectedFilters,
+                    searchQuery = query,
+                )
+            },
+            errorMessage,
+        ) { state, error ->
+            state.copy(
+                errorMessage = error,
             )
         }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = ExerciseListUiState(),
-            )
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ExerciseListUiState(),
+        )
 
     fun createExercise(
         name: String,
@@ -196,6 +209,154 @@ class ExerciseListViewModel @Inject constructor(
         }
     }
 
+    fun createPaceProfile(
+        exerciseId: Long,
+        name: String,
+        isDefault: Boolean = false,
+        isEnabled: Boolean = true,
+        prepLeadSeconds: Int = 0,
+        expectedWorkSeconds: Int = 0,
+        expectedRestSeconds: Int = 0,
+        nextSetWarningSeconds: Int = 0,
+        idleReminderIntervalSeconds: Int = 0,
+        idleReminderEnabled: Boolean = false,
+        etiquetteReminderEnabled: Boolean = false,
+    ) {
+        viewModelScope.launch {
+            val cleanedName = cleanPaceProfileName(name) ?: return@launch
+            val now = System.currentTimeMillis()
+
+            runCatching {
+                val existingProfile = exercisePaceProfileRepository
+                    .getProfileForExerciseByName(
+                        exerciseId = exerciseId,
+                        name = cleanedName,
+                    )
+
+                require(existingProfile == null) {
+                    "This exercise already has a pace profile named \"$cleanedName\"."
+                }
+
+                exercisePaceProfileRepository.insertProfile(
+                    ExercisePaceProfileEntity(
+                        exerciseId = exerciseId,
+                        name = cleanedName,
+                        isDefault = isDefault,
+                        isEnabled = isEnabled,
+                        prepLeadSeconds = sanitizeSeconds(prepLeadSeconds),
+                        expectedWorkSeconds = sanitizeSeconds(expectedWorkSeconds),
+                        expectedRestSeconds = sanitizeSeconds(expectedRestSeconds),
+                        nextSetWarningSeconds = sanitizeSeconds(nextSetWarningSeconds),
+                        idleReminderIntervalSeconds = sanitizeSeconds(
+                            idleReminderIntervalSeconds,
+                        ),
+                        idleReminderEnabled = idleReminderEnabled,
+                        etiquetteReminderEnabled = etiquetteReminderEnabled,
+                        createdAtEpochMillis = now,
+                        updatedAtEpochMillis = now,
+                    )
+                )
+            }.onSuccess {
+                errorMessage.value = null
+                refreshSignal.update { it + 1 }
+            }.onFailure { error ->
+                errorMessage.value = error.message ?: "Could not save pace profile."
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun updatePaceProfile(
+        profile: ExercisePaceProfileEntity,
+        name: String = profile.name,
+        isDefault: Boolean = profile.isDefault,
+        isEnabled: Boolean = profile.isEnabled,
+        prepLeadSeconds: Int = profile.prepLeadSeconds,
+        expectedWorkSeconds: Int = profile.expectedWorkSeconds,
+        expectedRestSeconds: Int = profile.expectedRestSeconds,
+        nextSetWarningSeconds: Int = profile.nextSetWarningSeconds,
+        idleReminderIntervalSeconds: Int = profile.idleReminderIntervalSeconds,
+        idleReminderEnabled: Boolean = profile.idleReminderEnabled,
+        etiquetteReminderEnabled: Boolean = profile.etiquetteReminderEnabled,
+    ) {
+        viewModelScope.launch {
+            val cleanedName = cleanPaceProfileName(name) ?: return@launch
+
+            runCatching {
+                val existingProfile = exercisePaceProfileRepository
+                    .getProfileForExerciseByName(
+                        exerciseId = profile.exerciseId,
+                        name = cleanedName,
+                    )
+
+                require(existingProfile == null || existingProfile.id == profile.id) {
+                    "This exercise already has a pace profile named \"$cleanedName\"."
+                }
+
+                exercisePaceProfileRepository.updateProfile(
+                    profile.copy(
+                        name = cleanedName,
+                        isDefault = isDefault,
+                        isEnabled = isEnabled,
+                        prepLeadSeconds = sanitizeSeconds(prepLeadSeconds),
+                        expectedWorkSeconds = sanitizeSeconds(expectedWorkSeconds),
+                        expectedRestSeconds = sanitizeSeconds(expectedRestSeconds),
+                        nextSetWarningSeconds = sanitizeSeconds(nextSetWarningSeconds),
+                        idleReminderIntervalSeconds = sanitizeSeconds(
+                            idleReminderIntervalSeconds,
+                        ),
+                        idleReminderEnabled = idleReminderEnabled,
+                        etiquetteReminderEnabled = etiquetteReminderEnabled,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
+            }.onSuccess {
+                errorMessage.value = null
+                refreshSignal.update { it + 1 }
+            }.onFailure { error ->
+                errorMessage.value = error.message ?: "Could not update pace profile."
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun setPaceProfileAsDefault(
+        profile: ExercisePaceProfileEntity,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                exercisePaceProfileRepository.setDefaultProfileForExercise(
+                    exerciseId = profile.exerciseId,
+                    profileId = profile.id,
+                    updatedAtEpochMillis = System.currentTimeMillis(),
+                )
+            }
+
+            refreshSignal.update { it + 1 }
+        }
+    }
+
+    fun togglePaceProfileEnabled(
+        profile: ExercisePaceProfileEntity,
+    ) {
+        updatePaceProfile(
+            profile = profile,
+            isEnabled = !profile.isEnabled,
+        )
+    }
+
+    fun deletePaceProfile(
+        profile: ExercisePaceProfileEntity,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                exercisePaceProfileRepository.deleteProfile(profile)
+            }
+
+            refreshSignal.update { it + 1 }
+        }
+    }
+
     private suspend fun buildExerciseListItem(
         exercise: ExerciseEntity,
     ): ExerciseListItemUiState {
@@ -204,6 +365,9 @@ class ExerciseListViewModel @Inject constructor(
             .first()
             .map { crossRef -> crossRef.muscleGroupId }
             .toSet()
+
+        val paceProfiles = exercisePaceProfileRepository
+            .getProfilesForExercise(exercise.id)
 
         return when (exercise.exerciseType) {
 
@@ -215,6 +379,7 @@ class ExerciseListViewModel @Inject constructor(
                     ExerciseListItemUiState(
                         exercise = exercise,
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
+                        paceProfiles = paceProfiles,
                     )
                 } else {
 
@@ -249,6 +414,7 @@ class ExerciseListViewModel @Inject constructor(
                                 cardioParts.joinToString(" · ")
                             },
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
+                        paceProfiles = paceProfiles,
                     )
                 }
             }
@@ -283,6 +449,7 @@ class ExerciseListViewModel @Inject constructor(
                             "Actual 1RM date: ${formatDate(it.achievedAtEpochMillis)}"
                         },
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
+                        paceProfiles = paceProfiles,
                         historyPoints = historyPoints,
                         historyTrendText = historyTrendText,
                     )
@@ -309,6 +476,7 @@ class ExerciseListViewModel @Inject constructor(
                             "Actual 1RM date: ${formatDate(it.achievedAtEpochMillis)}"
                         },
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
+                        paceProfiles = paceProfiles,
                         historyPoints = historyPoints,
                         historyTrendText = historyTrendText,
                     )
@@ -487,6 +655,26 @@ class ExerciseListViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun cleanPaceProfileName(
+        value: String,
+    ): String? {
+        val cleaned = value.trim()
+
+        if (cleaned.isBlank()) {
+            return null
+        }
+
+        return cleaned.replaceFirstChar { character ->
+            character.uppercase()
+        }
+    }
+
+    private fun sanitizeSeconds(
+        value: Int,
+    ): Int {
+        return value.coerceAtLeast(0)
     }
 
     private fun formatEpochDay(

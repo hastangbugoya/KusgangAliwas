@@ -2,14 +2,14 @@ package com.example.kusgangaliwas.data.repository
 
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
+import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
+import com.example.kusgangaliwas.data.local.model.SplitTemplateSummaryRow
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
-import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
-import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
-import com.example.kusgangaliwas.data.local.model.SplitTemplateSummaryRow
 
 /**
  * Room-backed implementation of SplitTemplateRepository.
@@ -68,6 +68,12 @@ class SplitTemplateRepositoryImpl @Inject constructor(
         return splitTemplateExerciseDao.getExercisesForSplit(splitTemplateId)
     }
 
+    override suspend fun getSplitExerciseById(
+        id: Long,
+    ): SplitTemplateExerciseEntity? {
+        return splitTemplateExerciseDao.getSplitExerciseById(id)
+    }
+
     override suspend fun insertSplitExercise(
         entity: SplitTemplateExerciseEntity,
     ): Long {
@@ -84,6 +90,16 @@ class SplitTemplateRepositoryImpl @Inject constructor(
         entity: SplitTemplateExerciseEntity,
     ) {
         splitTemplateExerciseDao.updateSplitExercise(entity)
+    }
+
+    override suspend fun updatePaceProfileForSplitExercise(
+        splitTemplateExerciseId: Long,
+        paceProfileId: Long?,
+    ) {
+        splitTemplateExerciseDao.updatePaceProfileForSplitExercise(
+            splitTemplateExerciseId = splitTemplateExerciseId,
+            paceProfileId = paceProfileId,
+        )
     }
 
     override suspend fun updateSplitExercises(

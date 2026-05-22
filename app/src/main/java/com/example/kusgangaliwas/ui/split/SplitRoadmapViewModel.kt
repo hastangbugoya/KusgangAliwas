@@ -5,9 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kusgangaliwas.data.local.entity.SplitScheduleEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
+import com.example.kusgangaliwas.domain.repository.ExercisePaceProfileRepository
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SplitScheduleRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
+import com.example.kusgangaliwas.domain.usecase.pace.ApplyPaceProfileNameToSplitUseCase
 import com.example.kusgangaliwas.domain.usecase.planning.RefreshPlannedSessionsUseCase
 import com.example.kusgangaliwas.domain.usecase.split.AddExerciseToSplitUseCase
 import com.example.kusgangaliwas.domain.usecase.split.GetSplitRoadmapUseCase
@@ -21,16 +24,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
 
 @HiltViewModel
 class SplitRoadmapViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val splitTemplateRepository: SplitTemplateRepository,
     private val exerciseRepository: ExerciseRepository,
+    private val exercisePaceProfileRepository: ExercisePaceProfileRepository,
     private val splitScheduleRepository: SplitScheduleRepository,
     private val refreshPlannedSessionsUseCase: RefreshPlannedSessionsUseCase,
     private val addExerciseToSplitUseCase: AddExerciseToSplitUseCase,
+    private val applyPaceProfileNameToSplitUseCase: ApplyPaceProfileNameToSplitUseCase,
     getSplitRoadmapUseCase: GetSplitRoadmapUseCase,
 ) : ViewModel() {
 
@@ -55,11 +59,14 @@ class SplitRoadmapViewModel @Inject constructor(
                 splitName = schedule.splitName,
                 roadmapItems = roadmap.map { item ->
                     val exercise = exerciseById[item.exerciseId]
+                    val paceProfiles = exercisePaceProfileRepository
+                        .getProfilesForExercise(item.exerciseId)
 
                     SplitRoadmapItemUiState(
                         splitTemplateExercise = item,
                         exerciseName = exercise?.name ?: "Unknown exercise",
                         exerciseType = exercise?.exerciseType,
+                        paceProfiles = paceProfiles,
                     )
                 },
                 availableExercises = exercises,
@@ -308,9 +315,38 @@ class SplitRoadmapViewModel @Inject constructor(
             }
         }
     }
+
+    fun updatePaceProfileForSplitExercise(
+        entity: SplitTemplateExerciseEntity,
+        paceProfileId: Long?,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                splitTemplateRepository.updatePaceProfileForSplitExercise(
+                    splitTemplateExerciseId = entity.id,
+                    paceProfileId = paceProfileId,
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun applyPaceProfileNameToSplit(
+        paceProfileName: String,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                applyPaceProfileNameToSplitUseCase(
+                    splitTemplateId = splitId,
+                    paceProfileName = paceProfileName,
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
 }
-
-
 
 private data class SplitRoadmapScheduleState(
     val splitName: String = "Split",

@@ -11,6 +11,8 @@ import com.example.kusgangaliwas.data.local.dao.ActualSessionDao
 import com.example.kusgangaliwas.data.local.dao.CycleCalendarAnchorDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseMuscleGroupDao
+import com.example.kusgangaliwas.data.local.dao.ExercisePaceProfileDao
+import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseSubstitutionDao
 import com.example.kusgangaliwas.data.local.dao.MuscleGroupDao
 import com.example.kusgangaliwas.data.local.dao.PlannedSessionDao
@@ -19,12 +21,11 @@ import com.example.kusgangaliwas.data.local.dao.ProgramDao
 import com.example.kusgangaliwas.data.local.dao.SplitScheduleDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateExerciseDao
-import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
-import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
-import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
 import com.example.kusgangaliwas.data.local.dao.SplitTemplateMuscleGroupDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleActivationDao
+import com.example.kusgangaliwas.data.local.dao.TrainingCycleDao
 import com.example.kusgangaliwas.data.local.dao.TrainingCycleProgressEventDao
+import com.example.kusgangaliwas.data.local.dao.TrainingCycleStepDao
 import com.example.kusgangaliwas.data.local.db.DatabaseSeedCallback
 import com.example.kusgangaliwas.data.local.db.KusgangAliwasDatabase
 import dagger.Module
@@ -299,17 +300,17 @@ object DatabaseModule {
                     ALTER TABLE split_template_exercise
                     ADD COLUMN targetDistance REAL
                     """.trimIndent()
-                            )
+            )
 
-                            db.execSQL(
-                                """
+            db.execSQL(
+                """
                     ALTER TABLE split_template_exercise
                     ADD COLUMN targetDistanceUnit TEXT
                     """.trimIndent()
-                            )
+            )
 
-                            db.execSQL(
-                                """
+            db.execSQL(
+                """
                     ALTER TABLE split_template_exercise
                     ADD COLUMN targetDurationMinutes INTEGER
                     """.trimIndent()
@@ -410,128 +411,128 @@ object DatabaseModule {
             )
 
             // -----------------------------------------------------------------
-// actual_session cycle linkage
-// -----------------------------------------------------------------
+            // actual_session cycle linkage
+            // -----------------------------------------------------------------
 
             db.execSQL(
                 """
-    CREATE TABLE IF NOT EXISTS actual_session_new (
-        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-        plannedSessionId INTEGER,
-        performedDateEpochDay INTEGER NOT NULL,
-        splitTemplateId INTEGER,
-        trainingCycleId INTEGER,
-        trainingCycleStepId INTEGER,
-        trainingCycleStepOrderSnapshot INTEGER,
-        title TEXT NOT NULL,
-        status TEXT NOT NULL,
-        startedAtEpochMillis INTEGER,
-        completedAtEpochMillis INTEGER,
-        notes TEXT,
-        rating INTEGER,
-        createdAtEpochMillis INTEGER NOT NULL,
-        updatedAtEpochMillis INTEGER NOT NULL,
-        FOREIGN KEY(plannedSessionId)
-            REFERENCES planned_session(id)
-            ON DELETE SET NULL,
-        FOREIGN KEY(splitTemplateId)
-            REFERENCES split_template(id)
-            ON DELETE SET NULL,
-        FOREIGN KEY(trainingCycleId)
-            REFERENCES training_cycle(id)
-            ON DELETE SET NULL
-    )
-    """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS actual_session_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        plannedSessionId INTEGER,
+                        performedDateEpochDay INTEGER NOT NULL,
+                        splitTemplateId INTEGER,
+                        trainingCycleId INTEGER,
+                        trainingCycleStepId INTEGER,
+                        trainingCycleStepOrderSnapshot INTEGER,
+                        title TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        startedAtEpochMillis INTEGER,
+                        completedAtEpochMillis INTEGER,
+                        notes TEXT,
+                        rating INTEGER,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(plannedSessionId)
+                            REFERENCES planned_session(id)
+                            ON DELETE SET NULL,
+                        FOREIGN KEY(splitTemplateId)
+                            REFERENCES split_template(id)
+                            ON DELETE SET NULL,
+                        FOREIGN KEY(trainingCycleId)
+                            REFERENCES training_cycle(id)
+                            ON DELETE SET NULL
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    INSERT INTO actual_session_new (
-        id,
-        plannedSessionId,
-        performedDateEpochDay,
-        splitTemplateId,
-        trainingCycleId,
-        trainingCycleStepId,
-        trainingCycleStepOrderSnapshot,
-        title,
-        status,
-        startedAtEpochMillis,
-        completedAtEpochMillis,
-        notes,
-        rating,
-        createdAtEpochMillis,
-        updatedAtEpochMillis
-    )
-    SELECT
-        id,
-        plannedSessionId,
-        performedDateEpochDay,
-        splitTemplateId,
-        NULL,
-        NULL,
-        NULL,
-        title,
-        status,
-        startedAtEpochMillis,
-        completedAtEpochMillis,
-        notes,
-        rating,
-        createdAtEpochMillis,
-        updatedAtEpochMillis
-    FROM actual_session
-    """.trimIndent()
+                    INSERT INTO actual_session_new (
+                        id,
+                        plannedSessionId,
+                        performedDateEpochDay,
+                        splitTemplateId,
+                        trainingCycleId,
+                        trainingCycleStepId,
+                        trainingCycleStepOrderSnapshot,
+                        title,
+                        status,
+                        startedAtEpochMillis,
+                        completedAtEpochMillis,
+                        notes,
+                        rating,
+                        createdAtEpochMillis,
+                        updatedAtEpochMillis
+                    )
+                    SELECT
+                        id,
+                        plannedSessionId,
+                        performedDateEpochDay,
+                        splitTemplateId,
+                        NULL,
+                        NULL,
+                        NULL,
+                        title,
+                        status,
+                        startedAtEpochMillis,
+                        completedAtEpochMillis,
+                        notes,
+                        rating,
+                        createdAtEpochMillis,
+                        updatedAtEpochMillis
+                    FROM actual_session
+                    """.trimIndent()
             )
 
             db.execSQL("DROP TABLE actual_session")
 
             db.execSQL(
                 """
-    ALTER TABLE actual_session_new
-    RENAME TO actual_session
-    """.trimIndent()
+                    ALTER TABLE actual_session_new
+                    RENAME TO actual_session
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    CREATE INDEX IF NOT EXISTS index_actual_session_plannedSessionId
-    ON actual_session(plannedSessionId)
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_session_plannedSessionId
+                    ON actual_session(plannedSessionId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    CREATE INDEX IF NOT EXISTS index_actual_session_performedDateEpochDay
-    ON actual_session(performedDateEpochDay)
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_session_performedDateEpochDay
+                    ON actual_session(performedDateEpochDay)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    CREATE INDEX IF NOT EXISTS index_actual_session_splitTemplateId
-    ON actual_session(splitTemplateId)
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_session_splitTemplateId
+                    ON actual_session(splitTemplateId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId
-    ON actual_session(trainingCycleId)
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId
+                    ON actual_session(trainingCycleId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleStepId
-    ON actual_session(trainingCycleStepId)
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleStepId
+                    ON actual_session(trainingCycleStepId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId_performedDateEpochDay
-    ON actual_session(trainingCycleId, performedDateEpochDay)
-    """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_actual_session_trainingCycleId_performedDateEpochDay
+                    ON actual_session(trainingCycleId, performedDateEpochDay)
+                    """.trimIndent()
             )
         }
     }
@@ -540,43 +541,43 @@ object DatabaseModule {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
                 """
-            CREATE TABLE IF NOT EXISTS training_cycle_progress_event (
-                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                trainingCycleId INTEGER NOT NULL,
-                trainingCycleStepId INTEGER NOT NULL,
-                eventType TEXT NOT NULL,
-                eventDateEpochDay INTEGER NOT NULL,
-                notes TEXT,
-                createdAtEpochMillis INTEGER NOT NULL,
-                FOREIGN KEY(trainingCycleId)
-                    REFERENCES training_cycle(id)
-                    ON DELETE CASCADE,
-                FOREIGN KEY(trainingCycleStepId)
-                    REFERENCES training_cycle_step(id)
-                    ON DELETE CASCADE
-            )
-            """.trimIndent()
-            )
-
-            db.execSQL(
-                """
-            CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleId
-            ON training_cycle_progress_event(trainingCycleId)
-            """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS training_cycle_progress_event (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        trainingCycleId INTEGER NOT NULL,
+                        trainingCycleStepId INTEGER NOT NULL,
+                        eventType TEXT NOT NULL,
+                        eventDateEpochDay INTEGER NOT NULL,
+                        notes TEXT,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(trainingCycleId)
+                            REFERENCES training_cycle(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(trainingCycleStepId)
+                            REFERENCES training_cycle_step(id)
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-            CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleStepId
-            ON training_cycle_progress_event(trainingCycleStepId)
-            """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleId
+                    ON training_cycle_progress_event(trainingCycleId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-            CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleId_eventDateEpochDay
-            ON training_cycle_progress_event(trainingCycleId, eventDateEpochDay)
-            """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleStepId
+                    ON training_cycle_progress_event(trainingCycleStepId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_training_cycle_progress_event_trainingCycleId_eventDateEpochDay
+                    ON training_cycle_progress_event(trainingCycleId, eventDateEpochDay)
+                    """.trimIndent()
             )
         }
     }
@@ -586,49 +587,306 @@ object DatabaseModule {
 
             db.execSQL(
                 """
-            CREATE TABLE IF NOT EXISTS training_cycle_activation (
-                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                cycleId INTEGER NOT NULL,
-                activatedDateEpochDay INTEGER NOT NULL,
-                deactivatedDateEpochDay INTEGER,
-                notes TEXT,
-                createdAtEpochMillis INTEGER NOT NULL,
-                updatedAtEpochMillis INTEGER NOT NULL,
-                FOREIGN KEY(cycleId)
-                    REFERENCES training_cycle(id)
-                    ON DELETE CASCADE
-            )
-            """.trimIndent()
-            )
-
-            db.execSQL(
-                """
-            CREATE INDEX IF NOT EXISTS
-            index_training_cycle_activation_cycleId
-            ON training_cycle_activation(cycleId)
-            """.trimIndent()
+                    CREATE TABLE IF NOT EXISTS training_cycle_activation (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        cycleId INTEGER NOT NULL,
+                        activatedDateEpochDay INTEGER NOT NULL,
+                        deactivatedDateEpochDay INTEGER,
+                        notes TEXT,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(cycleId)
+                            REFERENCES training_cycle(id)
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-            CREATE INDEX IF NOT EXISTS
-            index_training_cycle_activation_cycleId_activatedDateEpochDay
-            ON training_cycle_activation(
-                cycleId,
-                activatedDateEpochDay
-            )
-            """.trimIndent()
+                    CREATE INDEX IF NOT EXISTS
+                    index_training_cycle_activation_cycleId
+                    ON training_cycle_activation(cycleId)
+                    """.trimIndent()
             )
 
             db.execSQL(
                 """
-            CREATE INDEX IF NOT EXISTS
-            index_training_cycle_activation_cycleId_deactivatedDateEpochDay
-            ON training_cycle_activation(
-                cycleId,
-                deactivatedDateEpochDay
+                    CREATE INDEX IF NOT EXISTS
+                    index_training_cycle_activation_cycleId_activatedDateEpochDay
+                    ON training_cycle_activation(
+                        cycleId,
+                        activatedDateEpochDay
+                    )
+                    """.trimIndent()
             )
-            """.trimIndent()
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS
+                    index_training_cycle_activation_cycleId_deactivatedDateEpochDay
+                    ON training_cycle_activation(
+                        cycleId,
+                        deactivatedDateEpochDay
+                    )
+                    """.trimIndent()
+            )
+        }
+    }
+
+    private val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS exercise_pace_profile (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        exerciseId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        isDefault INTEGER NOT NULL,
+                        isEnabled INTEGER NOT NULL,
+                        prepLeadSeconds INTEGER NOT NULL,
+                        expectedWorkSeconds INTEGER NOT NULL,
+                        expectedRestSeconds INTEGER NOT NULL,
+                        nextSetWarningSeconds INTEGER NOT NULL,
+                        idleReminderIntervalSeconds INTEGER NOT NULL,
+                        idleReminderEnabled INTEGER NOT NULL,
+                        etiquetteReminderEnabled INTEGER NOT NULL,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(exerciseId)
+                            REFERENCES exercise(id)
+                            ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_pace_profile_exerciseId
+                    ON exercise_pace_profile(exerciseId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_exercise_pace_profile_exerciseId_name
+                    ON exercise_pace_profile(exerciseId, name)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS split_template_exercise_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        splitTemplateId INTEGER NOT NULL,
+                        exerciseId INTEGER NOT NULL,
+                        paceProfileId INTEGER,
+                        suggestedOrder INTEGER NOT NULL,
+                        notes TEXT,
+                        targetSets INTEGER,
+                        targetRepsMin INTEGER,
+                        targetRepsMax INTEGER,
+                        targetDistance REAL,
+                        targetDistanceUnit TEXT,
+                        targetDurationMinutes INTEGER,
+                        isOptional INTEGER NOT NULL,
+                        FOREIGN KEY(splitTemplateId)
+                            REFERENCES split_template(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(exerciseId)
+                            REFERENCES exercise(id)
+                            ON DELETE RESTRICT,
+                        FOREIGN KEY(paceProfileId)
+                            REFERENCES exercise_pace_profile(id)
+                            ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    INSERT INTO split_template_exercise_new (
+                        id,
+                        splitTemplateId,
+                        exerciseId,
+                        paceProfileId,
+                        suggestedOrder,
+                        notes,
+                        targetSets,
+                        targetRepsMin,
+                        targetRepsMax,
+                        targetDistance,
+                        targetDistanceUnit,
+                        targetDurationMinutes,
+                        isOptional
+                    )
+                    SELECT
+                        id,
+                        splitTemplateId,
+                        exerciseId,
+                        NULL,
+                        suggestedOrder,
+                        notes,
+                        targetSets,
+                        targetRepsMin,
+                        targetRepsMax,
+                        targetDistance,
+                        targetDistanceUnit,
+                        targetDurationMinutes,
+                        isOptional
+                    FROM split_template_exercise
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    DROP TABLE split_template_exercise
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    ALTER TABLE split_template_exercise_new
+                    RENAME TO split_template_exercise
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_split_template_exercise_splitTemplateId
+                    ON split_template_exercise(splitTemplateId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_split_template_exercise_exerciseId
+                    ON split_template_exercise(exerciseId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_split_template_exercise_paceProfileId
+                    ON split_template_exercise(paceProfileId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_split_template_exercise_splitTemplateId_exerciseId
+                    ON split_template_exercise(splitTemplateId, exerciseId)
+                    """.trimIndent()
+            )
+        }
+    }
+
+    private val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS planned_session_exercise_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    plannedSessionId INTEGER NOT NULL,
+                    plannedExerciseId INTEGER NOT NULL,
+                    paceProfileId INTEGER,
+                    sourceSplitTemplateExerciseId INTEGER,
+                    sourcePlannedSessionExerciseId INTEGER,
+                    originType TEXT NOT NULL,
+                    suggestedOrder INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    notes TEXT,
+                    FOREIGN KEY(plannedSessionId)
+                        REFERENCES planned_session(id)
+                        ON DELETE CASCADE,
+                    FOREIGN KEY(plannedExerciseId)
+                        REFERENCES exercise(id)
+                        ON DELETE RESTRICT,
+                    FOREIGN KEY(sourceSplitTemplateExerciseId)
+                        REFERENCES split_template_exercise(id)
+                        ON DELETE SET NULL,
+                    FOREIGN KEY(paceProfileId)
+                        REFERENCES exercise_pace_profile(id)
+                        ON DELETE SET NULL
+                )
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                INSERT INTO planned_session_exercise_new (
+                    id,
+                    plannedSessionId,
+                    plannedExerciseId,
+                    paceProfileId,
+                    sourceSplitTemplateExerciseId,
+                    sourcePlannedSessionExerciseId,
+                    originType,
+                    suggestedOrder,
+                    status,
+                    notes
+                )
+                SELECT
+                    id,
+                    plannedSessionId,
+                    plannedExerciseId,
+                    NULL,
+                    sourceSplitTemplateExerciseId,
+                    sourcePlannedSessionExerciseId,
+                    originType,
+                    suggestedOrder,
+                    status,
+                    notes
+                FROM planned_session_exercise
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                DROP TABLE planned_session_exercise
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                ALTER TABLE planned_session_exercise_new
+                RENAME TO planned_session_exercise
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_planned_session_exercise_plannedSessionId
+                ON planned_session_exercise(plannedSessionId)
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_planned_session_exercise_plannedExerciseId
+                ON planned_session_exercise(plannedExerciseId)
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_planned_session_exercise_sourceSplitTemplateExerciseId
+                ON planned_session_exercise(sourceSplitTemplateExerciseId)
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_planned_session_exercise_sourcePlannedSessionExerciseId
+                ON planned_session_exercise(sourcePlannedSessionExerciseId)
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_planned_session_exercise_paceProfileId
+                ON planned_session_exercise(paceProfileId)
+                """.trimIndent()
             )
         }
     }
@@ -655,7 +913,9 @@ object DatabaseModule {
                 MIGRATION_8_9,
                 MIGRATION_9_10,
                 MIGRATION_10_11,
-                MIGRATION_11_12
+                MIGRATION_11_12,
+                MIGRATION_12_13,
+                MIGRATION_13_14,
             )
             .build()
     }
@@ -675,6 +935,10 @@ object DatabaseModule {
     @Provides
     fun provideExerciseSubstitutionDao(database: KusgangAliwasDatabase): ExerciseSubstitutionDao =
         database.exerciseSubstitutionDao()
+
+    @Provides
+    fun provideExercisePaceProfileDao(database: KusgangAliwasDatabase): ExercisePaceProfileDao =
+        database.exercisePaceProfileDao()
 
     @Provides
     fun provideSplitTemplateDao(database: KusgangAliwasDatabase): SplitTemplateDao =

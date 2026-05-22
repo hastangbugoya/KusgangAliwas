@@ -20,10 +20,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -34,6 +32,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -46,19 +45,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.kusgangaliwas.R
+import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
+import com.example.kusgangaliwas.ui.common.MuscleGroupChipRow
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.ui.res.painterResource
-import com.example.kusgangaliwas.R
-import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
-import com.example.kusgangaliwas.ui.common.MuscleGroupChipRow
+import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +80,35 @@ fun ExerciseListScreen(
     onRenameMuscleGroup: (MuscleGroupEntity, String) -> Unit,
     onDeleteMuscleGroup: (Long) -> Unit,
     onRenameExercise: (ExerciseEntity, String) -> Unit,
+    onCreatePaceProfile: (
+        Long,
+        String,
+        Boolean,
+        Boolean,
+        Int,
+        Int,
+        Int,
+        Int,
+        Int,
+        Boolean,
+        Boolean,
+    ) -> Unit,
+    onUpdatePaceProfile: (
+        ExercisePaceProfileEntity,
+        String,
+        Boolean,
+        Boolean,
+        Int,
+        Int,
+        Int,
+        Int,
+        Int,
+        Boolean,
+        Boolean,
+    ) -> Unit,
+    onSetPaceProfileAsDefault: (ExercisePaceProfileEntity) -> Unit,
+    onTogglePaceProfileEnabled: (ExercisePaceProfileEntity) -> Unit,
+    onDeletePaceProfile: (ExercisePaceProfileEntity) -> Unit,
 ) {
     var newExerciseName by remember { mutableStateOf("") }
     var selectedExerciseType by remember { mutableStateOf(ExerciseType.STRENGTH) }
@@ -143,6 +172,12 @@ fun ExerciseListScreen(
                 availableMuscleGroups = uiState.availableMuscleGroups,
                 onToggleMuscleGroupForExercise = onToggleMuscleGroupForExercise,
                 onRenameExercise = onRenameExercise,
+                onCreatePaceProfile = onCreatePaceProfile,
+                onUpdatePaceProfile = onUpdatePaceProfile,
+                onSetPaceProfileAsDefault = onSetPaceProfileAsDefault,
+                onTogglePaceProfileEnabled = onTogglePaceProfileEnabled,
+                onDeletePaceProfile = onDeletePaceProfile,
+                errorMessage = uiState.errorMessage,
             )
         }
     }
@@ -211,13 +246,6 @@ fun ExerciseListScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-//            MuscleGroupFilterChips(
-//                muscleGroups = uiState.availableMuscleGroups,
-//                selectedMuscleGroupIds = selectedFilterMuscleGroupIds,
-//                onToggleMuscleGroup = onToggleFilterMuscleGroup,
-//                onClearFilters = onClearMuscleGroupFilters,
-//            )
-
             MuscleGroupChipRow(
                 muscleGroups = uiState.availableMuscleGroups,
                 selectedMuscleGroupIds = selectedFilterMuscleGroupIds,
@@ -227,6 +255,20 @@ fun ExerciseListScreen(
                     onToggleFilterMuscleGroup(muscleGroupId)
                 },
             )
+
+            uiState.errorMessage?.let { message ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraSmall,
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -281,6 +323,15 @@ fun ExerciseListScreen(
                                             text = "Type: ${exercise.exerciseType.displayText()}",
                                             style = MaterialTheme.typography.bodySmall,
                                         )
+
+                                        val paceSummary = buildPaceSummaryText(item.paceProfiles)
+                                        if (paceSummary != null) {
+                                            Text(
+                                                text = paceSummary,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.secondary,
+                                            )
+                                        }
                                     }
 
                                     TextButton(
@@ -296,11 +347,6 @@ fun ExerciseListScreen(
 
                                 item.lastSetSummaryText?.let { text ->
                                     Text(text = text)
-                                }
-
-                                if (exercise.exerciseType == ExerciseType.STRENGTH) {
-                                    Text(text = item.estimatedOneRepMaxText ?: "Estimated 1RM: —")
-                                    Text(text = item.actualOneRepMaxText ?: "Actual 1RM: —")
                                 }
 
                                 if (!exercise.notes.isNullOrBlank()) {
@@ -373,44 +419,45 @@ private fun AddExerciseSheetContent(
     }
 }
 
-//@Composable
-//private fun MuscleGroupFilterChips(
-//    muscleGroups: List<MuscleGroupEntity>,
-//    selectedMuscleGroupIds: Set<Long>,
-//    onToggleMuscleGroup: (Long) -> Unit,
-//    onClearFilters: () -> Unit,
-//) {
-//    if (muscleGroups.isEmpty()) return
-//
-//    Row(
-//        modifier = Modifier.horizontalScroll(rememberScrollState()),
-//        horizontalArrangement = Arrangement.spacedBy(8.dp),
-//    ) {
-//        FilterChip(
-//            selected = selectedMuscleGroupIds.isEmpty(),
-//            onClick = onClearFilters,
-//            label = { Text("All") },
-//        )
-//
-//        muscleGroups.forEach { muscleGroup ->
-//            FilterChip(
-//                selected = selectedMuscleGroupIds.contains(muscleGroup.id),
-//                onClick = { onToggleMuscleGroup(muscleGroup.id) },
-//                label = { Text(muscleGroup.name) },
-//            )
-//        }
-//    }
-//}
-
 @Composable
 private fun ExerciseDetailSheetContent(
     item: ExerciseListItemUiState,
+    errorMessage: String?,
     onSaveActualOneRepMax: (Long, Double, Long, String?) -> Unit,
     onDeleteActualOneRepMax: (Long) -> Unit,
     onClose: () -> Unit,
     availableMuscleGroups: List<MuscleGroupEntity>,
     onToggleMuscleGroupForExercise: (Long, Long, Boolean) -> Unit,
     onRenameExercise: (ExerciseEntity, String) -> Unit,
+    onCreatePaceProfile: (
+        Long,
+        String,
+        Boolean,
+        Boolean,
+        Int,
+        Int,
+        Int,
+        Int,
+        Int,
+        Boolean,
+        Boolean,
+    ) -> Unit,
+    onUpdatePaceProfile: (
+        ExercisePaceProfileEntity,
+        String,
+        Boolean,
+        Boolean,
+        Int,
+        Int,
+        Int,
+        Int,
+        Int,
+        Boolean,
+        Boolean,
+    ) -> Unit,
+    onSetPaceProfileAsDefault: (ExercisePaceProfileEntity) -> Unit,
+    onTogglePaceProfileEnabled: (ExercisePaceProfileEntity) -> Unit,
+    onDeletePaceProfile: (ExercisePaceProfileEntity) -> Unit,
 ) {
     val exercise = item.exercise
     val todayText = remember {
@@ -503,6 +550,19 @@ private fun ExerciseDetailSheetContent(
                 },
             )
         }
+
+        HorizontalDivider()
+
+        PaceProfilesSection(
+            exerciseId = exercise.id,
+            paceProfiles = item.paceProfiles,
+            onCreatePaceProfile = onCreatePaceProfile,
+            errorMessage = errorMessage,
+            onUpdatePaceProfile = onUpdatePaceProfile,
+            onSetPaceProfileAsDefault = onSetPaceProfileAsDefault,
+            onTogglePaceProfileEnabled = onTogglePaceProfileEnabled,
+            onDeletePaceProfile = onDeletePaceProfile,
+        )
 
         HorizontalDivider()
 
@@ -640,6 +700,524 @@ private fun ExerciseDetailSheetContent(
 }
 
 @Composable
+private fun PaceProfilesSection(
+    exerciseId: Long,
+    paceProfiles: List<ExercisePaceProfileEntity>,
+    errorMessage: String?,
+    onCreatePaceProfile: (
+        Long,
+        String,
+        Boolean,
+        Boolean,
+        Int,
+        Int,
+        Int,
+        Int,
+        Int,
+        Boolean,
+        Boolean,
+    ) -> Unit,
+    onUpdatePaceProfile: (
+        ExercisePaceProfileEntity,
+        String,
+        Boolean,
+        Boolean,
+        Int,
+        Int,
+        Int,
+        Int,
+        Int,
+        Boolean,
+        Boolean,
+    ) -> Unit,
+    onSetPaceProfileAsDefault: (ExercisePaceProfileEntity) -> Unit,
+    onTogglePaceProfileEnabled: (ExercisePaceProfileEntity) -> Unit,
+    onDeletePaceProfile: (ExercisePaceProfileEntity) -> Unit,
+) {
+    var newName by remember(exerciseId) { mutableStateOf("") }
+    var newIsDefault by remember(exerciseId) { mutableStateOf(false) }
+    var newIsEnabled by remember(exerciseId) { mutableStateOf(true) }
+    var newPrepLeadSeconds by remember(exerciseId) { mutableStateOf("0") }
+    var newExpectedWorkSeconds by remember(exerciseId) { mutableStateOf("0") }
+    var newExpectedRestSeconds by remember(exerciseId) { mutableStateOf("0") }
+    var newNextSetWarningSeconds by remember(exerciseId) { mutableStateOf("0") }
+    var newIdleReminderIntervalSeconds by remember(exerciseId) { mutableStateOf("0") }
+    var newIdleReminderEnabled by remember(exerciseId) { mutableStateOf(false) }
+    var newEtiquetteReminderEnabled by remember(exerciseId) { mutableStateOf(false) }
+    var previousPaceProfileCount by remember(exerciseId) {
+        mutableStateOf(paceProfiles.size)
+    }
+
+    LaunchedEffect(exerciseId, paceProfiles.size) {
+        val profileWasAdded = paceProfiles.size > previousPaceProfileCount
+
+        if (profileWasAdded) {
+            newName = ""
+            newIsDefault = false
+            newIsEnabled = true
+            newPrepLeadSeconds = "0"
+            newExpectedWorkSeconds = "0"
+            newExpectedRestSeconds = "0"
+            newNextSetWarningSeconds = "0"
+            newIdleReminderIntervalSeconds = "0"
+            newIdleReminderEnabled = false
+            newEtiquetteReminderEnabled = false
+        }
+
+        previousPaceProfileCount = paceProfiles.size
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Pace profiles",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Text(
+            text = "Optional gentle timing nudges. Leave disabled or use 0 seconds for no nudge.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+        )
+
+        errorMessage?.let { message ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraSmall,
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+
+        if (paceProfiles.isEmpty()) {
+            Text(
+                text = "No pace profiles yet.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+        } else {
+            val hasDefaultProfile = paceProfiles.any { profile ->
+                profile.isDefault
+            }
+
+            if (!hasDefaultProfile) {
+                Text(
+                    text = "This exercise has pace profiles, but no default is set.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
+
+            paceProfiles.forEach { profile ->
+                PaceProfileEditCard(
+                    profile = profile,
+                    onUpdatePaceProfile = onUpdatePaceProfile,
+                    onSetPaceProfileAsDefault = onSetPaceProfileAsDefault,
+                    onTogglePaceProfileEnabled = onTogglePaceProfileEnabled,
+                    onDeletePaceProfile = onDeletePaceProfile,
+                )
+            }
+        }
+
+        HorizontalDivider()
+
+        Text(
+            text = "Add pace profile",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+        )
+
+        OutlinedTextField(
+            value = newName,
+            onValueChange = { newName = it },
+            label = { Text("Profile name") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        PaceSwitchRow(
+            label = "Default for this exercise",
+            checked = newIsDefault,
+            onCheckedChange = { newIsDefault = it },
+        )
+
+        PaceSwitchRow(
+            label = "Pace enabled",
+            checked = newIsEnabled,
+            onCheckedChange = { newIsEnabled = it },
+        )
+
+        PaceTimingFields(
+            prepLeadSeconds = newPrepLeadSeconds,
+            onPrepLeadSecondsChange = { newPrepLeadSeconds = it },
+            expectedWorkSeconds = newExpectedWorkSeconds,
+            onExpectedWorkSecondsChange = { newExpectedWorkSeconds = it },
+            expectedRestSeconds = newExpectedRestSeconds,
+            onExpectedRestSecondsChange = { newExpectedRestSeconds = it },
+            nextSetWarningSeconds = newNextSetWarningSeconds,
+            onNextSetWarningSecondsChange = { newNextSetWarningSeconds = it },
+            idleReminderIntervalSeconds = newIdleReminderIntervalSeconds,
+            onIdleReminderIntervalSecondsChange = {
+                newIdleReminderIntervalSeconds = it
+            },
+        )
+
+        PaceSwitchRow(
+            label = "Idle reminders",
+            checked = newIdleReminderEnabled,
+            onCheckedChange = { newIdleReminderEnabled = it },
+        )
+
+        PaceSwitchRow(
+            label = "Equipment etiquette reminder",
+            checked = newEtiquetteReminderEnabled,
+            onCheckedChange = { newEtiquetteReminderEnabled = it },
+        )
+
+        OutlinedButton(
+            onClick = {
+                onCreatePaceProfile(
+                    exerciseId,
+                    newName,
+                    newIsDefault,
+                    newIsEnabled,
+                    secondsFromText(newPrepLeadSeconds),
+                    secondsFromText(newExpectedWorkSeconds),
+                    secondsFromText(newExpectedRestSeconds),
+                    secondsFromText(newNextSetWarningSeconds),
+                    secondsFromText(newIdleReminderIntervalSeconds),
+                    newIdleReminderEnabled,
+                    newEtiquetteReminderEnabled,
+                )
+            },
+            enabled = newName.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Save new pace profile")
+        }
+    }
+}
+
+@Composable
+private fun PaceProfileEditCard(
+    profile: ExercisePaceProfileEntity,
+    onUpdatePaceProfile: (
+        ExercisePaceProfileEntity,
+        String,
+        Boolean,
+        Boolean,
+        Int,
+        Int,
+        Int,
+        Int,
+        Int,
+        Boolean,
+        Boolean,
+    ) -> Unit,
+    onSetPaceProfileAsDefault: (ExercisePaceProfileEntity) -> Unit,
+    onTogglePaceProfileEnabled: (ExercisePaceProfileEntity) -> Unit,
+    onDeletePaceProfile: (ExercisePaceProfileEntity) -> Unit,
+) {
+    var name by remember(profile.id, profile.name) {
+        mutableStateOf(profile.name)
+    }
+    var isDefault by remember(profile.id, profile.isDefault) {
+        mutableStateOf(profile.isDefault)
+    }
+    var isEnabled by remember(profile.id, profile.isEnabled) {
+        mutableStateOf(profile.isEnabled)
+    }
+    var prepLeadSeconds by remember(profile.id, profile.prepLeadSeconds) {
+        mutableStateOf(profile.prepLeadSeconds.toString())
+    }
+    var expectedWorkSeconds by remember(profile.id, profile.expectedWorkSeconds) {
+        mutableStateOf(profile.expectedWorkSeconds.toString())
+    }
+    var expectedRestSeconds by remember(profile.id, profile.expectedRestSeconds) {
+        mutableStateOf(profile.expectedRestSeconds.toString())
+    }
+    var nextSetWarningSeconds by remember(profile.id, profile.nextSetWarningSeconds) {
+        mutableStateOf(profile.nextSetWarningSeconds.toString())
+    }
+    var idleReminderIntervalSeconds by remember(
+        profile.id,
+        profile.idleReminderIntervalSeconds,
+    ) {
+        mutableStateOf(profile.idleReminderIntervalSeconds.toString())
+    }
+    var idleReminderEnabled by remember(profile.id, profile.idleReminderEnabled) {
+        mutableStateOf(profile.idleReminderEnabled)
+    }
+    var etiquetteReminderEnabled by remember(
+        profile.id,
+        profile.etiquetteReminderEnabled,
+    ) {
+        mutableStateOf(profile.etiquetteReminderEnabled)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraSmall,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = if (profile.isDefault) {
+                            "${profile.name} · Default"
+                        } else {
+                            profile.name
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Text(
+                        text = if (profile.isEnabled) {
+                            buildProfileTimingSummary(profile)
+                        } else {
+                            "Disabled"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Profile name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                text = "Fill this form, then press Save new pace profile.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+            PaceSwitchRow(
+                label = "Default for this exercise",
+                checked = isDefault,
+                onCheckedChange = { isDefault = it },
+            )
+
+            PaceSwitchRow(
+                label = "Pace enabled",
+                checked = isEnabled,
+                onCheckedChange = { isEnabled = it },
+            )
+
+            PaceTimingFields(
+                prepLeadSeconds = prepLeadSeconds,
+                onPrepLeadSecondsChange = { prepLeadSeconds = it },
+                expectedWorkSeconds = expectedWorkSeconds,
+                onExpectedWorkSecondsChange = { expectedWorkSeconds = it },
+                expectedRestSeconds = expectedRestSeconds,
+                onExpectedRestSecondsChange = { expectedRestSeconds = it },
+                nextSetWarningSeconds = nextSetWarningSeconds,
+                onNextSetWarningSecondsChange = { nextSetWarningSeconds = it },
+                idleReminderIntervalSeconds = idleReminderIntervalSeconds,
+                onIdleReminderIntervalSecondsChange = {
+                    idleReminderIntervalSeconds = it
+                },
+            )
+
+            PaceSwitchRow(
+                label = "Idle reminders",
+                checked = idleReminderEnabled,
+                onCheckedChange = { idleReminderEnabled = it },
+            )
+
+            PaceSwitchRow(
+                label = "Equipment etiquette reminder",
+                checked = etiquetteReminderEnabled,
+                onCheckedChange = { etiquetteReminderEnabled = it },
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        onUpdatePaceProfile(
+                            profile,
+                            name,
+                            isDefault,
+                            isEnabled,
+                            secondsFromText(prepLeadSeconds),
+                            secondsFromText(expectedWorkSeconds),
+                            secondsFromText(expectedRestSeconds),
+                            secondsFromText(nextSetWarningSeconds),
+                            secondsFromText(idleReminderIntervalSeconds),
+                            idleReminderEnabled,
+                            etiquetteReminderEnabled,
+                        )
+                    },
+                ) {
+                    Text("Save changes")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        onSetPaceProfileAsDefault(profile)
+                        isDefault = true
+                    },
+                    enabled = !profile.isDefault,
+                ) {
+                    Text("Set default")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        onTogglePaceProfileEnabled(profile)
+                        isEnabled = !isEnabled
+                    },
+                ) {
+                    Text(if (profile.isEnabled) "Disable" else "Enable")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        onDeletePaceProfile(profile)
+                    },
+                ) {
+                    Text("Delete")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PaceTimingFields(
+    prepLeadSeconds: String,
+    onPrepLeadSecondsChange: (String) -> Unit,
+    expectedWorkSeconds: String,
+    onExpectedWorkSecondsChange: (String) -> Unit,
+    expectedRestSeconds: String,
+    onExpectedRestSecondsChange: (String) -> Unit,
+    nextSetWarningSeconds: String,
+    onNextSetWarningSecondsChange: (String) -> Unit,
+    idleReminderIntervalSeconds: String,
+    onIdleReminderIntervalSecondsChange: (String) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SecondsTextField(
+                value = prepLeadSeconds,
+                onValueChange = onPrepLeadSecondsChange,
+                label = "Prep lead",
+                modifier = Modifier.weight(1f),
+            )
+
+            SecondsTextField(
+                value = expectedWorkSeconds,
+                onValueChange = onExpectedWorkSecondsChange,
+                label = "Work",
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SecondsTextField(
+                value = expectedRestSeconds,
+                onValueChange = onExpectedRestSecondsChange,
+                label = "Rest",
+                modifier = Modifier.weight(1f),
+            )
+
+            SecondsTextField(
+                value = nextSetWarningSeconds,
+                onValueChange = onNextSetWarningSecondsChange,
+                label = "Warning",
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        SecondsTextField(
+            value = idleReminderIntervalSeconds,
+            onValueChange = onIdleReminderIntervalSecondsChange,
+            label = "Idle reminder interval",
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun SecondsTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text("$label seconds") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number,
+        ),
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun PaceSwitchRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+}
+
+@Composable
 private fun ExerciseHistoryGraph(
     historyPoints: List<ExerciseHistoryPointUiState>,
     historyTrendText: String?,
@@ -768,12 +1346,12 @@ private fun ManageMuscleGroupsSheetContent(
         filteredGroups
             .filter { it.name.isNotBlank() }
             .forEach { muscleGroup ->
-            MuscleGroupEditRow(
-                muscleGroup = muscleGroup,
-                onRenameMuscleGroup = onRenameMuscleGroup,
-                onDeleteMuscleGroup = onDeleteMuscleGroup,
-            )
-        }
+                MuscleGroupEditRow(
+                    muscleGroup = muscleGroup,
+                    onRenameMuscleGroup = onRenameMuscleGroup,
+                    onDeleteMuscleGroup = onDeleteMuscleGroup,
+                )
+            }
     }
 }
 
@@ -825,6 +1403,70 @@ private fun MuscleGroupEditRow(
             )
         }
     }
+}
+
+private fun buildPaceSummaryText(
+    paceProfiles: List<ExercisePaceProfileEntity>,
+): String? {
+    if (paceProfiles.isEmpty()) {
+        return null
+    }
+
+    val defaultProfile = paceProfiles.firstOrNull { profile ->
+        profile.isDefault
+    }
+
+    return if (defaultProfile != null) {
+        "Pace: ${defaultProfile.name}"
+    } else {
+        "Pace profiles: ${paceProfiles.size} · no default set"
+    }
+}
+
+private fun buildProfileTimingSummary(
+    profile: ExercisePaceProfileEntity,
+): String {
+    val parts = buildList {
+        if (profile.prepLeadSeconds > 0) {
+            add("prep ${profile.prepLeadSeconds}s")
+        }
+
+        if (profile.expectedWorkSeconds > 0) {
+            add("work ${profile.expectedWorkSeconds}s")
+        }
+
+        if (profile.expectedRestSeconds > 0) {
+            add("rest ${profile.expectedRestSeconds}s")
+        }
+
+        if (profile.nextSetWarningSeconds > 0) {
+            add("warning ${profile.nextSetWarningSeconds}s")
+        }
+
+        if (profile.idleReminderEnabled && profile.idleReminderIntervalSeconds > 0) {
+            add("idle every ${profile.idleReminderIntervalSeconds}s")
+        }
+
+        if (profile.etiquetteReminderEnabled) {
+            add("etiquette")
+        }
+    }
+
+    return if (parts.isEmpty()) {
+        "No timed nudges"
+    } else {
+        parts.joinToString(" · ")
+    }
+}
+
+private fun secondsFromText(
+    value: String,
+): Int {
+    return value
+        .trim()
+        .toIntOrNull()
+        ?.coerceAtLeast(0)
+        ?: 0
 }
 
 private fun ExerciseType.displayText(): String {

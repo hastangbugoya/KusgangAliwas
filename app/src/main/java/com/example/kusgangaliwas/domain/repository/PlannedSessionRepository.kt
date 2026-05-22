@@ -1,6 +1,7 @@
 package com.example.kusgangaliwas.domain.repository
 
 import com.example.kusgangaliwas.data.local.entity.PlannedSessionEntity
+import com.example.kusgangaliwas.data.local.entity.PlannedSessionExerciseEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -32,4 +33,28 @@ interface PlannedSessionRepository {
     suspend fun deletePlannedSession(session: PlannedSessionEntity)
 
     suspend fun deletePlannedSessionById(id: Long)
+
+    // ----------------------------
+    // Planned Session Exercises
+    // ----------------------------
+
+    fun observePlannedExercisesForSession(
+        plannedSessionId: Long,
+    ): Flow<List<PlannedSessionExerciseEntity>>
+
+    suspend fun getPlannedExercisesForSession(
+        plannedSessionId: Long,
+    ): List<PlannedSessionExerciseEntity>
+
+    suspend fun upsertPlannedSessionExercise(
+        exercise: PlannedSessionExerciseEntity,
+    ): Long
+
+    suspend fun upsertPlannedSessionExercises(
+        exercises: List<PlannedSessionExerciseEntity>,
+    )
+
+    suspend fun deletePlannedSessionExerciseById(id: Long)
+
+    suspend fun deletePlannedExercisesForSession(plannedSessionId: Long)
 }

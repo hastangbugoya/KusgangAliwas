@@ -31,10 +31,17 @@ import androidx.room.PrimaryKey
             childColumns = ["exerciseId"],
             onDelete = ForeignKey.RESTRICT,
         ),
+        ForeignKey(
+            entity = ExercisePaceProfileEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["paceProfileId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
     indices = [
         Index(value = ["splitTemplateId"]),
         Index(value = ["exerciseId"]),
+        Index(value = ["paceProfileId"]),
         // Prevent duplicate exercise in same split (v1 simplification)
         Index(value = ["splitTemplateId", "exerciseId"], unique = true),
     ],
@@ -46,6 +53,16 @@ data class SplitTemplateExerciseEntity(
     val splitTemplateId: Long,
 
     val exerciseId: Long,
+
+    /**
+     * Optional split-specific pace profile.
+     *
+     * Resolution rule:
+     * - if this value is set, use this pace profile
+     * - otherwise fall back to the exercise default pace profile
+     * - otherwise use no pace nudges
+     */
+    val paceProfileId: Long? = null,
 
     /**
      * Suggested execution order inside the split.

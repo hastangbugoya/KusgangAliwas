@@ -43,6 +43,18 @@ interface SplitTemplateExerciseDao {
         splitTemplateId: Long,
     ): List<SplitTemplateExerciseEntity>
 
+    @Query(
+        """
+        SELECT *
+        FROM split_template_exercise
+        WHERE id = :id
+        LIMIT 1
+        """
+    )
+    suspend fun getSplitExerciseById(
+        id: Long,
+    ): SplitTemplateExerciseEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSplitExercise(entity: SplitTemplateExerciseEntity): Long
 
@@ -51,6 +63,18 @@ interface SplitTemplateExerciseDao {
 
     @Update
     suspend fun updateSplitExercise(entity: SplitTemplateExerciseEntity)
+
+    @Query(
+        """
+        UPDATE split_template_exercise
+        SET paceProfileId = :paceProfileId
+        WHERE id = :splitTemplateExerciseId
+        """
+    )
+    suspend fun updatePaceProfileForSplitExercise(
+        splitTemplateExerciseId: Long,
+        paceProfileId: Long?,
+    )
 
     @Query(
         """

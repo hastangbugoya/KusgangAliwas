@@ -1,19 +1,21 @@
 package com.example.kusgangaliwas.di
 
+import com.example.kusgangaliwas.data.repository.ExercisePaceProfileRepositoryImpl
 import com.example.kusgangaliwas.data.repository.ExerciseRepositoryImpl
 import com.example.kusgangaliwas.data.repository.PlannedSessionRepositoryImpl
 import com.example.kusgangaliwas.data.repository.SessionRepositoryImpl
 import com.example.kusgangaliwas.data.repository.SplitScheduleRepositoryImpl
 import com.example.kusgangaliwas.data.repository.SplitTemplateRepositoryImpl
+import com.example.kusgangaliwas.data.repository.TrainingCycleProgressEventRepositoryImpl
 import com.example.kusgangaliwas.data.repository.TrainingCycleRepositoryImpl
+import com.example.kusgangaliwas.domain.repository.ExercisePaceProfileRepository
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.PlannedSessionRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
 import com.example.kusgangaliwas.domain.repository.SplitScheduleRepository
 import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
-import com.example.kusgangaliwas.domain.repository.TrainingCycleRepository
-import com.example.kusgangaliwas.data.repository.TrainingCycleProgressEventRepositoryImpl
 import com.example.kusgangaliwas.domain.repository.TrainingCycleProgressEventRepository
+import com.example.kusgangaliwas.domain.repository.TrainingCycleRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -32,6 +34,12 @@ abstract class RepositoryModule {
     abstract fun bindExerciseRepository(
         impl: ExerciseRepositoryImpl,
     ): ExerciseRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindExercisePaceProfileRepository(
+        impl: ExercisePaceProfileRepositoryImpl,
+    ): ExercisePaceProfileRepository
 
     @Binds
     @Singleton

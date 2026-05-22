@@ -1,6 +1,7 @@
 package com.example.kusgangaliwas.ui.split
 
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
@@ -54,4 +55,17 @@ data class SplitRoadmapItemUiState(
     val splitTemplateExercise: SplitTemplateExerciseEntity,
     val exerciseName: String,
     val exerciseType: ExerciseType? = null,
+
+    /**
+     * Pace profiles available for this exercise.
+     *
+     * The selected split-specific profile lives on:
+     * splitTemplateExercise.paceProfileId
+     *
+     * Resolution later:
+     * - selected paceProfileId
+     * - else exercise default profile
+     * - else no pace nudges
+     */
+    val paceProfiles: List<ExercisePaceProfileEntity> = emptyList(),
 )
