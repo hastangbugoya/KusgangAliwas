@@ -20,6 +20,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +40,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +61,6 @@ import com.example.kusgangaliwas.ui.common.MuscleGroupChipRow
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -734,6 +736,7 @@ private fun PaceProfilesSection(
     onTogglePaceProfileEnabled: (ExercisePaceProfileEntity) -> Unit,
     onDeletePaceProfile: (ExercisePaceProfileEntity) -> Unit,
 ) {
+    var showAddPaceProfileForm by remember(exerciseId) { mutableStateOf(false) }
     var newName by remember(exerciseId) { mutableStateOf("") }
     var newIsDefault by remember(exerciseId) { mutableStateOf(false) }
     var newIsEnabled by remember(exerciseId) { mutableStateOf(true) }
@@ -762,6 +765,7 @@ private fun PaceProfilesSection(
             newIdleReminderIntervalSeconds = "0"
             newIdleReminderEnabled = false
             newEtiquetteReminderEnabled = false
+            showAddPaceProfileForm = false
         }
 
         previousPaceProfileCount = paceProfiles.size
@@ -828,79 +832,104 @@ private fun PaceProfilesSection(
 
         HorizontalDivider()
 
-        Text(
-            text = "Add pace profile",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-        )
+        if (!showAddPaceProfileForm) {
+            OutlinedButton(
+                onClick = {
+                    showAddPaceProfileForm = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Add another pace profile")
+            }
+        } else {
+            Text(
+                text = "Add pace profile",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
 
-        OutlinedTextField(
-            value = newName,
-            onValueChange = { newName = it },
-            label = { Text("Profile name") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+            OutlinedTextField(
+                value = newName,
+                onValueChange = { newName = it },
+                label = { Text("Profile name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-        PaceSwitchRow(
-            label = "Default for this exercise",
-            checked = newIsDefault,
-            onCheckedChange = { newIsDefault = it },
-        )
+            PaceSwitchRow(
+                label = "Default for this exercise",
+                checked = newIsDefault,
+                onCheckedChange = { newIsDefault = it },
+            )
 
-        PaceSwitchRow(
-            label = "Pace enabled",
-            checked = newIsEnabled,
-            onCheckedChange = { newIsEnabled = it },
-        )
+            PaceSwitchRow(
+                label = "Pace enabled",
+                checked = newIsEnabled,
+                onCheckedChange = { newIsEnabled = it },
+            )
 
-        PaceTimingFields(
-            prepLeadSeconds = newPrepLeadSeconds,
-            onPrepLeadSecondsChange = { newPrepLeadSeconds = it },
-            expectedWorkSeconds = newExpectedWorkSeconds,
-            onExpectedWorkSecondsChange = { newExpectedWorkSeconds = it },
-            expectedRestSeconds = newExpectedRestSeconds,
-            onExpectedRestSecondsChange = { newExpectedRestSeconds = it },
-            nextSetWarningSeconds = newNextSetWarningSeconds,
-            onNextSetWarningSecondsChange = { newNextSetWarningSeconds = it },
-            idleReminderIntervalSeconds = newIdleReminderIntervalSeconds,
-            onIdleReminderIntervalSecondsChange = {
-                newIdleReminderIntervalSeconds = it
-            },
-        )
+            PaceTimingFields(
+                prepLeadSeconds = newPrepLeadSeconds,
+                onPrepLeadSecondsChange = { newPrepLeadSeconds = it },
+                expectedWorkSeconds = newExpectedWorkSeconds,
+                onExpectedWorkSecondsChange = { newExpectedWorkSeconds = it },
+                expectedRestSeconds = newExpectedRestSeconds,
+                onExpectedRestSecondsChange = { newExpectedRestSeconds = it },
+                nextSetWarningSeconds = newNextSetWarningSeconds,
+                onNextSetWarningSecondsChange = { newNextSetWarningSeconds = it },
+                idleReminderIntervalSeconds = newIdleReminderIntervalSeconds,
+                onIdleReminderIntervalSecondsChange = {
+                    newIdleReminderIntervalSeconds = it
+                },
+            )
 
-        PaceSwitchRow(
-            label = "Idle reminders",
-            checked = newIdleReminderEnabled,
-            onCheckedChange = { newIdleReminderEnabled = it },
-        )
+            PaceSwitchRow(
+                label = "Idle reminders",
+                checked = newIdleReminderEnabled,
+                onCheckedChange = { newIdleReminderEnabled = it },
+            )
 
-        PaceSwitchRow(
-            label = "Equipment etiquette reminder",
-            checked = newEtiquetteReminderEnabled,
-            onCheckedChange = { newEtiquetteReminderEnabled = it },
-        )
+            PaceSwitchRow(
+                label = "Equipment etiquette reminder",
+                checked = newEtiquetteReminderEnabled,
+                onCheckedChange = { newEtiquetteReminderEnabled = it },
+            )
 
-        OutlinedButton(
-            onClick = {
-                onCreatePaceProfile(
-                    exerciseId,
-                    newName,
-                    newIsDefault,
-                    newIsEnabled,
-                    secondsFromText(newPrepLeadSeconds),
-                    secondsFromText(newExpectedWorkSeconds),
-                    secondsFromText(newExpectedRestSeconds),
-                    secondsFromText(newNextSetWarningSeconds),
-                    secondsFromText(newIdleReminderIntervalSeconds),
-                    newIdleReminderEnabled,
-                    newEtiquetteReminderEnabled,
-                )
-            },
-            enabled = newName.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Save new pace profile")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        showAddPaceProfileForm = false
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Cancel")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        onCreatePaceProfile(
+                            exerciseId,
+                            newName,
+                            newIsDefault,
+                            newIsEnabled,
+                            secondsFromText(newPrepLeadSeconds),
+                            secondsFromText(newExpectedWorkSeconds),
+                            secondsFromText(newExpectedRestSeconds),
+                            secondsFromText(newNextSetWarningSeconds),
+                            secondsFromText(newIdleReminderIntervalSeconds),
+                            newIdleReminderEnabled,
+                            newEtiquetteReminderEnabled,
+                        )
+                    },
+                    enabled = newName.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Save")
+                }
+            }
         }
     }
 }
@@ -925,6 +954,9 @@ private fun PaceProfileEditCard(
     onTogglePaceProfileEnabled: (ExercisePaceProfileEntity) -> Unit,
     onDeletePaceProfile: (ExercisePaceProfileEntity) -> Unit,
 ) {
+    var expanded by remember(profile.id) {
+        mutableStateOf(false)
+    }
     var name by remember(profile.id, profile.name) {
         mutableStateOf(profile.name)
     }
@@ -972,139 +1004,150 @@ private fun PaceProfileEditCard(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = {
+                    Text(
+                        text = if (profile.isDefault) {
+                            "Profile name (default)"
+                        } else {
+                            "Profile name"
+                        },
+                    )
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
+                Text(
+                    text = if (profile.isEnabled) {
+                        buildProfileTimingSummary(profile)
+                    } else {
+                        "Disabled"
+                    },
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Text(
-                        text = if (profile.isDefault) {
-                            "${profile.name} · Default"
-                        } else {
-                            profile.name
-                        },
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
 
-                    Text(
-                        text = if (profile.isEnabled) {
-                            buildProfileTimingSummary(profile)
+                IconButton(
+                    onClick = {
+                        expanded = !expanded
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (expanded) {
+                            Icons.Default.KeyboardArrowUp
                         } else {
-                            "Disabled"
+                            Icons.Default.KeyboardArrowDown
                         },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
+                        contentDescription = if (expanded) {
+                            "Collapse pace profile"
+                        } else {
+                            "Expand pace profile"
+                        },
                     )
                 }
             }
 
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Profile name") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                text = "Fill this form, then press Save new pace profile.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            PaceSwitchRow(
-                label = "Default for this exercise",
-                checked = isDefault,
-                onCheckedChange = { isDefault = it },
-            )
+            if (expanded) {
+                PaceSwitchRow(
+                    label = "Default for this exercise",
+                    checked = isDefault,
+                    onCheckedChange = { isDefault = it },
+                )
 
-            PaceSwitchRow(
-                label = "Pace enabled",
-                checked = isEnabled,
-                onCheckedChange = { isEnabled = it },
-            )
+                PaceSwitchRow(
+                    label = "Pace enabled",
+                    checked = isEnabled,
+                    onCheckedChange = { isEnabled = it },
+                )
 
-            PaceTimingFields(
-                prepLeadSeconds = prepLeadSeconds,
-                onPrepLeadSecondsChange = { prepLeadSeconds = it },
-                expectedWorkSeconds = expectedWorkSeconds,
-                onExpectedWorkSecondsChange = { expectedWorkSeconds = it },
-                expectedRestSeconds = expectedRestSeconds,
-                onExpectedRestSecondsChange = { expectedRestSeconds = it },
-                nextSetWarningSeconds = nextSetWarningSeconds,
-                onNextSetWarningSecondsChange = { nextSetWarningSeconds = it },
-                idleReminderIntervalSeconds = idleReminderIntervalSeconds,
-                onIdleReminderIntervalSecondsChange = {
-                    idleReminderIntervalSeconds = it
-                },
-            )
-
-            PaceSwitchRow(
-                label = "Idle reminders",
-                checked = idleReminderEnabled,
-                onCheckedChange = { idleReminderEnabled = it },
-            )
-
-            PaceSwitchRow(
-                label = "Equipment etiquette reminder",
-                checked = etiquetteReminderEnabled,
-                onCheckedChange = { etiquetteReminderEnabled = it },
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        onUpdatePaceProfile(
-                            profile,
-                            name,
-                            isDefault,
-                            isEnabled,
-                            secondsFromText(prepLeadSeconds),
-                            secondsFromText(expectedWorkSeconds),
-                            secondsFromText(expectedRestSeconds),
-                            secondsFromText(nextSetWarningSeconds),
-                            secondsFromText(idleReminderIntervalSeconds),
-                            idleReminderEnabled,
-                            etiquetteReminderEnabled,
-                        )
+                PaceTimingFields(
+                    prepLeadSeconds = prepLeadSeconds,
+                    onPrepLeadSecondsChange = { prepLeadSeconds = it },
+                    expectedWorkSeconds = expectedWorkSeconds,
+                    onExpectedWorkSecondsChange = { expectedWorkSeconds = it },
+                    expectedRestSeconds = expectedRestSeconds,
+                    onExpectedRestSecondsChange = { expectedRestSeconds = it },
+                    nextSetWarningSeconds = nextSetWarningSeconds,
+                    onNextSetWarningSecondsChange = { nextSetWarningSeconds = it },
+                    idleReminderIntervalSeconds = idleReminderIntervalSeconds,
+                    onIdleReminderIntervalSecondsChange = {
+                        idleReminderIntervalSeconds = it
                     },
-                ) {
-                    Text("Save changes")
-                }
+                )
 
-                OutlinedButton(
-                    onClick = {
-                        onSetPaceProfileAsDefault(profile)
-                        isDefault = true
-                    },
-                    enabled = !profile.isDefault,
-                ) {
-                    Text("Set default")
-                }
+                PaceSwitchRow(
+                    label = "Idle reminders",
+                    checked = idleReminderEnabled,
+                    onCheckedChange = { idleReminderEnabled = it },
+                )
 
-                OutlinedButton(
-                    onClick = {
-                        onTogglePaceProfileEnabled(profile)
-                        isEnabled = !isEnabled
-                    },
-                ) {
-                    Text(if (profile.isEnabled) "Disable" else "Enable")
-                }
+                PaceSwitchRow(
+                    label = "Equipment etiquette reminder",
+                    checked = etiquetteReminderEnabled,
+                    onCheckedChange = { etiquetteReminderEnabled = it },
+                )
 
-                OutlinedButton(
-                    onClick = {
-                        onDeletePaceProfile(profile)
-                    },
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Delete")
+                    OutlinedButton(
+                        onClick = {
+                            onUpdatePaceProfile(
+                                profile,
+                                name,
+                                isDefault,
+                                isEnabled,
+                                secondsFromText(prepLeadSeconds),
+                                secondsFromText(expectedWorkSeconds),
+                                secondsFromText(expectedRestSeconds),
+                                secondsFromText(nextSetWarningSeconds),
+                                secondsFromText(idleReminderIntervalSeconds),
+                                idleReminderEnabled,
+                                etiquetteReminderEnabled,
+                            )
+                        },
+                    ) {
+                        Text("Save changes")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            onSetPaceProfileAsDefault(profile)
+                            isDefault = true
+                        },
+                        enabled = !profile.isDefault,
+                    ) {
+                        Text("Set default")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            onTogglePaceProfileEnabled(profile)
+                            isEnabled = !isEnabled
+                        },
+                    ) {
+                        Text(if (profile.isEnabled) "Disable" else "Enable")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            onDeletePaceProfile(profile)
+                        },
+                    ) {
+                        Text("Delete")
+                    }
                 }
             }
         }
