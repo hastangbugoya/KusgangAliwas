@@ -36,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalType
 import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
@@ -62,6 +64,7 @@ fun SplitRoadmapScreen(
     onToggleMuscleGroupForSplit: (Long, Boolean) -> Unit,
     onUpdateCardioTargets: (SplitTemplateExerciseEntity, Double?, String?, Int?) -> Unit,
     onUpdatePaceProfileForSplitExercise: (SplitTemplateExerciseEntity, Long?) -> Unit,
+    onImportMotivationalGoalToSplitExercise: (Long, Long) -> Unit,
     onApplyPaceProfileNameToSplit: (String) -> Unit,
     onOpenExercisePicker: (Long) -> Unit,
 ) {
@@ -173,6 +176,16 @@ fun SplitRoadmapScreen(
                                             paceProfiles = item.paceProfiles,
                                             onUpdatePaceProfileForSplitExercise =
                                                 onUpdatePaceProfileForSplitExercise,
+                                        )
+
+                                        MotivationalGoalRoadmapSection(
+                                            splitTemplateExerciseId = splitExercise.id,
+                                            attachedMotivationalGoals =
+                                                item.attachedMotivationalGoals,
+                                            availableLongTermMotivationalGoals =
+                                                item.availableLongTermMotivationalGoals,
+                                            onImportMotivationalGoalToSplitExercise =
+                                                onImportMotivationalGoalToSplitExercise,
                                         )
 
                                         buildTargetText(
@@ -586,6 +599,68 @@ private fun PaceProfileSelectorRow(
     }
 }
 
+@Composable
+private fun MotivationalGoalRoadmapSection(
+    splitTemplateExerciseId: Long,
+    attachedMotivationalGoals: List<ExerciseMotivationalGoalEntity>,
+    availableLongTermMotivationalGoals: List<ExerciseMotivationalGoalEntity>,
+    onImportMotivationalGoalToSplitExercise: (Long, Long) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = "Motivational goals",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (attachedMotivationalGoals.isEmpty()) {
+            Text(
+                text = "No goals attached to this split exercise.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            attachedMotivationalGoals.forEach { goal ->
+                Text(
+                    text = buildMotivationalGoalLine(goal),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+        }
+
+        if (availableLongTermMotivationalGoals.isNotEmpty()) {
+            Text(
+                text = "Import from exercise goals",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                availableLongTermMotivationalGoals.forEach { goal ->
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            onImportMotivationalGoalToSplitExercise(
+                                goal.id,
+                                splitTemplateExerciseId,
+                            )
+                        },
+                        label = {
+                            Text(goal.title)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
 private fun buildPaceSelectionText(
     selectedProfile: ExercisePaceProfileEntity?,
     defaultProfile: ExercisePaceProfileEntity?,
@@ -788,4 +863,82 @@ private fun buildTargetText(
     return listOfNotNull(setsPart, repsPart)
         .takeIf { it.isNotEmpty() }
         ?.joinToString(" · ")
+}
+
+private fun buildMotivationalGoalLine(
+    goal: ExerciseMotivationalGoalEntity,
+): String {
+    val detail = buildMotivationalGoalDetail(goal)
+
+    return if (detail == null) {
+        goal.title
+    } else {
+        "${goal.title} · $detail"
+    }
+}
+
+private fun buildMotivationalGoalDetail(
+    goal: ExerciseMotivationalGoalEntity,
+): String? {
+    return when (goal.goalType) {
+        ExerciseMotivationalGoalType.WEIGHT_REPS -> {
+            val weightText = goal.targetWeight?.let { "${formatGoalDouble(it)} lb" }
+            val repsText = goal.targetReps?.let { "$it reps" }
+
+            listOfNotNull(weightText, repsText)
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(" x ")
+        }
+
+        ExerciseMotivationalGoalType.ESTIMATED_1RM,
+        ExerciseMotivationalGoalType.ACTUAL_1RM -> {
+            goal.targetOneRepMax?.let {
+                "${formatGoalDouble(it)} lb"
+            }
+        }
+
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE -> {
+            goal.targetDistance?.let {
+                "${formatGoalDouble(it)} ${goal.targetDistanceUnit ?: "mi"}"
+            }
+        }
+
+        ExerciseMotivationalGoalType.CARDIO_DURATION -> {
+            goal.targetDurationSeconds?.let(::formatDurationSeconds)
+        }
+
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION -> {
+            val distanceText = goal.targetDistance?.let {
+                "${formatGoalDouble(it)} ${goal.targetDistanceUnit ?: "mi"}"
+            }
+            val durationText = goal.targetDurationSeconds?.let(::formatDurationSeconds)
+
+            listOfNotNull(distanceText, durationText)
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(" in ")
+        }
+    }
+}
+
+private fun formatGoalDouble(
+    value: Double,
+): String {
+    return if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        value.toString()
+    }
+}
+
+private fun formatDurationSeconds(
+    seconds: Int,
+): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+
+    return if (remainingSeconds == 0) {
+        "${minutes}m"
+    } else {
+        "${minutes}m ${remainingSeconds}s"
+    }
 }

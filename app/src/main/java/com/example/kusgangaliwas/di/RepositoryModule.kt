@@ -1,5 +1,6 @@
 package com.example.kusgangaliwas.di
 
+import com.example.kusgangaliwas.data.repository.ExerciseMotivationalGoalRepositoryImpl
 import com.example.kusgangaliwas.data.repository.ExercisePaceProfileRepositoryImpl
 import com.example.kusgangaliwas.data.repository.ExerciseRepositoryImpl
 import com.example.kusgangaliwas.data.repository.PlannedSessionRepositoryImpl
@@ -8,6 +9,7 @@ import com.example.kusgangaliwas.data.repository.SplitScheduleRepositoryImpl
 import com.example.kusgangaliwas.data.repository.SplitTemplateRepositoryImpl
 import com.example.kusgangaliwas.data.repository.TrainingCycleProgressEventRepositoryImpl
 import com.example.kusgangaliwas.data.repository.TrainingCycleRepositoryImpl
+import com.example.kusgangaliwas.domain.repository.ExerciseMotivationalGoalRepository
 import com.example.kusgangaliwas.domain.repository.ExercisePaceProfileRepository
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.PlannedSessionRepository
@@ -40,6 +42,12 @@ abstract class RepositoryModule {
     abstract fun bindExercisePaceProfileRepository(
         impl: ExercisePaceProfileRepositoryImpl,
     ): ExercisePaceProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindExerciseMotivationalGoalRepository(
+        impl: ExerciseMotivationalGoalRepositoryImpl,
+    ): ExerciseMotivationalGoalRepository
 
     @Binds
     @Singleton

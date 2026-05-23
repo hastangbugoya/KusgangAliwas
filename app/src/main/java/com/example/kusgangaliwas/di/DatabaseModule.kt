@@ -10,6 +10,7 @@ import com.example.kusgangaliwas.data.local.dao.ActualExerciseSetLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualSessionDao
 import com.example.kusgangaliwas.data.local.dao.CycleCalendarAnchorDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseDao
+import com.example.kusgangaliwas.data.local.dao.ExerciseMotivationalGoalDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseMuscleGroupDao
 import com.example.kusgangaliwas.data.local.dao.ExercisePaceProfileDao
 import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
@@ -891,6 +892,191 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS exercise_motivational_goal (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        exerciseId INTEGER NOT NULL,
+                        goalType TEXT NOT NULL,
+                        targetWeight REAL,
+                        targetReps INTEGER,
+                        targetOneRepMax REAL,
+                        targetDistance REAL,
+                        targetDistanceUnit TEXT,
+                        targetDurationSeconds INTEGER,
+                        title TEXT NOT NULL,
+                        notes TEXT,
+                        isActive INTEGER NOT NULL,
+                        isMotivationalOnly INTEGER NOT NULL,
+                        sourceGoalId INTEGER,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(exerciseId)
+                            REFERENCES exercise(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(sourceGoalId)
+                            REFERENCES exercise_motivational_goal(id)
+                            ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_exerciseId
+                    ON exercise_motivational_goal(exerciseId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_goalType
+                    ON exercise_motivational_goal(goalType)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_sourceGoalId
+                    ON exercise_motivational_goal(sourceGoalId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_exerciseId_isActive
+                    ON exercise_motivational_goal(exerciseId, isActive)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE TABLE IF NOT EXISTS exercise_motivational_goal_assignment (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        goalId INTEGER NOT NULL,
+                        scopeType TEXT NOT NULL,
+                        splitTemplateId INTEGER,
+                        splitTemplateExerciseId INTEGER,
+                        trainingCycleId INTEGER,
+                        trainingCycleStepId INTEGER,
+                        splitScheduleId INTEGER,
+                        programId INTEGER,
+                        startEpochDay INTEGER,
+                        targetEpochDay INTEGER,
+                        horizonWeeks INTEGER,
+                        sourceAssignmentId INTEGER,
+                        isActive INTEGER NOT NULL,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(goalId)
+                            REFERENCES exercise_motivational_goal(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(splitTemplateId)
+                            REFERENCES split_template(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(splitTemplateExerciseId)
+                            REFERENCES split_template_exercise(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(trainingCycleId)
+                            REFERENCES training_cycle(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(trainingCycleStepId)
+                            REFERENCES training_cycle_step(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(splitScheduleId)
+                            REFERENCES split_schedule(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(programId)
+                            REFERENCES program(id)
+                            ON DELETE CASCADE,
+                        FOREIGN KEY(sourceAssignmentId)
+                            REFERENCES exercise_motivational_goal_assignment(id)
+                            ON DELETE SET NULL
+                    )
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_goalId
+                    ON exercise_motivational_goal_assignment(goalId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_scopeType
+                    ON exercise_motivational_goal_assignment(scopeType)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_splitTemplateId
+                    ON exercise_motivational_goal_assignment(splitTemplateId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_splitTemplateExerciseId
+                    ON exercise_motivational_goal_assignment(splitTemplateExerciseId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_trainingCycleId
+                    ON exercise_motivational_goal_assignment(trainingCycleId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_trainingCycleStepId
+                    ON exercise_motivational_goal_assignment(trainingCycleStepId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_splitScheduleId
+                    ON exercise_motivational_goal_assignment(splitScheduleId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_programId
+                    ON exercise_motivational_goal_assignment(programId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_sourceAssignmentId
+                    ON exercise_motivational_goal_assignment(sourceAssignmentId)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_goalId_scopeType
+                    ON exercise_motivational_goal_assignment(goalId, scopeType)
+                    """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                    CREATE INDEX IF NOT EXISTS index_exercise_motivational_goal_assignment_scopeType_isActive
+                    ON exercise_motivational_goal_assignment(scopeType, isActive)
+                    """.trimIndent()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(
@@ -916,6 +1102,7 @@ object DatabaseModule {
                 MIGRATION_11_12,
                 MIGRATION_12_13,
                 MIGRATION_13_14,
+                MIGRATION_14_15,
             )
             .build()
     }
@@ -939,6 +1126,10 @@ object DatabaseModule {
     @Provides
     fun provideExercisePaceProfileDao(database: KusgangAliwasDatabase): ExercisePaceProfileDao =
         database.exercisePaceProfileDao()
+
+    @Provides
+    fun provideExerciseMotivationalGoalDao(database: KusgangAliwasDatabase): ExerciseMotivationalGoalDao =
+        database.exerciseMotivationalGoalDao()
 
     @Provides
     fun provideSplitTemplateDao(database: KusgangAliwasDatabase): SplitTemplateDao =

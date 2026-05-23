@@ -54,6 +54,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.R
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalType
 import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
@@ -82,6 +84,21 @@ fun ExerciseListScreen(
     onRenameMuscleGroup: (MuscleGroupEntity, String) -> Unit,
     onDeleteMuscleGroup: (Long) -> Unit,
     onRenameExercise: (ExerciseEntity, String) -> Unit,
+    onCreateMotivationalGoal: (
+        Long,
+        ExerciseMotivationalGoalType,
+        String,
+        Double?,
+        Int?,
+        Double?,
+        Double?,
+        String?,
+        Int?,
+        String?,
+    ) -> Unit,
+    onDeactivateMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+    onRestoreMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+    onDeleteMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
     onCreatePaceProfile: (
         Long,
         String,
@@ -174,6 +191,10 @@ fun ExerciseListScreen(
                 availableMuscleGroups = uiState.availableMuscleGroups,
                 onToggleMuscleGroupForExercise = onToggleMuscleGroupForExercise,
                 onRenameExercise = onRenameExercise,
+                onCreateMotivationalGoal = onCreateMotivationalGoal,
+                onDeactivateMotivationalGoal = onDeactivateMotivationalGoal,
+                onRestoreMotivationalGoal = onRestoreMotivationalGoal,
+                onDeleteMotivationalGoal = onDeleteMotivationalGoal,
                 onCreatePaceProfile = onCreatePaceProfile,
                 onUpdatePaceProfile = onUpdatePaceProfile,
                 onSetPaceProfileAsDefault = onSetPaceProfileAsDefault,
@@ -326,6 +347,19 @@ fun ExerciseListScreen(
                                             style = MaterialTheme.typography.bodySmall,
                                         )
 
+                                        val goalSummary =
+                                            buildMotivationalGoalListSummary(
+                                                item.motivationalGoals,
+                                            )
+
+                                        if (goalSummary != null) {
+                                            Text(
+                                                text = goalSummary,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.tertiary,
+                                            )
+                                        }
+
                                         val paceSummary = buildPaceSummaryText(item.paceProfiles)
                                         if (paceSummary != null) {
                                             Text(
@@ -431,6 +465,21 @@ private fun ExerciseDetailSheetContent(
     availableMuscleGroups: List<MuscleGroupEntity>,
     onToggleMuscleGroupForExercise: (Long, Long, Boolean) -> Unit,
     onRenameExercise: (ExerciseEntity, String) -> Unit,
+    onCreateMotivationalGoal: (
+        Long,
+        ExerciseMotivationalGoalType,
+        String,
+        Double?,
+        Int?,
+        Double?,
+        Double?,
+        String?,
+        Int?,
+        String?,
+    ) -> Unit,
+    onDeactivateMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+    onRestoreMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+    onDeleteMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
     onCreatePaceProfile: (
         Long,
         String,
@@ -552,6 +601,19 @@ private fun ExerciseDetailSheetContent(
                 },
             )
         }
+
+        HorizontalDivider()
+
+        MotivationalGoalsSection(
+            exerciseId = exercise.id,
+            motivationalGoals = item.motivationalGoals,
+            hiddenMotivationalGoals = item.hiddenMotivationalGoals,
+            onCreateMotivationalGoal = onCreateMotivationalGoal,
+            onDeactivateMotivationalGoal = onDeactivateMotivationalGoal,
+            onRestoreMotivationalGoal = onRestoreMotivationalGoal,
+            onDeleteMotivationalGoal = onDeleteMotivationalGoal,
+            errorMessage = errorMessage,
+        )
 
         HorizontalDivider()
 
@@ -699,6 +761,479 @@ private fun ExerciseDetailSheetContent(
             }
         }
     }
+}
+
+@Composable
+private fun MotivationalGoalsSection(
+    exerciseId: Long,
+    motivationalGoals: List<ExerciseMotivationalGoalEntity>,
+    hiddenMotivationalGoals: List<ExerciseMotivationalGoalEntity>,
+    errorMessage: String?,
+    onCreateMotivationalGoal: (
+        Long,
+        ExerciseMotivationalGoalType,
+        String,
+        Double?,
+        Int?,
+        Double?,
+        Double?,
+        String?,
+        Int?,
+        String?,
+    ) -> Unit,
+    onDeactivateMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+    onRestoreMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+    onDeleteMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+) {
+    var showAddGoalForm by remember(exerciseId) { mutableStateOf(false) }
+    var selectedGoalType by remember(exerciseId) {
+        mutableStateOf(ExerciseMotivationalGoalType.WEIGHT_REPS)
+    }
+    var titleText by remember(exerciseId) { mutableStateOf("") }
+    var targetWeightText by remember(exerciseId) { mutableStateOf("") }
+    var targetRepsText by remember(exerciseId) { mutableStateOf("") }
+    var targetOneRepMaxText by remember(exerciseId) { mutableStateOf("") }
+    var targetDistanceText by remember(exerciseId) { mutableStateOf("") }
+    var targetDistanceUnitText by remember(exerciseId) { mutableStateOf("mi") }
+    var targetDurationMinutesText by remember(exerciseId) { mutableStateOf("") }
+    var notesText by remember(exerciseId) { mutableStateOf("") }
+    var previousGoalCount by remember(exerciseId) {
+        mutableStateOf(motivationalGoals.size)
+    }
+
+    LaunchedEffect(exerciseId, motivationalGoals.size) {
+        val goalWasAdded = motivationalGoals.size > previousGoalCount
+
+        if (goalWasAdded) {
+            selectedGoalType = ExerciseMotivationalGoalType.WEIGHT_REPS
+            titleText = ""
+            targetWeightText = ""
+            targetRepsText = ""
+            targetOneRepMaxText = ""
+            targetDistanceText = ""
+            targetDistanceUnitText = "mi"
+            targetDurationMinutesText = ""
+            notesText = ""
+            showAddGoalForm = false
+        }
+
+        previousGoalCount = motivationalGoals.size
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Motivational goals",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Text(
+            text = "Optional targets to keep in mind. These do not score or judge the workout.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.secondary,
+        )
+
+        errorMessage?.let { message ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraSmall,
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+
+        if (motivationalGoals.isEmpty()) {
+            Text(
+                text = "No active motivational goals.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+        } else {
+            motivationalGoals.forEach { goal ->
+                MotivationalGoalCard(
+                    goal = goal,
+                    onDeactivateMotivationalGoal = onDeactivateMotivationalGoal,
+                )
+            }
+        }
+
+        if (hiddenMotivationalGoals.isNotEmpty()) {
+            HorizontalDivider()
+
+            Text(
+                text = "Hidden goals",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                text = "Hidden goals stay available here if you want to restore them later.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+
+            hiddenMotivationalGoals.forEach { goal ->
+                HiddenMotivationalGoalCard(
+                    goal = goal,
+                    onRestoreMotivationalGoal = onRestoreMotivationalGoal,
+                    onDeleteMotivationalGoal = onDeleteMotivationalGoal,
+                )
+            }
+        }
+
+        HorizontalDivider()
+
+        if (!showAddGoalForm) {
+            OutlinedButton(
+                onClick = {
+                    showAddGoalForm = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Add motivational goal")
+            }
+        } else {
+            Text(
+                text = "Add motivational goal",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ExerciseMotivationalGoalType.entries.forEach { goalType ->
+                    FilterChip(
+                        selected = selectedGoalType == goalType,
+                        onClick = {
+                            selectedGoalType = goalType
+                        },
+                        label = {
+                            Text(goalType.displayText())
+                        },
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = titleText,
+                onValueChange = { titleText = it },
+                label = { Text("Title optional") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            when (selectedGoalType) {
+                ExerciseMotivationalGoalType.WEIGHT_REPS -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        GoalNumberField(
+                            value = targetWeightText,
+                            onValueChange = { targetWeightText = it },
+                            label = "Weight lb",
+                            allowDecimal = true,
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        GoalNumberField(
+                            value = targetRepsText,
+                            onValueChange = { targetRepsText = it },
+                            label = "Reps",
+                            allowDecimal = false,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+
+                ExerciseMotivationalGoalType.ESTIMATED_1RM,
+                ExerciseMotivationalGoalType.ACTUAL_1RM -> {
+                    GoalNumberField(
+                        value = targetOneRepMaxText,
+                        onValueChange = { targetOneRepMaxText = it },
+                        label = "Target 1RM lb",
+                        allowDecimal = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                ExerciseMotivationalGoalType.CARDIO_DISTANCE -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        GoalNumberField(
+                            value = targetDistanceText,
+                            onValueChange = { targetDistanceText = it },
+                            label = "Distance",
+                            allowDecimal = true,
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        OutlinedTextField(
+                            value = targetDistanceUnitText,
+                            onValueChange = { targetDistanceUnitText = it },
+                            label = { Text("Unit") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+
+                ExerciseMotivationalGoalType.CARDIO_DURATION -> {
+                    GoalNumberField(
+                        value = targetDurationMinutesText,
+                        onValueChange = { targetDurationMinutesText = it },
+                        label = "Duration minutes",
+                        allowDecimal = false,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        GoalNumberField(
+                            value = targetDistanceText,
+                            onValueChange = { targetDistanceText = it },
+                            label = "Distance",
+                            allowDecimal = true,
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        OutlinedTextField(
+                            value = targetDistanceUnitText,
+                            onValueChange = { targetDistanceUnitText = it },
+                            label = { Text("Unit") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
+                    GoalNumberField(
+                        value = targetDurationMinutesText,
+                        onValueChange = { targetDurationMinutesText = it },
+                        label = "Duration minutes",
+                        allowDecimal = false,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = notesText,
+                onValueChange = { notesText = it },
+                label = { Text("Notes optional") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        showAddGoalForm = false
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Cancel")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        onCreateMotivationalGoal(
+                            exerciseId,
+                            selectedGoalType,
+                            titleText,
+                            positiveDoubleFromText(targetWeightText),
+                            positiveIntFromText(targetRepsText),
+                            positiveDoubleFromText(targetOneRepMaxText),
+                            positiveDoubleFromText(targetDistanceText),
+                            targetDistanceUnitText.trim().takeIf { it.isNotBlank() },
+                            durationSecondsFromMinutesText(targetDurationMinutesText),
+                            notesText,
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Save")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MotivationalGoalCard(
+    goal: ExerciseMotivationalGoalEntity,
+    onDeactivateMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+) {
+    val displayTitle = buildMotivationalGoalDisplayTitle(goal)
+    val summary = buildMotivationalGoalSummary(goal)
+        ?.takeUnless { detail ->
+            detail.equals(displayTitle, ignoreCase = true)
+        }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraSmall,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = displayTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                text = goal.goalType.displayText(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+
+            if (summary != null) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            if (!goal.notes.isNullOrBlank()) {
+                Text(
+                    text = goal.notes,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    onClick = {
+                        onDeactivateMotivationalGoal(goal)
+                    },
+                ) {
+                    Text("Hide goal")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HiddenMotivationalGoalCard(
+    goal: ExerciseMotivationalGoalEntity,
+    onRestoreMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+    onDeleteMotivationalGoal: (ExerciseMotivationalGoalEntity) -> Unit,
+) {
+    val displayTitle = buildMotivationalGoalDisplayTitle(goal)
+    val summary = buildMotivationalGoalSummary(goal)
+        ?.takeUnless { detail ->
+            detail.equals(displayTitle, ignoreCase = true)
+        }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraSmall,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = displayTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                text = "Hidden · ${goal.goalType.displayText()}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+
+            if (summary != null) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            if (!goal.notes.isNullOrBlank()) {
+                Text(
+                    text = goal.notes,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    onClick = {
+                        onRestoreMotivationalGoal(goal)
+                    },
+                ) {
+                    Text("Restore")
+                }
+
+                TextButton(
+                    onClick = {
+                        onDeleteMotivationalGoal(goal)
+                    },
+                ) {
+                    Text("Delete")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoalNumberField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    allowDecimal: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (allowDecimal) {
+                KeyboardType.Decimal
+            } else {
+                KeyboardType.Number
+            },
+        ),
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -1448,6 +1983,78 @@ private fun MuscleGroupEditRow(
     }
 }
 
+private fun buildMotivationalGoalListSummary(
+    motivationalGoals: List<ExerciseMotivationalGoalEntity>,
+): String? {
+    if (motivationalGoals.isEmpty()) {
+        return null
+    }
+
+    val firstGoal = motivationalGoals.first()
+    val firstGoalTitle = buildMotivationalGoalDisplayTitle(firstGoal)
+
+    return if (motivationalGoals.size == 1) {
+        "Goal: $firstGoalTitle"
+    } else {
+        "Goals: $firstGoalTitle + ${motivationalGoals.size - 1} more"
+    }
+}
+
+private fun buildMotivationalGoalDisplayTitle(
+    goal: ExerciseMotivationalGoalEntity,
+): String {
+    val summary = buildMotivationalGoalSummary(goal)
+
+    return if (summary != null && goal.title.equals(summary, ignoreCase = true)) {
+        goal.goalType.defaultTitle()
+    } else {
+        goal.title
+    }
+}
+
+private fun buildMotivationalGoalSummary(
+    goal: ExerciseMotivationalGoalEntity,
+): String? {
+    return when (goal.goalType) {
+        ExerciseMotivationalGoalType.WEIGHT_REPS -> {
+            val weightText = goal.targetWeight?.let { "${formatGoalDouble(it)} lb" }
+            val repsText = goal.targetReps?.let { "$it reps" }
+
+            listOfNotNull(weightText, repsText)
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(" x ")
+        }
+
+        ExerciseMotivationalGoalType.ESTIMATED_1RM,
+        ExerciseMotivationalGoalType.ACTUAL_1RM -> {
+            goal.targetOneRepMax?.let {
+                "${formatGoalDouble(it)} lb"
+            }
+        }
+
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE -> {
+            goal.targetDistance?.let {
+                "${formatGoalDouble(it)} ${goal.targetDistanceUnit ?: "mi"}"
+            }
+        }
+
+        ExerciseMotivationalGoalType.CARDIO_DURATION -> {
+            goal.targetDurationSeconds?.let(::formatDurationSeconds)
+        }
+
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION -> {
+            val distanceText = goal.targetDistance?.let {
+                "${formatGoalDouble(it)} ${goal.targetDistanceUnit ?: "mi"}"
+            }
+            val durationText = goal.targetDurationSeconds?.let(::formatDurationSeconds)
+
+            listOfNotNull(distanceText, durationText)
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(" in ")
+        }
+    }
+}
+
 private fun buildPaceSummaryText(
     paceProfiles: List<ExercisePaceProfileEntity>,
 ): String? {
@@ -1512,6 +2119,57 @@ private fun secondsFromText(
         ?: 0
 }
 
+private fun positiveDoubleFromText(
+    value: String,
+): Double? {
+    return value
+        .trim()
+        .toDoubleOrNull()
+        ?.takeIf { it > 0.0 }
+}
+
+private fun positiveIntFromText(
+    value: String,
+): Int? {
+    return value
+        .trim()
+        .toIntOrNull()
+        ?.takeIf { it > 0 }
+}
+
+private fun durationSecondsFromMinutesText(
+    value: String,
+): Int? {
+    return value
+        .trim()
+        .toIntOrNull()
+        ?.takeIf { it > 0 }
+        ?.times(60)
+}
+
+private fun ExerciseMotivationalGoalType.defaultTitle(): String {
+    return when (this) {
+        ExerciseMotivationalGoalType.WEIGHT_REPS -> "Weight x reps goal"
+        ExerciseMotivationalGoalType.ESTIMATED_1RM -> "Estimated 1RM goal"
+        ExerciseMotivationalGoalType.ACTUAL_1RM -> "Actual 1RM goal"
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE -> "Cardio distance goal"
+        ExerciseMotivationalGoalType.CARDIO_DURATION -> "Cardio duration goal"
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION ->
+            "Cardio distance and duration goal"
+    }
+}
+
+private fun ExerciseMotivationalGoalType.displayText(): String {
+    return when (this) {
+        ExerciseMotivationalGoalType.WEIGHT_REPS -> "Weight x reps"
+        ExerciseMotivationalGoalType.ESTIMATED_1RM -> "Estimated 1RM"
+        ExerciseMotivationalGoalType.ACTUAL_1RM -> "Actual 1RM"
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE -> "Distance"
+        ExerciseMotivationalGoalType.CARDIO_DURATION -> "Duration"
+        ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION -> "Distance + duration"
+    }
+}
+
 private fun ExerciseType.displayText(): String {
     return when (this) {
         ExerciseType.STRENGTH -> "Strength"
@@ -1528,5 +2186,28 @@ private fun formatGraphWeight(
         value.toInt().toString()
     } else {
         value.toString()
+    }
+}
+
+private fun formatGoalDouble(
+    value: Double,
+): String {
+    return if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        value.toString()
+    }
+}
+
+private fun formatDurationSeconds(
+    seconds: Int,
+): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+
+    return if (remainingSeconds == 0) {
+        "${minutes}m"
+    } else {
+        "${minutes}m ${remainingSeconds}s"
     }
 }

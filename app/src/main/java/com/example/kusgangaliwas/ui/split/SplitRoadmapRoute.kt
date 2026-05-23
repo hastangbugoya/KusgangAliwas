@@ -33,6 +33,8 @@ fun SplitRoadmapRoute(
         onToggleMuscleGroupForSplit = viewModel::toggleMuscleGroupForSplit,
         onUpdateCardioTargets = viewModel::updateCardioTargets,
         onUpdatePaceProfileForSplitExercise = viewModel::updatePaceProfileForSplitExercise,
+        onImportMotivationalGoalToSplitExercise =
+            viewModel::importMotivationalGoalToSplitExercise,
         onApplyPaceProfileNameToSplit = viewModel::applyPaceProfileNameToSplit,
         onOpenExercisePicker = onOpenExercisePicker,
     )

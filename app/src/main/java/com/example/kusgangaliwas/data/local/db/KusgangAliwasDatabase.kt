@@ -9,6 +9,7 @@ import com.example.kusgangaliwas.data.local.dao.ActualExerciseSetLogDao
 import com.example.kusgangaliwas.data.local.dao.ActualSessionDao
 import com.example.kusgangaliwas.data.local.dao.CycleCalendarAnchorDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseDao
+import com.example.kusgangaliwas.data.local.dao.ExerciseMotivationalGoalDao
 import com.example.kusgangaliwas.data.local.dao.ExerciseMuscleGroupDao
 import com.example.kusgangaliwas.data.local.dao.ExercisePaceProfileDao
 import com.example.kusgangaliwas.data.local.dao.ExercisePrDao
@@ -31,6 +32,8 @@ import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualSessionEntity
 import com.example.kusgangaliwas.data.local.entity.CycleCalendarAnchorEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalAssignmentEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleGroupCrossRef
 import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
@@ -94,6 +97,12 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
  * - resolution happens when the planned exercise is created
  * - runtime logging can use the planned pace directly without re-reading the split
  *
+ * DB-15 adds motivational exercise goals:
+ * - goals are optional aspirational overlays for exercises
+ * - assignments let goals appear in long-term, split, cycle, schedule, and future
+ *   program contexts
+ * - goals are not planned loads, pass/fail metrics, or punitive success criteria
+ *
  */
 @Database(
     entities = [
@@ -102,6 +111,8 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
         ExerciseMuscleGroupCrossRef::class,
         ExerciseSubstitutionEntity::class,
         ExercisePaceProfileEntity::class,
+        ExerciseMotivationalGoalEntity::class,
+        ExerciseMotivationalGoalAssignmentEntity::class,
         SplitTemplateEntity::class,
         SplitTemplateExerciseEntity::class,
         SplitTemplateMuscleGroupCrossRef::class,
@@ -120,7 +131,7 @@ import com.example.kusgangaliwas.data.local.entity.TrainingCycleStepEntity
         ExercisePrEntity::class,
         TrainingCycleActivationEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
 )
 @TypeConverters(DatabaseConverters::class)
@@ -130,6 +141,7 @@ abstract class KusgangAliwasDatabase : RoomDatabase() {
     abstract fun exerciseMuscleGroupDao(): ExerciseMuscleGroupDao
     abstract fun exerciseSubstitutionDao(): ExerciseSubstitutionDao
     abstract fun exercisePaceProfileDao(): ExercisePaceProfileDao
+    abstract fun exerciseMotivationalGoalDao(): ExerciseMotivationalGoalDao
     abstract fun splitTemplateDao(): SplitTemplateDao
     abstract fun splitTemplateExerciseDao(): SplitTemplateExerciseDao
     abstract fun splitTemplateMuscleGroupDao(): SplitTemplateMuscleGroupDao

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.kusgangaliwas.data.local.entity.SplitScheduleEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateMuscleGroupCrossRef
+import com.example.kusgangaliwas.domain.repository.ExerciseMotivationalGoalRepository
 import com.example.kusgangaliwas.domain.repository.ExercisePaceProfileRepository
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SplitScheduleRepository
@@ -31,6 +32,7 @@ class SplitRoadmapViewModel @Inject constructor(
     private val splitTemplateRepository: SplitTemplateRepository,
     private val exerciseRepository: ExerciseRepository,
     private val exercisePaceProfileRepository: ExercisePaceProfileRepository,
+    private val exerciseMotivationalGoalRepository: ExerciseMotivationalGoalRepository,
     private val splitScheduleRepository: SplitScheduleRepository,
     private val refreshPlannedSessionsUseCase: RefreshPlannedSessionsUseCase,
     private val addExerciseToSplitUseCase: AddExerciseToSplitUseCase,
@@ -44,13 +46,20 @@ class SplitRoadmapViewModel @Inject constructor(
 
     private val scheduleState = MutableStateFlow(SplitRoadmapScheduleState())
 
+    private val goalRefreshSignal = MutableStateFlow(0)
+
     val uiState: StateFlow<SplitRoadmapUiState> =
         combine(
             getSplitRoadmapUseCase(splitId),
             exerciseRepository.observeActiveExercises(),
             exerciseRepository.observeActiveMuscleGroups(),
             splitTemplateRepository.observeMuscleGroupsForSplit(splitId),
-            scheduleState,
+            combine(
+                scheduleState,
+                goalRefreshSignal,
+            ) { schedule, _ ->
+                schedule
+            },
         ) { roadmap, exercises, muscleGroups, selectedSplitMuscleGroups, schedule ->
             val exerciseById = exercises.associateBy { it.id }
 
@@ -61,12 +70,24 @@ class SplitRoadmapViewModel @Inject constructor(
                     val exercise = exerciseById[item.exerciseId]
                     val paceProfiles = exercisePaceProfileRepository
                         .getProfilesForExercise(item.exerciseId)
+                    val attachedMotivationalGoals = exerciseMotivationalGoalRepository
+                        .getActiveGoalsForSplitTemplateExercise(item.id)
+                    val attachedGoalIds = attachedMotivationalGoals
+                        .map { goal -> goal.id }
+                        .toSet()
+                    val availableLongTermMotivationalGoals = exerciseMotivationalGoalRepository
+                        .getActiveLongTermGoalsForExercise(item.exerciseId)
+                        .filterNot { goal ->
+                            attachedGoalIds.contains(goal.id)
+                        }
 
                     SplitRoadmapItemUiState(
                         splitTemplateExercise = item,
                         exerciseName = exercise?.name ?: "Unknown exercise",
                         exerciseType = exercise?.exerciseType,
                         paceProfiles = paceProfiles,
+                        attachedMotivationalGoals = attachedMotivationalGoals,
+                        availableLongTermMotivationalGoals = availableLongTermMotivationalGoals,
                     )
                 },
                 availableExercises = exercises,
@@ -326,6 +347,25 @@ class SplitRoadmapViewModel @Inject constructor(
                     splitTemplateExerciseId = entity.id,
                     paceProfileId = paceProfileId,
                 )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun importMotivationalGoalToSplitExercise(
+        goalId: Long,
+        splitTemplateExerciseId: Long,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                exerciseMotivationalGoalRepository.assignGoalToSplitTemplateExerciseIfMissing(
+                    goalId = goalId,
+                    splitTemplateExerciseId = splitTemplateExerciseId,
+                    createdAtEpochMillis = System.currentTimeMillis(),
+                )
+            }.onSuccess {
+                goalRefreshSignal.update { it + 1 }
             }.onFailure { error ->
                 error.printStackTrace()
             }

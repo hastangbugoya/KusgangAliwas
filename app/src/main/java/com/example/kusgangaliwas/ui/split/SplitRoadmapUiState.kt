@@ -1,6 +1,7 @@
 package com.example.kusgangaliwas.ui.split
 
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalEntity
 import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
@@ -68,4 +69,20 @@ data class SplitRoadmapItemUiState(
      * - else no pace nudges
      */
     val paceProfiles: List<ExercisePaceProfileEntity> = emptyList(),
+
+    /**
+     * Motivational goals already attached to this split exercise.
+     *
+     * These are contextual targets only. They should not be shown as required
+     * loads, completion criteria, or pass/fail status.
+     */
+    val attachedMotivationalGoals: List<ExerciseMotivationalGoalEntity> = emptyList(),
+
+    /**
+     * Active long-term goals for this exercise that are not necessarily attached
+     * to this split exercise yet.
+     *
+     * The split UI can offer a simple import/attach action from this list.
+     */
+    val availableLongTermMotivationalGoals: List<ExerciseMotivationalGoalEntity> = emptyList(),
 )

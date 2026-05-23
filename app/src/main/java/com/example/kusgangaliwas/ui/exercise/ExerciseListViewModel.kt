@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalEntity
+import com.example.kusgangaliwas.data.local.entity.ExerciseMotivationalGoalType
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleEmphasis
 import com.example.kusgangaliwas.data.local.entity.ExerciseMuscleGroupCrossRef
 import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
@@ -11,6 +13,7 @@ import com.example.kusgangaliwas.data.local.entity.ExercisePrEntity
 import com.example.kusgangaliwas.data.local.entity.ExercisePrType
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
+import com.example.kusgangaliwas.domain.repository.ExerciseMotivationalGoalRepository
 import com.example.kusgangaliwas.domain.repository.ExercisePaceProfileRepository
 import com.example.kusgangaliwas.domain.repository.ExerciseRepository
 import com.example.kusgangaliwas.domain.repository.SessionRepository
@@ -50,6 +53,8 @@ data class ExerciseListItemUiState(
     val latestMaxWeightText: String? = null,
     val selectedMuscleGroupIds: Set<Long> = emptySet(),
     val paceProfiles: List<ExercisePaceProfileEntity> = emptyList(),
+    val motivationalGoals: List<ExerciseMotivationalGoalEntity> = emptyList(),
+    val hiddenMotivationalGoals: List<ExerciseMotivationalGoalEntity> = emptyList(),
     val historyPoints: List<ExerciseHistoryPointUiState> = emptyList(),
     val historyTrendText: String? = null,
 )
@@ -63,6 +68,7 @@ data class ExerciseHistoryPointUiState(
 class ExerciseListViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
     private val exercisePaceProfileRepository: ExercisePaceProfileRepository,
+    private val exerciseMotivationalGoalRepository: ExerciseMotivationalGoalRepository,
     private val sessionRepository: SessionRepository,
     private val createExerciseUseCase: CreateExerciseUseCase,
     private val getEstimatedOneRepMaxUseCase: GetEstimatedOneRepMaxUseCase,
@@ -208,6 +214,122 @@ class ExerciseListViewModel @Inject constructor(
             refreshSignal.update { it + 1 }
         }
     }
+
+    fun createMotivationalGoal(
+        exerciseId: Long,
+        goalType: ExerciseMotivationalGoalType,
+        title: String = "",
+        targetWeight: Double? = null,
+        targetReps: Int? = null,
+        targetOneRepMax: Double? = null,
+        targetDistance: Double? = null,
+        targetDistanceUnit: String? = null,
+        targetDurationSeconds: Int? = null,
+        notes: String? = null,
+    ) {
+        viewModelScope.launch {
+            val sanitizedTargetWeight = sanitizePositiveDouble(targetWeight)
+            val sanitizedTargetReps = sanitizePositiveInt(targetReps)
+            val sanitizedTargetOneRepMax = sanitizePositiveDouble(targetOneRepMax)
+            val sanitizedTargetDistance = sanitizePositiveDouble(targetDistance)
+            val sanitizedTargetDistanceUnit = targetDistanceUnit
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+            val sanitizedTargetDurationSeconds = sanitizePositiveInt(targetDurationSeconds)
+
+            val cleanedTitle = cleanMotivationalGoalTitle(title)
+                ?: buildMotivationalGoalTitle(goalType)
+
+            val now = System.currentTimeMillis()
+
+            runCatching {
+                exerciseMotivationalGoalRepository.insertGoalWithLongTermAssignment(
+                    goal = ExerciseMotivationalGoalEntity(
+                        exerciseId = exerciseId,
+                        goalType = goalType,
+                        targetWeight = sanitizedTargetWeight,
+                        targetReps = sanitizedTargetReps,
+                        targetOneRepMax = sanitizedTargetOneRepMax,
+                        targetDistance = sanitizedTargetDistance,
+                        targetDistanceUnit = sanitizedTargetDistanceUnit,
+                        targetDurationSeconds = sanitizedTargetDurationSeconds,
+                        title = cleanedTitle,
+                        notes = notes?.trim()?.takeIf { it.isNotBlank() },
+                        isActive = true,
+                        isMotivationalOnly = true,
+                        createdAtEpochMillis = now,
+                        updatedAtEpochMillis = now,
+                    ),
+                    assignmentCreatedAtEpochMillis = now,
+                )
+            }.onSuccess {
+                errorMessage.value = null
+                refreshSignal.update { it + 1 }
+            }.onFailure { error ->
+                errorMessage.value = error.message ?: "Could not save motivational goal."
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun deactivateMotivationalGoal(
+        goal: ExerciseMotivationalGoalEntity,
+    ) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+
+            runCatching {
+                exerciseMotivationalGoalRepository.deactivateGoal(
+                    goalId = goal.id,
+                    updatedAtEpochMillis = now,
+                )
+            }.onSuccess {
+                errorMessage.value = null
+                refreshSignal.update { it + 1 }
+            }.onFailure { error ->
+                errorMessage.value = error.message ?: "Could not hide motivational goal."
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun restoreMotivationalGoal(
+        goal: ExerciseMotivationalGoalEntity,
+    ) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+
+            runCatching {
+                exerciseMotivationalGoalRepository.restoreGoalAndAssignments(
+                    goalId = goal.id,
+                    updatedAtEpochMillis = now,
+                )
+            }.onSuccess {
+                errorMessage.value = null
+                refreshSignal.update { it + 1 }
+            }.onFailure { error ->
+                errorMessage.value = error.message ?: "Could not restore motivational goal."
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteMotivationalGoal(
+        goal: ExerciseMotivationalGoalEntity,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                exerciseMotivationalGoalRepository.deleteGoal(goal)
+            }.onSuccess {
+                errorMessage.value = null
+                refreshSignal.update { it + 1 }
+            }.onFailure { error ->
+                errorMessage.value = error.message ?: "Could not delete motivational goal."
+                error.printStackTrace()
+            }
+        }
+    }
+
 
     fun createPaceProfile(
         exerciseId: Long,
@@ -369,6 +491,12 @@ class ExerciseListViewModel @Inject constructor(
         val paceProfiles = exercisePaceProfileRepository
             .getProfilesForExercise(exercise.id)
 
+        val motivationalGoals = exerciseMotivationalGoalRepository
+            .getActiveLongTermGoalsForExercise(exercise.id)
+
+        val hiddenMotivationalGoals = exerciseMotivationalGoalRepository
+            .getHiddenGoalsForExercise(exercise.id)
+
         return when (exercise.exerciseType) {
 
             ExerciseType.CARDIO -> {
@@ -380,6 +508,8 @@ class ExerciseListViewModel @Inject constructor(
                         exercise = exercise,
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
                         paceProfiles = paceProfiles,
+                        motivationalGoals = motivationalGoals,
+                        hiddenMotivationalGoals = hiddenMotivationalGoals,
                     )
                 } else {
 
@@ -415,6 +545,8 @@ class ExerciseListViewModel @Inject constructor(
                             },
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
                         paceProfiles = paceProfiles,
+                        motivationalGoals = motivationalGoals,
+                        hiddenMotivationalGoals = hiddenMotivationalGoals,
                     )
                 }
             }
@@ -450,6 +582,8 @@ class ExerciseListViewModel @Inject constructor(
                         },
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
                         paceProfiles = paceProfiles,
+                        motivationalGoals = motivationalGoals,
+                        hiddenMotivationalGoals = hiddenMotivationalGoals,
                         historyPoints = historyPoints,
                         historyTrendText = historyTrendText,
                     )
@@ -477,6 +611,8 @@ class ExerciseListViewModel @Inject constructor(
                         },
                         selectedMuscleGroupIds = selectedMuscleGroupIds,
                         paceProfiles = paceProfiles,
+                        motivationalGoals = motivationalGoals,
+                        hiddenMotivationalGoals = hiddenMotivationalGoals,
                         historyPoints = historyPoints,
                         historyTrendText = historyTrendText,
                     )
@@ -541,9 +677,9 @@ class ExerciseListViewModel @Inject constructor(
         val delta = last - first
 
         return when {
-            delta > 0.0 -> "Trend: improving"
-            delta < 0.0 -> "Trend: declining"
-            else -> "Trend: stable"
+            delta > 0.0 -> "Trend: building up"
+            delta < 0.0 -> "Trend: lighter recently"
+            else -> "Trend: steady"
         }
     }
 
@@ -671,10 +807,50 @@ class ExerciseListViewModel @Inject constructor(
         }
     }
 
+    private fun cleanMotivationalGoalTitle(
+        value: String,
+    ): String? {
+        val cleaned = value.trim()
+
+        if (cleaned.isBlank()) {
+            return null
+        }
+
+        return cleaned.replaceFirstChar { character ->
+            character.uppercase()
+        }
+    }
+
+    private fun buildMotivationalGoalTitle(
+        goalType: ExerciseMotivationalGoalType,
+    ): String {
+        return when (goalType) {
+            ExerciseMotivationalGoalType.WEIGHT_REPS -> "Weight x reps goal"
+            ExerciseMotivationalGoalType.ESTIMATED_1RM -> "Estimated 1RM goal"
+            ExerciseMotivationalGoalType.ACTUAL_1RM -> "Actual 1RM goal"
+            ExerciseMotivationalGoalType.CARDIO_DISTANCE -> "Cardio distance goal"
+            ExerciseMotivationalGoalType.CARDIO_DURATION -> "Cardio duration goal"
+            ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION ->
+                "Cardio distance and duration goal"
+        }
+    }
+
     private fun sanitizeSeconds(
         value: Int,
     ): Int {
         return value.coerceAtLeast(0)
+    }
+
+    private fun sanitizePositiveDouble(
+        value: Double?,
+    ): Double? {
+        return value?.takeIf { it > 0.0 }
+    }
+
+    private fun sanitizePositiveInt(
+        value: Int?,
+    ): Int? {
+        return value?.takeIf { it > 0 }
     }
 
     private fun formatEpochDay(
@@ -703,6 +879,19 @@ class ExerciseListViewModel @Inject constructor(
             value.toInt().toString()
         } else {
             value.toString()
+        }
+    }
+
+    private fun formatDuration(
+        seconds: Int,
+    ): String {
+        val minutes = seconds / 60
+        val remainingSeconds = seconds % 60
+
+        return if (remainingSeconds == 0) {
+            "${minutes}m"
+        } else {
+            "${minutes}m ${remainingSeconds}s"
         }
     }
 }
