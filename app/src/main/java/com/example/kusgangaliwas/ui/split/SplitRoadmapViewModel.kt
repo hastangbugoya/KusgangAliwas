@@ -292,27 +292,6 @@ class SplitRoadmapViewModel @Inject constructor(
         }
     }
 
-    fun updateExerciseTargets(
-        entity: SplitTemplateExerciseEntity,
-        targetSets: Int?,
-        targetRepsMin: Int?,
-        targetRepsMax: Int?,
-    ) {
-        viewModelScope.launch {
-            runCatching {
-                splitTemplateRepository.updateSplitExercise(
-                    entity.copy(
-                        targetSets = targetSets,
-                        targetRepsMin = targetRepsMin,
-                        targetRepsMax = targetRepsMax,
-                    )
-                )
-            }.onFailure { error ->
-                error.printStackTrace()
-            }
-        }
-    }
-
     fun updateCardioTargets(
         entity: SplitTemplateExerciseEntity,
         targetDistance: Double?,
@@ -326,9 +305,6 @@ class SplitRoadmapViewModel @Inject constructor(
                         targetDistance = targetDistance,
                         targetDistanceUnit = targetDistanceUnit?.takeIf { it.isNotBlank() },
                         targetDurationMinutes = targetDurationMinutes,
-                        targetSets = null,
-                        targetRepsMin = null,
-                        targetRepsMax = null,
                     )
                 )
             }.onFailure { error ->

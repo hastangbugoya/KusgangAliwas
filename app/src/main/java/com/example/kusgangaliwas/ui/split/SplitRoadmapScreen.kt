@@ -53,7 +53,6 @@ fun SplitRoadmapScreen(
     onOverflowClick: () -> Unit,
     onAddExercise: (Long) -> Unit,
     onDeleteExercise: (Long) -> Unit,
-    onUpdateExerciseTargets: (SplitTemplateExerciseEntity, Int?, Int?, Int?) -> Unit,
     onScheduleEnabledChange: (Boolean) -> Unit,
     onToggleScheduleDay: (Int) -> Unit,
     onHorizonWeeksTextChange: (String) -> Unit,
@@ -188,14 +187,6 @@ fun SplitRoadmapScreen(
                                                 onImportMotivationalGoalToSplitExercise,
                                         )
 
-                                        buildTargetText(
-                                            sets = splitExercise.targetSets,
-                                            min = splitExercise.targetRepsMin,
-                                            max = splitExercise.targetRepsMax,
-                                        )?.let { text ->
-                                            Text(text = text)
-                                        }
-
                                         Text(
                                             text = when (exerciseType) {
                                                 ExerciseType.STRENGTH ->
@@ -223,22 +214,11 @@ fun SplitRoadmapScreen(
                                             )
                                         }
 
-                                        when (exerciseType) {
-                                            ExerciseType.STRENGTH -> {
-                                                TargetEditorRow(
-                                                    splitExercise = splitExercise,
-                                                    onUpdateExerciseTargets = onUpdateExerciseTargets,
-                                                )
-                                            }
-
-                                            ExerciseType.CARDIO -> {
-                                                CardioTargetEditorRow(
-                                                    splitExercise = splitExercise,
-                                                    onUpdateCardioTargets = onUpdateCardioTargets,
-                                                )
-                                            }
-
-                                            else -> Unit
+                                        if (exerciseType == ExerciseType.CARDIO) {
+                                            CardioTargetEditorRow(
+                                                splitExercise = splitExercise,
+                                                onUpdateCardioTargets = onUpdateCardioTargets,
+                                            )
                                         }
 
                                         Row(
@@ -758,73 +738,6 @@ private fun CardioTargetEditorRow(
 }
 
 @Composable
-private fun TargetEditorRow(
-    splitExercise: SplitTemplateExerciseEntity,
-    onUpdateExerciseTargets: (SplitTemplateExerciseEntity, Int?, Int?, Int?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var setsText by remember(splitExercise.id) {
-        mutableStateOf(splitExercise.targetSets?.toString() ?: "")
-    }
-    var minText by remember(splitExercise.id) {
-        mutableStateOf(splitExercise.targetRepsMin?.toString() ?: "")
-    }
-    var maxText by remember(splitExercise.id) {
-        mutableStateOf(splitExercise.targetRepsMax?.toString() ?: "")
-    }
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        TargetNumberField(
-            label = "Sets",
-            value = setsText,
-            onValueChange = { value ->
-                setsText = value
-                onUpdateExerciseTargets(
-                    splitExercise,
-                    setsText.toIntOrNull(),
-                    minText.toIntOrNull(),
-                    maxText.toIntOrNull(),
-                )
-            },
-            modifier = Modifier.weight(1f),
-        )
-
-        TargetNumberField(
-            label = "Min",
-            value = minText,
-            onValueChange = { value ->
-                minText = value
-                onUpdateExerciseTargets(
-                    splitExercise,
-                    setsText.toIntOrNull(),
-                    minText.toIntOrNull(),
-                    maxText.toIntOrNull(),
-                )
-            },
-            modifier = Modifier.weight(1f),
-        )
-
-        TargetNumberField(
-            label = "Max",
-            value = maxText,
-            onValueChange = { value ->
-                maxText = value
-                onUpdateExerciseTargets(
-                    splitExercise,
-                    setsText.toIntOrNull(),
-                    minText.toIntOrNull(),
-                    maxText.toIntOrNull(),
-                )
-            },
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
 private fun TargetNumberField(
     label: String,
     value: String,
@@ -844,25 +757,6 @@ private fun TargetNumberField(
         textStyle = MaterialTheme.typography.bodySmall,
         modifier = modifier,
     )
-}
-
-private fun buildTargetText(
-    sets: Int?,
-    min: Int?,
-    max: Int?,
-): String? {
-    val setsPart = sets?.let { "$it sets" }
-
-    val repsPart = when {
-        min != null && max != null && min != max -> "$min-$max reps"
-        min != null -> "$min reps"
-        max != null -> "up to $max reps"
-        else -> null
-    }
-
-    return listOfNotNull(setsPart, repsPart)
-        .takeIf { it.isNotEmpty() }
-        ?.joinToString(" · ")
 }
 
 private fun buildMotivationalGoalLine(
