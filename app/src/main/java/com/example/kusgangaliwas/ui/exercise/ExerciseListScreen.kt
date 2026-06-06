@@ -37,6 +37,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -609,6 +610,147 @@ private fun ExerciseType.accentColor(): Color {
 }
 
 
+
+@Composable
+private fun KaDetailSectionCard(
+    title: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    count: Int? = null,
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = accentColor.copy(alpha = 0.20f),
+        ),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(5.dp)
+                        .height(32.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(accentColor.copy(alpha = 0.9f)),
+                )
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+
+                count?.let {
+                    Text(
+                        text = it.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            content()
+        }
+    }
+}
+
+@Composable
+private fun KaDetailInnerCard(
+    modifier: Modifier = Modifier,
+    borderColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = borderColor,
+        ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun KaDetailFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(label)
+        },
+        modifier = modifier,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = accentColor.copy(alpha = 0.18f),
+            selectedLabelColor = accentColor,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = MaterialTheme.colorScheme.outlineVariant,
+            selectedBorderColor = accentColor.copy(alpha = 0.55f),
+        ),
+    )
+}
+
+@Composable
+private fun DetailInfoText(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        modifier = modifier,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun DetailMetricLine(
+    text: String,
+    accentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        modifier = modifier,
+        style = MaterialTheme.typography.bodyMedium,
+        color = accentColor,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
 @Composable
 private fun AddExerciseSheetContent(
     exerciseName: String,
@@ -744,6 +886,7 @@ private fun ExerciseDetailSheetContent(
     onDeletePaceProfile: (ExercisePaceProfileEntity) -> Unit,
 ) {
     val exercise = item.exercise
+    val typeAccentColor = exercise.exerciseType.accentColor()
     val todayText = remember {
         LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
@@ -774,68 +917,75 @@ private fun ExerciseDetailSheetContent(
             .verticalScroll(rememberScrollState())
             .imePadding()
             .navigationBarsPadding()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        KaDetailSectionCard(
+            title = "Exercise",
+            accentColor = typeAccentColor,
         ) {
-            OutlinedTextField(
-                value = exerciseNameText,
-                onValueChange = { exerciseNameText = it },
-                label = { Text("Exercise name") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = exerciseNameText,
+                        onValueChange = { exerciseNameText = it },
+                        label = { Text("Exercise name") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
 
-            IconButton(
-                onClick = {
-                    onRenameExercise(exercise, exerciseNameText)
-                },
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.floppy_disk_pen),
-                    contentDescription = "Update exercise name",
-                )
+                    IconButton(
+                        onClick = {
+                            onRenameExercise(exercise, exerciseNameText)
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.floppy_disk_pen),
+                            contentDescription = "Update exercise name",
+                            tint = typeAccentColor,
+                        )
+                    }
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TypePill(
+                        text = exercise.exerciseType.displayText(),
+                        color = typeAccentColor,
+                    )
+
+                    DetailInfoText("Exercise detail")
+                }
             }
         }
 
-        Text(
-            text = "Type: ${exercise.exerciseType.displayText()}",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        HorizontalDivider()
-
-        Text(
-            text = "Muscle groups",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
-
-        if (availableMuscleGroups.isEmpty()) {
-            Text(
-                text = "No muscle groups yet.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        } else {
-            MuscleGroupChipRow(
-                muscleGroups = availableMuscleGroups,
-                selectedMuscleGroupIds = item.selectedMuscleGroupIds,
-                onToggleMuscleGroup = { muscleGroupId, isSelected ->
-                    onToggleMuscleGroupForExercise(
-                        exercise.id,
-                        muscleGroupId,
-                        isSelected,
-                    )
-                },
-            )
+        KaDetailSectionCard(
+            title = "Muscle groups",
+            count = item.selectedMuscleGroupIds.size.takeIf { availableMuscleGroups.isNotEmpty() },
+            accentColor = KaPalette.SteelBlue,
+        ) {
+            if (availableMuscleGroups.isEmpty()) {
+                DetailInfoText("No muscle groups yet.")
+            } else {
+                MuscleGroupChipRow(
+                    muscleGroups = availableMuscleGroups,
+                    selectedMuscleGroupIds = item.selectedMuscleGroupIds,
+                    onToggleMuscleGroup = { muscleGroupId, isSelected ->
+                        onToggleMuscleGroupForExercise(
+                            exercise.id,
+                            muscleGroupId,
+                            isSelected,
+                        )
+                    },
+                )
+            }
         }
-
-        HorizontalDivider()
 
         MotivationalGoalsSection(
             exerciseId = exercise.id,
@@ -848,8 +998,6 @@ private fun ExerciseDetailSheetContent(
             errorMessage = errorMessage,
         )
 
-        HorizontalDivider()
-
         PaceProfilesSection(
             exerciseId = exercise.id,
             paceProfiles = item.paceProfiles,
@@ -861,128 +1009,136 @@ private fun ExerciseDetailSheetContent(
             onDeletePaceProfile = onDeletePaceProfile,
         )
 
-        HorizontalDivider()
-
-        Text(
-            text = "Recent performance",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
-
-        Text(text = item.lastLogDateText ?: "No logged sessions yet.")
-        Text(text = item.lastSetSummaryText ?: "No set summary yet.")
+        KaDetailSectionCard(
+            title = "Recent performance",
+            accentColor = KaPalette.Success,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                DetailMetricLine(
+                    text = item.lastLogDateText ?: "No logged sessions yet.",
+                    accentColor = MaterialTheme.colorScheme.onSurface,
+                )
+                DetailInfoText(item.lastSetSummaryText ?: "No set summary yet.")
+            }
+        }
 
         if (exercise.exerciseType == ExerciseType.STRENGTH) {
-            HorizontalDivider()
-
-            Text(
-                text = "Strength records",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Text(text = item.latestMaxWeightText ?: "Latest max weight: —")
-            Text(text = item.estimatedOneRepMaxText ?: "Estimated 1RM: —")
-            Text(text = item.actualOneRepMaxText ?: "Actual 1RM: —")
-            Text(text = item.actualOneRepMaxDateText ?: "Actual 1RM date: —")
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            KaDetailSectionCard(
+                title = "Strength records",
+                accentColor = KaPalette.SteelBlue,
             ) {
-                OutlinedTextField(
-                    value = actualOneRepMaxText,
-                    onValueChange = { actualOneRepMaxText = it },
-                    label = { Text("Actual 1RM") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal,
-                    ),
-                    modifier = Modifier.weight(1f),
-                )
-
-                OutlinedTextField(
-                    value = actualOneRepMaxDateText,
-                    onValueChange = { actualOneRepMaxDateText = it },
-                    label = { Text("Date") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            OutlinedTextField(
-                value = actualOneRepMaxNotesText,
-                onValueChange = { actualOneRepMaxNotesText = it },
-                label = { Text("Notes optional") },
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        val value = actualOneRepMaxText.toDoubleOrNull()
-                        val date = runCatching {
-                            LocalDate.parse(actualOneRepMaxDateText)
-                        }.getOrNull()
-
-                        if (value != null && date != null) {
-                            val achievedAtEpochMillis = date
-                                .atStartOfDay(ZoneId.systemDefault())
-                                .toInstant()
-                                .toEpochMilli()
-
-                            onSaveActualOneRepMax(
-                                exercise.id,
-                                value,
-                                achievedAtEpochMillis,
-                                actualOneRepMaxNotesText,
-                            )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    KaDetailInnerCard(
+                        borderColor = KaPalette.SteelBlue.copy(alpha = 0.28f),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            DetailInfoText(item.latestMaxWeightText ?: "Latest max weight: —")
+                            DetailInfoText(item.estimatedOneRepMaxText ?: "Estimated 1RM: —")
+                            DetailInfoText(item.actualOneRepMaxText ?: "Actual 1RM: —")
+                            DetailInfoText(item.actualOneRepMaxDateText ?: "Actual 1RM date: —")
                         }
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Save 1RM")
-                }
+                    }
 
-                OutlinedButton(
-                    onClick = {
-                        onDeleteActualOneRepMax(exercise.id)
-                        actualOneRepMaxText = ""
-                        actualOneRepMaxNotesText = ""
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Delete 1RM")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = actualOneRepMaxText,
+                            onValueChange = { actualOneRepMaxText = it },
+                            label = { Text("Actual 1RM") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Decimal,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        OutlinedTextField(
+                            value = actualOneRepMaxDateText,
+                            onValueChange = { actualOneRepMaxDateText = it },
+                            label = { Text("Date") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = actualOneRepMaxNotesText,
+                        onValueChange = { actualOneRepMaxNotesText = it },
+                        label = { Text("Notes optional") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Button(
+                            onClick = {
+                                val value = actualOneRepMaxText.toDoubleOrNull()
+                                val date = runCatching {
+                                    LocalDate.parse(actualOneRepMaxDateText)
+                                }.getOrNull()
+
+                                if (value != null && date != null) {
+                                    val achievedAtEpochMillis = date
+                                        .atStartOfDay(ZoneId.systemDefault())
+                                        .toInstant()
+                                        .toEpochMilli()
+
+                                    onSaveActualOneRepMax(
+                                        exercise.id,
+                                        value,
+                                        achievedAtEpochMillis,
+                                        actualOneRepMaxNotesText,
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                        ) {
+                            Text("Save 1RM")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                onDeleteActualOneRepMax(exercise.id)
+                                actualOneRepMaxText = ""
+                                actualOneRepMaxNotesText = ""
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = KaPalette.Danger,
+                            ),
+                        ) {
+                            Text("Delete 1RM")
+                        }
+                    }
                 }
             }
         }
 
-        HorizontalDivider()
-
-        Text(
-            text = "Last 10 trend",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
-
-        ExerciseHistoryGraph(
-            historyPoints = item.historyPoints,
-            historyTrendText = item.historyTrendText,
-        )
+        KaDetailSectionCard(
+            title = "Last 10 trend",
+            accentColor = KaPalette.Amber,
+        ) {
+            ExerciseHistoryGraph(
+                historyPoints = item.historyPoints,
+                historyTrendText = item.historyTrendText,
+            )
+        }
 
         if (!exercise.notes.isNullOrBlank()) {
-            HorizontalDivider()
-
-            Text(
-                text = "Notes",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Text(text = exercise.notes)
+            KaDetailSectionCard(
+                title = "Notes",
+                accentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ) {
+                DetailInfoText(exercise.notes)
+            }
         }
 
         Row(
@@ -1053,255 +1209,254 @@ private fun MotivationalGoalsSection(
         previousGoalCount = motivationalGoals.size
     }
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    KaDetailSectionCard(
+        title = "Motivational goals",
+        count = motivationalGoals.size + hiddenMotivationalGoals.size,
+        accentColor = KaPalette.Purple,
     ) {
-        Text(
-            text = "Motivational goals",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            DetailInfoText(
+                text = "Optional targets to keep in mind. These do not score or judge the workout.",
+            )
 
-        Text(
-            text = "Optional targets to keep in mind. These do not score or judge the workout.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.secondary,
-        )
+            errorMessage?.let { message ->
+                KaErrorCard(message = message)
+            }
 
-        errorMessage?.let { message ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraSmall,
-            ) {
+            if (motivationalGoals.isEmpty()) {
+                DetailInfoText("No active motivational goals.")
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    motivationalGoals.forEach { goal ->
+                        MotivationalGoalCard(
+                            goal = goal,
+                            onDeactivateMotivationalGoal = onDeactivateMotivationalGoal,
+                        )
+                    }
+                }
+            }
+
+            if (hiddenMotivationalGoals.isNotEmpty()) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
                 Text(
-                    text = message,
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    text = "Hidden goals",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
                 )
-            }
-        }
 
-        if (motivationalGoals.isEmpty()) {
-            Text(
-                text = "No active motivational goals.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        } else {
-            motivationalGoals.forEach { goal ->
-                MotivationalGoalCard(
-                    goal = goal,
-                    onDeactivateMotivationalGoal = onDeactivateMotivationalGoal,
-                )
-            }
-        }
+                DetailInfoText("Hidden goals stay available here if you want to restore them later.")
 
-        if (hiddenMotivationalGoals.isNotEmpty()) {
-            HorizontalDivider()
-
-            Text(
-                text = "Hidden goals",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Text(
-                text = "Hidden goals stay available here if you want to restore them later.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-
-            hiddenMotivationalGoals.forEach { goal ->
-                HiddenMotivationalGoalCard(
-                    goal = goal,
-                    onRestoreMotivationalGoal = onRestoreMotivationalGoal,
-                    onDeleteMotivationalGoal = onDeleteMotivationalGoal,
-                )
-            }
-        }
-
-        HorizontalDivider()
-
-        if (!showAddGoalForm) {
-            OutlinedButton(
-                onClick = {
-                    showAddGoalForm = true
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Add motivational goal")
-            }
-        } else {
-            Text(
-                text = "Add motivational goal",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                ExerciseMotivationalGoalType.entries.forEach { goalType ->
-                    FilterChip(
-                        selected = selectedGoalType == goalType,
-                        onClick = {
-                            selectedGoalType = goalType
-                        },
-                        label = {
-                            Text(goalType.displayText())
-                        },
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = titleText,
-                onValueChange = { titleText = it },
-                label = { Text("Title optional") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            when (selectedGoalType) {
-                ExerciseMotivationalGoalType.WEIGHT_REPS -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        GoalNumberField(
-                            value = targetWeightText,
-                            onValueChange = { targetWeightText = it },
-                            label = "Weight lb",
-                            allowDecimal = true,
-                            modifier = Modifier.weight(1f),
-                        )
-
-                        GoalNumberField(
-                            value = targetRepsText,
-                            onValueChange = { targetRepsText = it },
-                            label = "Reps",
-                            allowDecimal = false,
-                            modifier = Modifier.weight(1f),
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    hiddenMotivationalGoals.forEach { goal ->
+                        HiddenMotivationalGoalCard(
+                            goal = goal,
+                            onRestoreMotivationalGoal = onRestoreMotivationalGoal,
+                            onDeleteMotivationalGoal = onDeleteMotivationalGoal,
                         )
                     }
                 }
+            }
 
-                ExerciseMotivationalGoalType.ESTIMATED_1RM,
-                ExerciseMotivationalGoalType.ACTUAL_1RM -> {
-                    GoalNumberField(
-                        value = targetOneRepMaxText,
-                        onValueChange = { targetOneRepMaxText = it },
-                        label = "Target 1RM lb",
-                        allowDecimal = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            if (!showAddGoalForm) {
+                Button(
+                    onClick = {
+                        showAddGoalForm = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                ) {
+                    Text("Add motivational goal")
                 }
-
-                ExerciseMotivationalGoalType.CARDIO_DISTANCE -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            } else {
+                KaDetailInnerCard(
+                    borderColor = KaPalette.Purple.copy(alpha = 0.35f),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        GoalNumberField(
-                            value = targetDistanceText,
-                            onValueChange = { targetDistanceText = it },
-                            label = "Distance",
-                            allowDecimal = true,
-                            modifier = Modifier.weight(1f),
+                        Text(
+                            text = "Add motivational goal",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
                         )
+
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            ExerciseMotivationalGoalType.entries.forEach { goalType ->
+                                KaDetailFilterChip(
+                                    selected = selectedGoalType == goalType,
+                                    onClick = {
+                                        selectedGoalType = goalType
+                                    },
+                                    label = goalType.displayText(),
+                                    accentColor = KaPalette.Purple,
+                                )
+                            }
+                        }
 
                         OutlinedTextField(
-                            value = targetDistanceUnitText,
-                            onValueChange = { targetDistanceUnitText = it },
-                            label = { Text("Unit") },
+                            value = titleText,
+                            onValueChange = { titleText = it },
+                            label = { Text("Title optional") },
                             singleLine = true,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                    }
-                }
 
-                ExerciseMotivationalGoalType.CARDIO_DURATION -> {
-                    GoalNumberField(
-                        value = targetDurationMinutesText,
-                        onValueChange = { targetDurationMinutesText = it },
-                        label = "Duration minutes",
-                        allowDecimal = false,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                        when (selectedGoalType) {
+                            ExerciseMotivationalGoalType.WEIGHT_REPS -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    GoalNumberField(
+                                        value = targetWeightText,
+                                        onValueChange = { targetWeightText = it },
+                                        label = "Weight lb",
+                                        allowDecimal = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
 
-                ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        GoalNumberField(
-                            value = targetDistanceText,
-                            onValueChange = { targetDistanceText = it },
-                            label = "Distance",
-                            allowDecimal = true,
-                            modifier = Modifier.weight(1f),
-                        )
+                                    GoalNumberField(
+                                        value = targetRepsText,
+                                        onValueChange = { targetRepsText = it },
+                                        label = "Reps",
+                                        allowDecimal = false,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+
+                            ExerciseMotivationalGoalType.ESTIMATED_1RM,
+                            ExerciseMotivationalGoalType.ACTUAL_1RM -> {
+                                GoalNumberField(
+                                    value = targetOneRepMaxText,
+                                    onValueChange = { targetOneRepMaxText = it },
+                                    label = "Target 1RM lb",
+                                    allowDecimal = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            ExerciseMotivationalGoalType.CARDIO_DISTANCE -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    GoalNumberField(
+                                        value = targetDistanceText,
+                                        onValueChange = { targetDistanceText = it },
+                                        label = "Distance",
+                                        allowDecimal = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+
+                                    OutlinedTextField(
+                                        value = targetDistanceUnitText,
+                                        onValueChange = { targetDistanceUnitText = it },
+                                        label = { Text("Unit") },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+
+                            ExerciseMotivationalGoalType.CARDIO_DURATION -> {
+                                GoalNumberField(
+                                    value = targetDurationMinutesText,
+                                    onValueChange = { targetDurationMinutesText = it },
+                                    label = "Duration minutes",
+                                    allowDecimal = false,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            ExerciseMotivationalGoalType.CARDIO_DISTANCE_DURATION -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    GoalNumberField(
+                                        value = targetDistanceText,
+                                        onValueChange = { targetDistanceText = it },
+                                        label = "Distance",
+                                        allowDecimal = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+
+                                    OutlinedTextField(
+                                        value = targetDistanceUnitText,
+                                        onValueChange = { targetDistanceUnitText = it },
+                                        label = { Text("Unit") },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+
+                                GoalNumberField(
+                                    value = targetDurationMinutesText,
+                                    onValueChange = { targetDurationMinutesText = it },
+                                    label = "Duration minutes",
+                                    allowDecimal = false,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
 
                         OutlinedTextField(
-                            value = targetDistanceUnitText,
-                            onValueChange = { targetDistanceUnitText = it },
-                            label = { Text("Unit") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f),
+                            value = notesText,
+                            onValueChange = { notesText = it },
+                            label = { Text("Notes optional") },
+                            modifier = Modifier.fillMaxWidth(),
                         )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    showAddGoalForm = false
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text("Cancel")
+                            }
+
+                            Button(
+                                onClick = {
+                                    onCreateMotivationalGoal(
+                                        exerciseId,
+                                        selectedGoalType,
+                                        titleText,
+                                        positiveDoubleFromText(targetWeightText),
+                                        positiveIntFromText(targetRepsText),
+                                        positiveDoubleFromText(targetOneRepMaxText),
+                                        positiveDoubleFromText(targetDistanceText),
+                                        targetDistanceUnitText.trim().takeIf { it.isNotBlank() },
+                                        durationSecondsFromMinutesText(targetDurationMinutesText),
+                                        notesText,
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
+                            ) {
+                                Text("Save")
+                            }
+                        }
                     }
-
-                    GoalNumberField(
-                        value = targetDurationMinutesText,
-                        onValueChange = { targetDurationMinutesText = it },
-                        label = "Duration minutes",
-                        allowDecimal = false,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = notesText,
-                onValueChange = { notesText = it },
-                label = { Text("Notes optional") },
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        showAddGoalForm = false
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Cancel")
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        onCreateMotivationalGoal(
-                            exerciseId,
-                            selectedGoalType,
-                            titleText,
-                            positiveDoubleFromText(targetWeightText),
-                            positiveIntFromText(targetRepsText),
-                            positiveDoubleFromText(targetOneRepMaxText),
-                            positiveDoubleFromText(targetDistanceText),
-                            targetDistanceUnitText.trim().takeIf { it.isNotBlank() },
-                            durationSecondsFromMinutesText(targetDurationMinutesText),
-                            notesText,
-                        )
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Save")
                 }
             }
         }
@@ -1319,14 +1474,10 @@ private fun MotivationalGoalCard(
             detail.equals(displayTitle, ignoreCase = true)
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraSmall,
+    KaDetailInnerCard(
+        borderColor = KaPalette.Purple.copy(alpha = 0.30f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
@@ -1338,22 +1489,19 @@ private fun MotivationalGoalCard(
             Text(
                 text = goal.goalType.displayText(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
+                color = KaPalette.Purple,
+                fontWeight = FontWeight.SemiBold,
             )
 
             if (summary != null) {
-                Text(
+                DetailMetricLine(
                     text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    accentColor = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
             if (!goal.notes.isNullOrBlank()) {
-                Text(
-                    text = goal.notes,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
+                DetailInfoText(goal.notes)
             }
 
             Row(
@@ -1365,7 +1513,10 @@ private fun MotivationalGoalCard(
                         onDeactivateMotivationalGoal(goal)
                     },
                 ) {
-                    Text("Hide goal")
+                    Text(
+                        text = "Hide goal",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -1384,14 +1535,10 @@ private fun HiddenMotivationalGoalCard(
             detail.equals(displayTitle, ignoreCase = true)
         }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraSmall,
+    KaDetailInnerCard(
+        borderColor = MaterialTheme.colorScheme.outlineVariant,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
@@ -1403,22 +1550,18 @@ private fun HiddenMotivationalGoalCard(
             Text(
                 text = "Hidden · ${goal.goalType.displayText()}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             if (summary != null) {
-                Text(
+                DetailMetricLine(
                     text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    accentColor = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
             if (!goal.notes.isNullOrBlank()) {
-                Text(
-                    text = goal.notes,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
+                DetailInfoText(goal.notes)
             }
 
             Row(
@@ -1430,7 +1573,10 @@ private fun HiddenMotivationalGoalCard(
                         onRestoreMotivationalGoal(goal)
                     },
                 ) {
-                    Text("Restore")
+                    Text(
+                        text = "Restore",
+                        color = KaPalette.Success,
+                    )
                 }
 
                 TextButton(
@@ -1438,7 +1584,10 @@ private fun HiddenMotivationalGoalCard(
                         onDeleteMotivationalGoal(goal)
                     },
                 ) {
-                    Text("Delete")
+                    Text(
+                        text = "Delete",
+                        color = KaPalette.Danger,
+                    )
                 }
             }
         }
@@ -1539,163 +1688,161 @@ private fun PaceProfilesSection(
         previousPaceProfileCount = paceProfiles.size
     }
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    KaDetailSectionCard(
+        title = "Pace profiles",
+        count = paceProfiles.size,
+        accentColor = KaPalette.Amber,
     ) {
-        Text(
-            text = "Pace profiles",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
-
-        Text(
-            text = "Optional gentle timing nudges. Leave disabled or use 0 seconds for no nudge.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.secondary,
-        )
-
-        errorMessage?.let { message ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraSmall,
-            ) {
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-
-        if (paceProfiles.isEmpty()) {
-            Text(
-                text = "No pace profiles yet.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            DetailInfoText(
+                text = "Optional gentle timing nudges. Leave disabled or use 0 seconds for no nudge.",
             )
-        } else {
-            val hasDefaultProfile = paceProfiles.any { profile ->
-                profile.isDefault
+
+            errorMessage?.let { message ->
+                KaErrorCard(message = message)
             }
 
-            if (!hasDefaultProfile) {
-                Text(
-                    text = "This exercise has pace profiles, but no default is set.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-            }
-
-            paceProfiles.forEach { profile ->
-                PaceProfileEditCard(
-                    profile = profile,
-                    onUpdatePaceProfile = onUpdatePaceProfile,
-                    onSetPaceProfileAsDefault = onSetPaceProfileAsDefault,
-                    onTogglePaceProfileEnabled = onTogglePaceProfileEnabled,
-                    onDeletePaceProfile = onDeletePaceProfile,
-                )
-            }
-        }
-
-        HorizontalDivider()
-
-        if (!showAddPaceProfileForm) {
-            OutlinedButton(
-                onClick = {
-                    showAddPaceProfileForm = true
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Add another pace profile")
-            }
-        } else {
-            Text(
-                text = "Add pace profile",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            OutlinedTextField(
-                value = newName,
-                onValueChange = { newName = it },
-                label = { Text("Profile name") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            PaceSwitchRow(
-                label = "Default for this exercise",
-                checked = newIsDefault,
-                onCheckedChange = { newIsDefault = it },
-            )
-
-            PaceSwitchRow(
-                label = "Pace enabled",
-                checked = newIsEnabled,
-                onCheckedChange = { newIsEnabled = it },
-            )
-
-            PaceTimingFields(
-                prepLeadSeconds = newPrepLeadSeconds,
-                onPrepLeadSecondsChange = { newPrepLeadSeconds = it },
-                expectedWorkSeconds = newExpectedWorkSeconds,
-                onExpectedWorkSecondsChange = { newExpectedWorkSeconds = it },
-                expectedRestSeconds = newExpectedRestSeconds,
-                onExpectedRestSecondsChange = { newExpectedRestSeconds = it },
-                nextSetWarningSeconds = newNextSetWarningSeconds,
-                onNextSetWarningSecondsChange = { newNextSetWarningSeconds = it },
-                idleReminderIntervalSeconds = newIdleReminderIntervalSeconds,
-                onIdleReminderIntervalSecondsChange = {
-                    newIdleReminderIntervalSeconds = it
-                },
-            )
-
-            PaceSwitchRow(
-                label = "Idle reminders",
-                checked = newIdleReminderEnabled,
-                onCheckedChange = { newIdleReminderEnabled = it },
-            )
-
-            PaceSwitchRow(
-                label = "Equipment etiquette reminder",
-                checked = newEtiquetteReminderEnabled,
-                onCheckedChange = { newEtiquetteReminderEnabled = it },
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        showAddPaceProfileForm = false
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Cancel")
+            if (paceProfiles.isEmpty()) {
+                DetailInfoText("No pace profiles yet.")
+            } else {
+                val hasDefaultProfile = paceProfiles.any { profile ->
+                    profile.isDefault
                 }
 
-                OutlinedButton(
-                    onClick = {
-                        onCreatePaceProfile(
-                            exerciseId,
-                            newName,
-                            newIsDefault,
-                            newIsEnabled,
-                            secondsFromText(newPrepLeadSeconds),
-                            secondsFromText(newExpectedWorkSeconds),
-                            secondsFromText(newExpectedRestSeconds),
-                            secondsFromText(newNextSetWarningSeconds),
-                            secondsFromText(newIdleReminderIntervalSeconds),
-                            newIdleReminderEnabled,
-                            newEtiquetteReminderEnabled,
+                if (!hasDefaultProfile) {
+                    DetailInfoText("This exercise has pace profiles, but no default is set.")
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    paceProfiles.forEach { profile ->
+                        PaceProfileEditCard(
+                            profile = profile,
+                            onUpdatePaceProfile = onUpdatePaceProfile,
+                            onSetPaceProfileAsDefault = onSetPaceProfileAsDefault,
+                            onTogglePaceProfileEnabled = onTogglePaceProfileEnabled,
+                            onDeletePaceProfile = onDeletePaceProfile,
                         )
+                    }
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            if (!showAddPaceProfileForm) {
+                Button(
+                    onClick = {
+                        showAddPaceProfileForm = true
                     },
-                    enabled = newName.isNotBlank(),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
                 ) {
-                    Text("Save")
+                    Text("Add pace profile")
+                }
+            } else {
+                KaDetailInnerCard(
+                    borderColor = KaPalette.Amber.copy(alpha = 0.35f),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = "Add pace profile",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+
+                        OutlinedTextField(
+                            value = newName,
+                            onValueChange = { newName = it },
+                            label = { Text("Profile name") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        PaceSwitchRow(
+                            label = "Default for this exercise",
+                            checked = newIsDefault,
+                            onCheckedChange = { newIsDefault = it },
+                        )
+
+                        PaceSwitchRow(
+                            label = "Pace enabled",
+                            checked = newIsEnabled,
+                            onCheckedChange = { newIsEnabled = it },
+                        )
+
+                        PaceTimingFields(
+                            prepLeadSeconds = newPrepLeadSeconds,
+                            onPrepLeadSecondsChange = { newPrepLeadSeconds = it },
+                            expectedWorkSeconds = newExpectedWorkSeconds,
+                            onExpectedWorkSecondsChange = { newExpectedWorkSeconds = it },
+                            expectedRestSeconds = newExpectedRestSeconds,
+                            onExpectedRestSecondsChange = { newExpectedRestSeconds = it },
+                            nextSetWarningSeconds = newNextSetWarningSeconds,
+                            onNextSetWarningSecondsChange = { newNextSetWarningSeconds = it },
+                            idleReminderIntervalSeconds = newIdleReminderIntervalSeconds,
+                            onIdleReminderIntervalSecondsChange = {
+                                newIdleReminderIntervalSeconds = it
+                            },
+                        )
+
+                        PaceSwitchRow(
+                            label = "Idle reminders",
+                            checked = newIdleReminderEnabled,
+                            onCheckedChange = { newIdleReminderEnabled = it },
+                        )
+
+                        PaceSwitchRow(
+                            label = "Equipment etiquette reminder",
+                            checked = newEtiquetteReminderEnabled,
+                            onCheckedChange = { newEtiquetteReminderEnabled = it },
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    showAddPaceProfileForm = false
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text("Cancel")
+                            }
+
+                            Button(
+                                onClick = {
+                                    onCreatePaceProfile(
+                                        exerciseId,
+                                        newName,
+                                        newIsDefault,
+                                        newIsEnabled,
+                                        secondsFromText(newPrepLeadSeconds),
+                                        secondsFromText(newExpectedWorkSeconds),
+                                        secondsFromText(newExpectedRestSeconds),
+                                        secondsFromText(newNextSetWarningSeconds),
+                                        secondsFromText(newIdleReminderIntervalSeconds),
+                                        newIdleReminderEnabled,
+                                        newEtiquetteReminderEnabled,
+                                    )
+                                },
+                                enabled = newName.isNotBlank(),
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
+                            ) {
+                                Text("Save")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1762,47 +1909,61 @@ private fun PaceProfileEditCard(
         mutableStateOf(profile.etiquetteReminderEnabled)
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraSmall,
+    KaDetailInnerCard(
+        borderColor =
+            if (profile.isDefault) {
+                KaPalette.Amber.copy(alpha = 0.45f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = {
-                    Text(
-                        text = if (profile.isDefault) {
-                            "Profile name (default)"
-                        } else {
-                            "Profile name"
-                        },
-                    )
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = if (profile.isEnabled) {
-                        buildProfileTimingSummary(profile)
-                    } else {
-                        "Disabled"
-                    },
+                Column(
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Text(
+                        text = profile.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (profile.isDefault) {
+                            Text(
+                                text = "Default",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = KaPalette.Amber,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+
+                        Text(
+                            text = if (profile.isEnabled) {
+                                "Enabled"
+                            } else {
+                                "Disabled"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (profile.isEnabled) {
+                                KaPalette.Success
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
 
                 IconButton(
                     onClick = {
@@ -1820,11 +1981,36 @@ private fun PaceProfileEditCard(
                         } else {
                             "Expand pace profile"
                         },
+                        tint = KaPalette.Amber,
                     )
                 }
             }
 
+            DetailInfoText(
+                text = if (profile.isEnabled) {
+                    buildProfileTimingSummary(profile)
+                } else {
+                    "Disabled"
+                },
+            )
+
             if (expanded) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = {
+                        Text(
+                            text = if (profile.isDefault) {
+                                "Profile name (default)"
+                            } else {
+                                "Profile name"
+                            },
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
                 PaceSwitchRow(
                     label = "Default for this exercise",
                     checked = isDefault,
@@ -1870,7 +2056,7 @@ private fun PaceProfileEditCard(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             onUpdatePaceProfile(
                                 profile,
@@ -1886,6 +2072,10 @@ private fun PaceProfileEditCard(
                                 etiquetteReminderEnabled,
                             )
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
                     ) {
                         Text("Save changes")
                     }
@@ -1896,6 +2086,9 @@ private fun PaceProfileEditCard(
                             isDefault = true
                         },
                         enabled = !profile.isDefault,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = KaPalette.Amber,
+                        ),
                     ) {
                         Text("Set default")
                     }
@@ -1913,6 +2106,9 @@ private fun PaceProfileEditCard(
                         onClick = {
                             onDeletePaceProfile(profile)
                         },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = KaPalette.Danger,
+                        ),
                     ) {
                         Text("Delete")
                     }
@@ -2019,11 +2215,18 @@ private fun PaceSwitchRow(
             text = label,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = KaPalette.Amber,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ),
         )
     }
 }
@@ -2034,11 +2237,7 @@ private fun ExerciseHistoryGraph(
     historyTrendText: String?,
 ) {
     if (historyPoints.isEmpty()) {
-        Text(
-            text = "No history yet.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.secondary,
-        )
+        DetailInfoText("No history yet.")
         return
     }
 
@@ -2048,48 +2247,51 @@ private fun ExerciseHistoryGraph(
         ?: 1.0
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         historyTrendText?.let { text ->
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
+            DetailInfoText(text)
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Bottom,
+        KaDetailInnerCard(
+            borderColor = KaPalette.Amber.copy(alpha = 0.25f),
         ) {
-            historyPoints.forEach { point ->
-                val barHeight = ((point.maxWeight / maxWeight) * 72.0)
-                    .coerceAtLeast(12.0)
-                    .dp
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                historyPoints.forEach { point ->
+                    val barHeight = ((point.maxWeight / maxWeight) * 72.0)
+                        .coerceAtLeast(12.0)
+                        .dp
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = formatGraphWeight(point.maxWeight),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = formatGraphWeight(point.maxWeight),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
 
-                    Box(
-                        modifier = Modifier
-                            .width(28.dp)
-                            .height(barHeight)
-                            .background(MaterialTheme.colorScheme.primary),
-                    )
+                        Box(
+                            modifier = Modifier
+                                .width(28.dp)
+                                .height(barHeight)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(KaPalette.Amber),
+                        )
 
-                    Text(
-                        text = point.label,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
+                        Text(
+                            text = point.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

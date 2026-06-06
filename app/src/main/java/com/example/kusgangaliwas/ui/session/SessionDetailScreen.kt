@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -138,16 +139,16 @@ fun SessionDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(12.dp),
-            contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             item {
                 KaSectionCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -224,7 +225,7 @@ fun SessionDetailScreen(
 
             item {
                 KaSectionCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         KaSectionHeader("Session rating")
 
                         StarRatingRow(
@@ -237,7 +238,7 @@ fun SessionDetailScreen(
 
             item {
                 KaDangerCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         KaSectionHeader("Danger zone")
 
                         Text(
@@ -247,6 +248,7 @@ fun SessionDetailScreen(
 
                         Button(
                             onClick = onDeleteSession,
+                            modifier = Modifier.height(40.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = KaPalette.Danger,
                                 contentColor = MaterialTheme.colorScheme.onError,
@@ -255,6 +257,7 @@ fun SessionDetailScreen(
                             Icon(
                                 painter = painterResource(R.drawable.trash),
                                 contentDescription = null,
+                                modifier = Modifier.size(18.dp),
                             )
 
                             Spacer(modifier = Modifier.width(8.dp))
@@ -322,7 +325,7 @@ private fun KaSectionCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -332,7 +335,7 @@ private fun KaSectionCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(10.dp),
         ) {
             content()
         }
@@ -362,7 +365,7 @@ private fun KaTimelineItemCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, borderColor),
         colors = CardDefaults.cardColors(
             containerColor = containerColor,
@@ -372,7 +375,7 @@ private fun KaTimelineItemCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(10.dp),
         ) {
             content()
         }
@@ -386,7 +389,7 @@ private fun KaDangerCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, KaPalette.Danger),
         colors = CardDefaults.cardColors(
             containerColor = KaPalette.DangerContainer,
@@ -396,7 +399,7 @@ private fun KaDangerCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(10.dp),
         ) {
             content()
         }
@@ -416,12 +419,12 @@ private fun KaSectionHeader(
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.16f)
-                .height(3.dp)
+                .fillMaxWidth(0.14f)
+                .height(2.dp)
                 .background(
                     color = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(percent = 100),
@@ -454,10 +457,10 @@ private fun StrengthTimelineCard(
         isExpanded = expanded,
         isRemoteFocused = focusedExerciseLogId == item.log.id,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
@@ -527,6 +530,7 @@ private fun StrengthTimelineCard(
                 ) {
                     Button(
                         onClick = { onAddSet(item.log.id) },
+                        modifier = Modifier.height(40.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -535,6 +539,7 @@ private fun StrengthTimelineCard(
                         Icon(
                             painter = painterResource(R.drawable.add_document),
                             contentDescription = null,
+                            modifier = Modifier.size(18.dp),
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -606,10 +611,10 @@ private fun CardioTimelineCard(
     KaTimelineItemCard(
         isExpanded = expanded,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
@@ -653,7 +658,7 @@ private fun CardioTimelineCard(
 
             item.previousCardioText?.let { text ->
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -693,7 +698,7 @@ private fun CardioTimelineCard(
 
             if (!reorderMode && expanded) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
@@ -824,8 +829,10 @@ private fun CompactSessionItemControls(
             onToggleRemoteFocus?.let { toggleRemoteFocus ->
                 IconButton(
                     onClick = toggleRemoteFocus,
+                    modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
+                        modifier = Modifier.size(21.dp),
                         painter = painterResource(
                             id =
                                 if (isRemoteFocused) {
@@ -885,8 +892,10 @@ private fun ControlIconButton(
 
     IconButton(
         onClick = onClick,
+        modifier = Modifier.size(40.dp),
     ) {
         Icon(
+            modifier = Modifier.size(21.dp),
             painter = painterResource(id = drawableResId),
             contentDescription = contentDescription,
             tint = iconTint,
@@ -918,6 +927,8 @@ private fun IntensitySelectorRow(
 
                 OutlinedButton(
                     onClick = { onIntensitySelected(level) },
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                 ) {
                     Text(
                         text =
@@ -947,21 +958,21 @@ private fun StarRatingRow(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         (1..5).forEach { star ->
             val filled = (rating ?: 0) >= star
 
             Text(
                 text = if (filled) "★" else "☆",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 color = if (filled) {
                     KaPalette.Amber
                 } else {
                     MaterialTheme.colorScheme.outline
                 },
                 modifier = Modifier
-                    .padding(4.dp)
+                    .padding(2.dp)
                     .clickable {
                         if (rating == star) {
                             onRatingChange(null)
@@ -984,7 +995,7 @@ private fun SetEditorRow(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -995,11 +1006,11 @@ private fun SetEditorRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -1051,8 +1062,10 @@ private fun SetActionIconButton(
 ) {
     IconButton(
         onClick = onClick,
+        modifier = Modifier.size(34.dp),
     ) {
         Icon(
+            modifier = Modifier.size(18.dp),
             painter = painterResource(id = drawableResId),
             contentDescription = contentDescription,
             tint = tint,
@@ -1089,7 +1102,7 @@ private fun WeightRepsInputRow(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         NumberInputWithStepper(
@@ -1184,6 +1197,8 @@ private fun NumberInputWithStepper(
             keyboardOptions = KeyboardOptions(
                 keyboardType = keyboardType,
             ),
+            textStyle = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Row(
@@ -1191,21 +1206,29 @@ private fun NumberInputWithStepper(
         ) {
             OutlinedButton(
                 onClick = onDecrement,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.minus),
                     contentDescription = "Decrease",
+                    modifier = Modifier.size(18.dp),
                 )
             }
 
             OutlinedButton(
                 onClick = onIncrement,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.plus),
                     contentDescription = "Increase",
+                    modifier = Modifier.size(18.dp),
                 )
             }
         }
