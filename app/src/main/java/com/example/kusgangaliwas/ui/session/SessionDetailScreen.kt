@@ -1,5 +1,14 @@
 package com.example.kusgangaliwas.ui.session
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import com.example.kusgangaliwas.ui.theme.KaPalette
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -26,6 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -35,10 +46,9 @@ import com.example.kusgangaliwas.data.local.entity.ActualCardioLogEntity
 import com.example.kusgangaliwas.data.local.entity.ActualExerciseSetLogEntity
 import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
-import com.example.kusgangaliwas.ui.common.SectionHeader
-import com.example.kusgangaliwas.ui.common.SharpCard
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 
@@ -82,6 +92,7 @@ fun SessionDetailScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Box {
                 KusgangTopBar(
@@ -132,7 +143,7 @@ fun SessionDetailScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                SharpCard {
+                KaSectionCard {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -140,7 +151,7 @@ fun SessionDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                SectionHeader("Session timeline")
+                                KaSectionHeader("Session timeline")
                             }
 
                             IconButton(
@@ -149,11 +160,20 @@ fun SessionDetailScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.plus),
                                     contentDescription = "Add session item",
+                                    tint = MaterialTheme.colorScheme.primary,
                                 )
                             }
 
                             TextButton(
                                 onClick = { reorderMode = !reorderMode },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor =
+                                        if (reorderMode) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.secondary
+                                        },
+                                ),
                             ) {
                                 Text(if (reorderMode) "Done" else "Reorder")
                             }
@@ -203,9 +223,9 @@ fun SessionDetailScreen(
             }
 
             item {
-                SharpCard {
+                KaSectionCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Session rating")
+                        KaSectionHeader("Session rating")
 
                         StarRatingRow(
                             rating = uiState.session?.rating,
@@ -216,18 +236,29 @@ fun SessionDetailScreen(
             }
 
             item {
-                SharpCard {
+                KaDangerCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionHeader("Danger zone")
+                        KaSectionHeader("Danger zone")
 
                         Text(
                             text = "Delete this workout session permanently.",
                             style = MaterialTheme.typography.bodySmall,
                         )
 
-                        OutlinedButton(
+                        Button(
                             onClick = onDeleteSession,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = KaPalette.Danger,
+                                contentColor = MaterialTheme.colorScheme.onError,
+                            ),
                         ) {
+                            Icon(
+                                painter = painterResource(R.drawable.trash),
+                                contentDescription = null,
+                            )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
                             Text("Delete session")
                         }
                     }
@@ -283,6 +314,122 @@ fun SessionDetailScreen(
     }
 }
 
+
+@Composable
+private fun KaSectionCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun KaTimelineItemCard(
+    isExpanded: Boolean,
+    modifier: Modifier = Modifier,
+    isRemoteFocused: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val borderColor =
+        when {
+            isRemoteFocused -> MaterialTheme.colorScheme.primary
+            isExpanded -> MaterialTheme.colorScheme.secondary
+            else -> MaterialTheme.colorScheme.outlineVariant
+        }
+
+    val containerColor =
+        if (isExpanded) {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, borderColor),
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun KaDangerCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, KaPalette.Danger),
+        colors = CardDefaults.cardColors(
+            containerColor = KaPalette.DangerContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun KaSectionHeader(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = text.uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.16f)
+                .height(3.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(percent = 100),
+                ),
+        )
+    }
+}
+
 @Composable
 private fun StrengthTimelineCard(
     index: Int,
@@ -303,7 +450,10 @@ private fun StrengthTimelineCard(
         mutableStateOf(false)
     }
 
-    SharpCard {
+    KaTimelineItemCard(
+        isExpanded = expanded,
+        isRemoteFocused = focusedExerciseLogId == item.log.id,
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -323,7 +473,7 @@ private fun StrengthTimelineCard(
                     Text(
                         text = buildSetSummary(item.sets),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -343,7 +493,7 @@ private fun StrengthTimelineCard(
                 Text(
                     text = text,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -352,7 +502,7 @@ private fun StrengthTimelineCard(
                     Text(
                         "No sets yet.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
                     item.sets.forEach { set ->
@@ -375,14 +525,21 @@ private fun StrengthTimelineCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    OutlinedButton(
+                    Button(
                         onClick = { onAddSet(item.log.id) },
-                        modifier = Modifier.fillMaxWidth(0.32f).padding(4.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.add_document),
-                            contentDescription = "Add set",
+                            contentDescription = null,
                         )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text("Add set")
                     }
                 }
 
@@ -446,7 +603,9 @@ private fun CardioTimelineCard(
         }
     }
 
-    SharpCard {
+    KaTimelineItemCard(
+        isExpanded = expanded,
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -469,13 +628,13 @@ private fun CardioTimelineCard(
                         Text(
                             text = details.joinToString(" • "),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
                         Text(
                             text = "No cardio details yet.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -500,7 +659,7 @@ private fun CardioTimelineCard(
                     Text(
                         text = text,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
 
@@ -681,6 +840,12 @@ private fun CompactSessionItemControls(
                             } else {
                                 "Focus for remote"
                             },
+                        tint =
+                            if (isRemoteFocused) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                     )
                 }
             }
@@ -697,6 +862,12 @@ private fun CompactSessionItemControls(
                     } else {
                         "Expand item"
                     },
+                tint =
+                    if (expanded) {
+                        MaterialTheme.colorScheme.secondary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 onClick = onToggleExpanded,
             )
         }
@@ -708,13 +879,17 @@ private fun ControlIconButton(
     drawableResId: Int,
     contentDescription: String,
     onClick: () -> Unit,
+    tint: Color? = null,
 ) {
+    val iconTint = tint ?: MaterialTheme.colorScheme.onSurfaceVariant
+
     IconButton(
         onClick = onClick,
     ) {
         Icon(
             painter = painterResource(id = drawableResId),
             contentDescription = contentDescription,
+            tint = iconTint,
         )
     }
 }
@@ -759,7 +934,7 @@ private fun IntensitySelectorRow(
         Text(
             text = "1=slow walk · 3=brisk walk · 5=run",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.secondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -781,7 +956,7 @@ private fun StarRatingRow(
                 text = if (filled) "★" else "☆",
                 style = MaterialTheme.typography.headlineMedium,
                 color = if (filled) {
-                    MaterialTheme.colorScheme.primary
+                    KaPalette.Amber
                 } else {
                     MaterialTheme.colorScheme.outline
                 },
@@ -807,69 +982,81 @@ private fun SetEditorRow(
     onDuplicateSet: (ActualExerciseSetLogEntity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = "Set ${set.setOrder}",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Set ${set.setOrder}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+
+                SetActionIconButton(
+                    drawableResId = R.drawable.copy,
+                    contentDescription = "Copy set",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    onClick = { onDuplicateSet(set) },
+                )
+
+                SetActionIconButton(
+                    drawableResId = R.drawable.trash,
+                    contentDescription = "Delete set",
+                    tint = KaPalette.Danger,
+                    onClick = { onDeleteSet(set.id) },
+                )
+            }
+
+            WeightRepsInputRow(
+                set = set,
+                onUpdateSet = onUpdateSet,
             )
 
-//            TextButton(
-//                onClick = { onDuplicateSet(set) },
-//            ) {
-//                Text("Copy")
-//            }
-
-            OutlinedButton(
-                onClick = { onDuplicateSet(set) },
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.copy),
-                    contentDescription = "Increase",
-                )
-            }
-
-//            TextButton(
-//                onClick = { onDeleteSet(set.id) },
-//            ) {
-//                Text("Delete")
-//            }
-
-            OutlinedButton(
-                onClick = { onDeleteSet(set.id) },
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.trash),
-                    contentDescription = "Increase",
-                )
-            }
+            set.notes
+                ?.takeIf { it.isNotBlank() }
+                ?.let { note ->
+                    Text(
+                        text = note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
         }
+    }
+}
 
-        WeightRepsInputRow(
-            set = set,
-            onUpdateSet = onUpdateSet,
+@Composable
+private fun SetActionIconButton(
+    drawableResId: Int,
+    contentDescription: String,
+    tint: Color,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+    ) {
+        Icon(
+            painter = painterResource(id = drawableResId),
+            contentDescription = contentDescription,
+            tint = tint,
         )
-
-        set.notes
-            ?.takeIf { it.isNotBlank() }
-            ?.let { note ->
-                Text(
-                    text = note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-            }
     }
 }
 
