@@ -1,12 +1,15 @@
 package com.example.kusgangaliwas.ui.calendar
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,13 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.kusgangaliwas.ui.common.SharpCard
 import com.example.kusgangaliwas.R
-import com.example.kusgangaliwas.ui.theme.MissedSessionsRed
-import com.example.kusgangaliwas.ui.theme.PartialYellow
-import com.example.kusgangaliwas.ui.theme.SuccessGreen
+import com.example.kusgangaliwas.ui.theme.KaPalette
 
 @Composable
 fun DayCell(
@@ -29,72 +30,80 @@ fun DayCell(
     onClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SharpCard(
+    val isMutedMonthDay = !day.isInCurrentMonth
+
+    val borderWidth = when {
+        day.isToday -> 2.dp
+        day.status == CalendarDayStatus.IN_PROGRESS -> 1.dp
+        day.status == CalendarDayStatus.PLANNED -> 1.dp
+        day.status == CalendarDayStatus.LOGGED -> 1.dp
+        day.isCurrentWeek -> 1.dp
+        else -> 0.dp
+    }
+
+    val borderColor = when {
+        day.isToday -> KaPalette.Amber.copy(alpha = 0.95f)
+        day.status == CalendarDayStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+        day.status == CalendarDayStatus.PLANNED -> KaPalette.SteelBlue.copy(alpha = 0.35f)
+        day.status == CalendarDayStatus.LOGGED -> KaPalette.Success.copy(alpha = 0.35f)
+        day.isCurrentWeek -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+        else -> Color.Transparent
+    }
+
+    val containerColor =
+        if (isMutedMonthDay) {
+            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.75f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        }
+
+    Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .background(
-                if (day.isCurrentWeek) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                } else {
-                    Color.Transparent
-                },
-            )
-            .border(
-                width = when {
-                    day.isToday -> 2.dp
-                    day.isCurrentWeek -> 1.dp
-                    else -> 0.dp
-                },
-                color = when {
-                    day.isToday -> MaterialTheme.colorScheme.primary
-                    day.isCurrentWeek -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                    else -> Color.Transparent
-                },
-            )
+            .height(58.dp)
             .clickable {
                 onClick(day.date.toEpochDay())
-            }
-
+            },
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(
+            width = borderWidth,
+            color = borderColor,
+        ),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text =
-                    if (day.status == CalendarDayStatus.TODAY) {
-                        "${day.date.dayOfMonth}"
+                text = day.date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight =
+                    if (day.isToday) {
+                        FontWeight.Bold
                     } else {
-                        day.date.dayOfMonth.toString()
-                    },
-                style =
-                    if (day.status == CalendarDayStatus.TODAY) {
-                        MaterialTheme.typography.bodyMedium
-                    } else {
-                        MaterialTheme.typography.bodySmall
+                        FontWeight.SemiBold
                     },
                 color =
-                    if (day.status == CalendarDayStatus.TODAY) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
+                    when {
+                        day.isToday -> KaPalette.Amber
+                        isMutedMonthDay -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                        else -> MaterialTheme.colorScheme.onSurface
                     },
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
             )
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    tint = iconTint(day.status),
-                    painter = painterResource(day.status.tempDrawableRes),
-                    contentDescription = day.status.contentDescription,
-                )
-            }
+            Icon(
+                tint = iconTint(day.status),
+                painter = painterResource(day.status.tempDrawableRes),
+                contentDescription = day.status.contentDescription,
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }
@@ -113,16 +122,17 @@ private val CalendarDayStatus.contentDescription: String
         CalendarDayStatus.LOGGED -> "Session logged"
         CalendarDayStatus.PLANNED -> "Planned session"
         CalendarDayStatus.NEUTRAL -> "No planned or logged session"
-        CalendarDayStatus.IN_PROGRESS -> "Session in Progress"
+        CalendarDayStatus.IN_PROGRESS -> "Session in progress"
         CalendarDayStatus.TODAY -> "Today"
     }
 
 @Composable
 private fun iconTint(status: CalendarDayStatus): Color {
     return when (status) {
-        CalendarDayStatus.LOGGED, CalendarDayStatus.IN_PROGRESS -> SuccessGreen
-        CalendarDayStatus.PLANNED -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.primary
+        CalendarDayStatus.LOGGED -> KaPalette.Success.copy(alpha = 0.85f)
+        CalendarDayStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+        CalendarDayStatus.PLANNED -> KaPalette.SteelBlue.copy(alpha = 0.85f)
+        CalendarDayStatus.TODAY -> KaPalette.Amber.copy(alpha = 0.95f)
+        CalendarDayStatus.NEUTRAL -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
     }
 }
-

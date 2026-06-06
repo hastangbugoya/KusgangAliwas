@@ -1,6 +1,8 @@
 package com.example.kusgangaliwas.ui.exercise
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +65,16 @@ import com.example.kusgangaliwas.ui.common.MuscleGroupChipRow
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.example.kusgangaliwas.ui.theme.KaPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,6 +161,8 @@ fun ExerciseListScreen(
             onDismissRequest = {
                 showAddExerciseSheet = false
             },
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             AddExerciseSheetContent(
                 exerciseName = newExerciseName,
@@ -182,6 +196,8 @@ fun ExerciseListScreen(
         ModalBottomSheet(
             onDismissRequest = { selectedExerciseId = 0L },
             sheetState = exerciseDetailSheetState,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             ExerciseDetailSheetContent(
                 item = selectedExerciseItem,
@@ -210,6 +226,8 @@ fun ExerciseListScreen(
             onDismissRequest = {
                 showManageMuscleGroupsSheet = false
             },
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             ManageMuscleGroupsSheetContent(
                 muscleGroups = uiState.availableMuscleGroups,
@@ -222,9 +240,15 @@ fun ExerciseListScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(text = "Exercises") },
+                title = {
+                    Text(
+                        text = "Exercises",
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 actions = {
                     IconButton(
                         onClick = {
@@ -234,6 +258,7 @@ fun ExerciseListScreen(
                         Icon(
                             painter = painterResource(R.drawable.plus),
                             contentDescription = "Add exercise",
+                            tint = KaPalette.SteelBlue,
                         )
                     }
 
@@ -248,6 +273,11 @@ fun ExerciseListScreen(
                         )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             )
         },
     ) { innerPadding ->
@@ -255,8 +285,8 @@ fun ExerciseListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             OutlinedTextField(
                 value = localSearchQuery,
@@ -280,118 +310,37 @@ fun ExerciseListScreen(
             )
 
             uiState.errorMessage?.let { message ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraSmall,
-                ) {
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+                KaErrorCard(message = message)
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            KaRootSectionCard(
+                title = "Exercise library",
+                count = uiState.exercises.size,
+                accentColor = KaPalette.SteelBlue,
+                modifier = Modifier.weight(1f),
             ) {
                 if (uiState.exercises.isEmpty()) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.extraSmall,
-                        ) {
-                            Text(
-                                text = "No exercises yet.",
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
+                    EmptyExerciseState(
+                        onAddClick = {
+                            showAddExerciseSheet = true
+                        },
+                    )
                 } else {
-                    items(
-                        items = uiState.exercises,
-                        key = { item -> item.exercise.id },
-                    ) { item ->
-                        val exercise = item.exercise
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.extraSmall,
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Column(
-                                        modifier = Modifier.weight(1f),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                                    ) {
-                                        Text(
-                                            text = exercise.name,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-
-                                        Text(
-                                            text = "Type: ${exercise.exerciseType.displayText()}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                        )
-
-                                        val goalSummary =
-                                            buildMotivationalGoalListSummary(
-                                                item.motivationalGoals,
-                                            )
-
-                                        if (goalSummary != null) {
-                                            Text(
-                                                text = goalSummary,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.tertiary,
-                                            )
-                                        }
-
-                                        val paceSummary = buildPaceSummaryText(item.paceProfiles)
-                                        if (paceSummary != null) {
-                                            Text(
-                                                text = paceSummary,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.secondary,
-                                            )
-                                        }
-                                    }
-
-                                    TextButton(
-                                        onClick = { selectedExerciseId = exercise.id },
-                                    ) {
-                                        Text("Details")
-                                    }
-                                }
-
-                                item.lastLogDateText?.let { text ->
-                                    Text(text = text)
-                                }
-
-                                item.lastSetSummaryText?.let { text ->
-                                    Text(text = text)
-                                }
-
-                                if (!exercise.notes.isNullOrBlank()) {
-                                    Text(
-                                        text = exercise.notes,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                }
-                            }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(
+                            items = uiState.exercises,
+                            key = { item -> item.exercise.id },
+                        ) { item ->
+                            ExerciseRowCard(
+                                item = item,
+                                onClick = {
+                                    selectedExerciseId = item.exercise.id
+                                },
+                            )
                         }
                     }
                 }
@@ -399,6 +348,266 @@ fun ExerciseListScreen(
         }
     }
 }
+
+@Composable
+private fun KaRootSectionCard(
+    title: String,
+    count: Int? = null,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(5.dp)
+                        .height(32.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(accentColor.copy(alpha = 0.85f)),
+                )
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+
+                count?.let {
+                    Text(
+                        text = it.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            content()
+        }
+    }
+}
+
+@Composable
+private fun ExerciseRowCard(
+    item: ExerciseListItemUiState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val exercise = item.exercise
+    val accentColor = exercise.exerciseType.accentColor()
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant,
+        ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = exercise.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TypePill(
+                            text = exercise.exerciseType.displayText(),
+                            color = accentColor,
+                        )
+
+                        item.lastLogDateText?.let { text ->
+                            Text(
+                                text = text,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = "Details",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = KaPalette.SteelBlue,
+                )
+            }
+
+            item.lastSetSummaryText?.let { text ->
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            val goalSummary = buildMotivationalGoalListSummary(
+                item.motivationalGoals,
+            )
+
+            if (goalSummary != null) {
+                Text(
+                    text = goalSummary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KaPalette.Purple,
+                )
+            }
+
+            val paceSummary = buildPaceSummaryText(item.paceProfiles)
+            if (paceSummary != null) {
+                Text(
+                    text = paceSummary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KaPalette.Amber,
+                )
+            }
+
+            if (!exercise.notes.isNullOrBlank()) {
+                Text(
+                    text = exercise.notes,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TypePill(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.16f),
+            contentColor = color,
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = color.copy(alpha = 0.35f),
+        ),
+        shape = RoundedCornerShape(999.dp),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun EmptyExerciseState(
+    onAddClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = "No exercises yet.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Button(
+            onClick = onAddClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.plus),
+                contentDescription = null,
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text("Add exercise")
+        }
+    }
+}
+
+@Composable
+private fun KaErrorCard(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = KaPalette.DangerContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = KaPalette.Danger.copy(alpha = 0.45f),
+        ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(12.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+        )
+    }
+}
+
+@Composable
+private fun ExerciseType.accentColor(): Color {
+    return when (this) {
+        ExerciseType.STRENGTH -> KaPalette.SteelBlue
+        ExerciseType.CARDIO -> KaPalette.Success
+        ExerciseType.MOBILITY -> KaPalette.Purple
+        ExerciseType.OTHER -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+}
+
 
 @Composable
 private fun AddExerciseSheetContent(
@@ -434,22 +643,46 @@ private fun AddExerciseSheetContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ExerciseType.entries.forEach { type ->
+                val selected = selectedExerciseType == type
+                val accentColor = type.accentColor()
+
                 FilterChip(
-                    selected = selectedExerciseType == type,
+                    selected = selected,
                     onClick = {
                         onExerciseTypeSelected(type)
                     },
                     label = {
                         Text(type.displayText())
                     },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentColor.copy(alpha = 0.18f),
+                        selectedLabelColor = accentColor,
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selected,
+                        borderColor = MaterialTheme.colorScheme.outlineVariant,
+                        selectedBorderColor = accentColor.copy(alpha = 0.55f),
+                    ),
                 )
             }
         }
 
-        OutlinedButton(
+        Button(
             onClick = onSave,
             modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
         ) {
+            Icon(
+                painter = painterResource(R.drawable.plus),
+                contentDescription = null,
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             Text("Save exercise")
         }
     }
@@ -1901,13 +2134,24 @@ private fun ManageMuscleGroupsSheetContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        OutlinedButton(
+        Button(
             onClick = {
                 onCreateMuscleGroup(newName)
                 newName = ""
             },
             modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
         ) {
+            Icon(
+                painter = painterResource(R.drawable.plus),
+                contentDescription = null,
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             Text("Add muscle group")
         }
 

@@ -1,20 +1,25 @@
 package com.example.kusgangaliwas.ui.calendar
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,16 +27,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.domain.model.WeeklyTrainingProgress
 import com.example.kusgangaliwas.domain.model.cycle.CycleDayContext
-import com.example.kusgangaliwas.ui.common.KusgangTopBar
-import com.example.kusgangaliwas.ui.common.SharpCard
+import com.example.kusgangaliwas.ui.theme.KaPalette
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -55,10 +62,15 @@ fun CalendarScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Calendar")
+                    Text(
+                        text = "Calendar",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
                 },
                 actions = {
                     IconButton(
@@ -69,7 +81,12 @@ fun CalendarScreen(
                             contentDescription = "More options",
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             )
         },
     ) { innerPadding ->
@@ -79,7 +96,7 @@ fun CalendarScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 12.dp),
             contentPadding = PaddingValues(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
                 MonthHeader(
@@ -128,50 +145,70 @@ private fun ActiveCyclesCard(
     cycles: List<CycleDayContext>,
     modifier: Modifier = Modifier,
 ) {
-    SharpCard(
+    RootSectionCard(
+        title = "Active cycles",
+        accentColor = KaPalette.Purple.copy(alpha = 0.75f),
         modifier = modifier,
     ) {
+        if (cycles.isEmpty()) {
+            Text(
+                text = "No active cycles.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            cycles.forEach { cycle ->
+                CycleSummaryRow(cycle = cycle)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CycleSummaryRow(
+    cycle: CycleDayContext,
+    modifier: Modifier = Modifier,
+) {
+    val detailText = buildList {
+        cycle.lastCompletedStepName?.let { last ->
+            add("Last: $last")
+        }
+
+        cycle.nextStepName?.let { next ->
+            add("Next: $next")
+        }
+    }.joinToString("  ·  ")
+        .ifBlank { "No cycle split available." }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+        ),
+    ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = "Active cycles",
-                style = MaterialTheme.typography.titleMedium,
+                text = cycle.trainingCycleName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
             )
 
-            if (cycles.isEmpty()) {
-                Text(
-                    text = "No active cycles.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                cycles.forEach { cycle ->
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Text(
-                            text = cycle.trainingCycleName,
-                        )
-
-                        cycle.lastCompletedStepName?.let { last ->
-                            Text(
-                                text = "Last: $last",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-
-                        cycle.nextStepName?.let { next ->
-                            Text(
-                                text = "Next: $next",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
+            Text(
+                text = detailText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -191,53 +228,113 @@ private fun WeeklyProgressCard(
             ?.takeIf { it > 0.0 }
             ?: 1.0
 
-    SharpCard(
-        modifier = modifier
-            .background(
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.04f)
-            ),
+    RootSectionCard(
+        title = "Weekly progress",
+        accentColor = KaPalette.SteelBlue.copy(alpha = 0.75f),
+        modifier = modifier,
+    ) {
+        WeeklyMetricBarRow(
+            label = "Strength",
+            dayLabels = progress.days.map {
+                LocalDate
+                    .ofEpochDay(it.epochDay)
+                    .dayOfWeek
+                    .shortLabel()
+            },
+            values = progress.days.map { it.strengthVolume },
+            maxValue = maxStrength,
+            barColor = KaPalette.Amber.copy(alpha = 0.85f),
+            valueText = { value ->
+                if (value > 0.0) {
+                    "${value.toInt()}"
+                } else {
+                    "—"
+                }
+            },
+        )
+
+        WeeklyMetricBarRow(
+            label = "Cardio (miles)",
+            dayLabels = progress.days.map {
+                LocalDate
+                    .ofEpochDay(it.epochDay)
+                    .dayOfWeek
+                    .shortLabel()
+            },
+            values = progress.days.map { it.cardioDistance },
+            maxValue = maxCardio,
+            barColor = KaPalette.SteelBlue.copy(alpha = 0.85f),
+            valueText = { value ->
+                if (value > 0.0) {
+                    "${formatDistance(value)}"
+                } else {
+                    "—"
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun RootSectionCard(
+    title: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+        ),
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            WeeklyMetricBarRow(
-                label = "Strength",
-                dayLabels = progress.days.map {
-                    LocalDate
-                        .ofEpochDay(it.epochDay)
-                        .dayOfWeek
-                        .shortLabel()
-                },
-                values = progress.days.map { it.strengthVolume },
-                maxValue = maxStrength,
-                valueText = { value ->
-                    if (value > 0.0) {
-                        "${value.toInt()}"
-                    } else {
-                        "—"
-                    }
-                },
+            RootSectionHeader(
+                title = title,
+                accentColor = accentColor,
             )
 
-            WeeklyMetricBarRow(
-                label = "Cardio (miles)",
-                dayLabels = progress.days.map {
-                    LocalDate
-                        .ofEpochDay(it.epochDay)
-                        .dayOfWeek
-                        .shortLabel()
-                },
-                values = progress.days.map { it.cardioDistance },
-                maxValue = maxCardio,
-                valueText = { value ->
-                    if (value > 0.0) {
-                        "${formatDistance(value)}"
-                    } else {
-                        "—"
-                    }
-                },
-            )
+            content()
         }
+    }
+}
+
+@Composable
+private fun RootSectionHeader(
+    title: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(18.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(accentColor),
+        )
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
@@ -247,6 +344,7 @@ private fun WeeklyMetricBarRow(
     dayLabels: List<String>,
     values: List<Double>,
     maxValue: Double,
+    barColor: Color,
     valueText: (Double) -> String,
     modifier: Modifier = Modifier,
 ) {
@@ -257,6 +355,7 @@ private fun WeeklyMetricBarRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
         )
 
         Row(
@@ -277,7 +376,9 @@ private fun WeeklyMetricBarRow(
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -288,7 +389,7 @@ private fun WeeklyMetricBarRow(
                                 .fillMaxWidth()
                                 .height((36 * ratio).dp)
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(MaterialTheme.colorScheme.primary)
+                                .background(barColor)
                                 .align(Alignment.BottomCenter)
                         )
                     }
@@ -296,6 +397,7 @@ private fun WeeklyMetricBarRow(
                     Text(
                         text = valueText(value),
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
                     )
