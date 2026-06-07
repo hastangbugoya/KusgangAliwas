@@ -15,21 +15,27 @@ import kotlinx.coroutines.launch
 
 data class SplitListUiState(
     val splits: List<SplitTemplateEntity> = emptyList(),
+    val deletedSplits: List<SplitTemplateEntity> = emptyList(),
     val errorMessage: String? = null,
 )
 
 @HiltViewModel
 class SplitListViewModel @Inject constructor(
-    splitTemplateRepository: SplitTemplateRepository,
+    private val splitTemplateRepository: SplitTemplateRepository,
     private val createSplitTemplateUseCase: CreateSplitTemplateUseCase,
 ) : ViewModel() {
 
     val uiState: StateFlow<SplitListUiState> =
         splitTemplateRepository
-            .observeActiveSplits()
-            .map { splits ->
+            .observeAllSplits()
+            .map { allSplits ->
                 SplitListUiState(
-                    splits = splits,
+                    splits = allSplits
+                        .filter { split -> split.isActive }
+                        .sortedBy { split -> split.name.lowercase() },
+                    deletedSplits = allSplits
+                        .filterNot { split -> split.isActive }
+                        .sortedBy { split -> split.name.lowercase() },
                 )
             }
             .stateIn(
@@ -42,6 +48,32 @@ class SplitListViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 createSplitTemplateUseCase(name = name)
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteSplit(splitId: Long) {
+        viewModelScope.launch {
+            runCatching {
+                splitTemplateRepository.softDeleteSplit(
+                    splitId = splitId,
+                    updatedAtEpochMillis = System.currentTimeMillis(),
+                )
+            }.onFailure { error ->
+                error.printStackTrace()
+            }
+        }
+    }
+
+    fun restoreSplit(splitId: Long) {
+        viewModelScope.launch {
+            runCatching {
+                splitTemplateRepository.restoreSplit(
+                    splitId = splitId,
+                    updatedAtEpochMillis = System.currentTimeMillis(),
+                )
             }.onFailure { error ->
                 error.printStackTrace()
             }

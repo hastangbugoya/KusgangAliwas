@@ -33,6 +33,11 @@ interface SplitTemplateRepository {
         updatedAtEpochMillis: Long,
     )
 
+    suspend fun restoreSplit(
+        splitId: Long,
+        updatedAtEpochMillis: Long,
+    )
+
     suspend fun getActiveSplitSummaries(): List<SplitTemplateSummaryRow>
 
     // ----------------------------

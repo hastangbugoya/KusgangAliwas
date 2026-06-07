@@ -21,6 +21,8 @@ fun SplitListRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         onCreateSplit = viewModel::createSplit,
+        onDeleteSplit = viewModel::deleteSplit,
+        onRestoreSplit = viewModel::restoreSplit,
         onSplitClick = onSplitClick,
         modifier = modifier,
     )

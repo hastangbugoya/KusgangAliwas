@@ -56,6 +56,16 @@ class SplitTemplateRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun restoreSplit(
+        splitId: Long,
+        updatedAtEpochMillis: Long,
+    ) {
+        splitTemplateDao.restoreSplit(
+            splitId = splitId,
+            updatedAtEpochMillis = updatedAtEpochMillis,
+        )
+    }
+
     override fun observeExercisesForSplit(
         splitTemplateId: Long,
     ): Flow<List<SplitTemplateExerciseEntity>> {

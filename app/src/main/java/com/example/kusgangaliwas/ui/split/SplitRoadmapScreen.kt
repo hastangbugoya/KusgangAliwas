@@ -60,6 +60,10 @@ import com.example.kusgangaliwas.data.local.entity.ExerciseType
 import com.example.kusgangaliwas.data.local.entity.MuscleGroupEntity
 import com.example.kusgangaliwas.data.local.entity.SplitTemplateExerciseEntity
 import com.example.kusgangaliwas.ui.theme.KaPalette
+import androidx.annotation.DrawableRes
+import androidx.compose.ui.res.painterResource
+import com.example.kusgangaliwas.ui.common.MuscleGroupChipCard
+import com.example.kusgangaliwas.ui.common.MuscleGroupChipRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,7 +149,7 @@ fun SplitRoadmapScreen(
             }
 
             item {
-                SplitMuscleGroupCard(
+                MuscleGroupChipCard(
                     muscleGroups = uiState.availableMuscleGroups,
                     selectedMuscleGroupIds = uiState.selectedMuscleGroupIds,
                     onToggleMuscleGroup = onToggleMuscleGroupForSplit,
@@ -257,8 +261,9 @@ private fun RoadmapExerciseCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        TypePill(
-                            text = exerciseType?.displayText() ?: "Unknown",
+                        TypeIconPill(
+                            iconRes = exerciseType.drawableIconRes(),
+                            contentDescription = exerciseType?.displayText() ?: "Exercise type",
                             color = accentColor,
                         )
 
@@ -402,45 +407,45 @@ private fun RenameSplitCard(
     }
 }
 
-@Composable
-private fun SplitMuscleGroupCard(
-    muscleGroups: List<MuscleGroupEntity>,
-    selectedMuscleGroupIds: Set<Long>,
-    onToggleMuscleGroup: (Long, Boolean) -> Unit,
-) {
-    KaSecondLevelSectionCard(
-        title = "Muscle groups",
-        count = selectedMuscleGroupIds.size.takeIf { muscleGroups.isNotEmpty() },
-        accentColor = KaPalette.SteelBlue,
-    ) {
-        if (muscleGroups.isEmpty()) {
-            EmptyText("No muscle groups yet.")
-        } else {
-            Row(
-                modifier = Modifier.horizontalScroll(
-                    rememberScrollState(),
-                ),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                muscleGroups.forEach { muscleGroup ->
-                    val selected = selectedMuscleGroupIds.contains(muscleGroup.id)
-
-                    KaFilterChip(
-                        selected = selected,
-                        onClick = {
-                            onToggleMuscleGroup(
-                                muscleGroup.id,
-                                selected,
-                            )
-                        },
-                        label = muscleGroup.name,
-                        accentColor = KaPalette.SteelBlue,
-                    )
-                }
-            }
-        }
-    }
-}
+//@Composable
+//private fun SplitMuscleGroupCard(
+//    muscleGroups: List<MuscleGroupEntity>,
+//    selectedMuscleGroupIds: Set<Long>,
+//    onToggleMuscleGroup: (Long, Boolean) -> Unit,
+//) {
+//    KaSecondLevelSectionCard(
+//        title = "Muscle groups",
+//        count = selectedMuscleGroupIds.size.takeIf { muscleGroups.isNotEmpty() },
+//        accentColor = KaPalette.SteelBlue,
+//    ) {
+//        if (muscleGroups.isEmpty()) {
+//            EmptyText("No muscle groups yet.")
+//        } else {
+//            Row(
+//                modifier = Modifier.horizontalScroll(
+//                    rememberScrollState(),
+//                ),
+//                horizontalArrangement = Arrangement.spacedBy(8.dp),
+//            ) {
+//                muscleGroups.forEach { muscleGroup ->
+//                    val selected = selectedMuscleGroupIds.contains(muscleGroup.id)
+//
+//                    KaFilterChip(
+//                        selected = selected,
+//                        onClick = {
+//                            onToggleMuscleGroup(
+//                                muscleGroup.id,
+//                                selected,
+//                            )
+//                        },
+//                        label = muscleGroup.name,
+//                        accentColor = KaPalette.SteelBlue,
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
 
 @Composable
 private fun ScheduleCard(
@@ -1048,9 +1053,21 @@ private fun KaInsetCard(
     }
 }
 
+@DrawableRes
+private fun ExerciseType?.drawableIconRes(): Int {
+    return when (this) {
+        ExerciseType.STRENGTH -> android.R.drawable.ic_menu_manage
+        ExerciseType.CARDIO -> android.R.drawable.ic_menu_directions
+        ExerciseType.MOBILITY -> android.R.drawable.ic_menu_rotate
+        ExerciseType.OTHER -> android.R.drawable.ic_menu_help
+        null -> android.R.drawable.ic_menu_help
+    }
+}
+
 @Composable
-private fun TypePill(
-    text: String,
+private fun TypeIconPill(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
     color: Color,
     modifier: Modifier = Modifier,
 ) {
@@ -1066,11 +1083,11 @@ private fun TypePill(
         ),
         shape = RoundedCornerShape(999.dp),
     ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = contentDescription,
+            tint = color,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
         )
     }
 }

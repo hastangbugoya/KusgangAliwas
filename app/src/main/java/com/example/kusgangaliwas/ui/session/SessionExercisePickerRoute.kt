@@ -20,6 +20,8 @@ fun SessionExercisePickerRoute(
         onBackClick = onBackClick,
         onOverflowClick = {},
         onSearchTextChange = viewModel::onSearchTextChange,
+        onToggleMuscleGroup = { _, _ -> },
+        onClearMuscleGroups = {},
         onToggleExercise = viewModel::toggleExercise,
         onAddSelectedClick = {
             viewModel.addSelectedExercisesToSession(

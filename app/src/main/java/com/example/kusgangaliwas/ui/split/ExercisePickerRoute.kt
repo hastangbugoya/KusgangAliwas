@@ -20,6 +20,8 @@ fun ExercisePickerRoute(
         onBackClick = onBackClick,
         onOverflowClick = onOverflowClick,
         onSearchTextChange = viewModel::onSearchTextChange,
+        onToggleMuscleGroup = viewModel::toggleMuscleGroup,
+        onClearMuscleGroups = viewModel::clearMuscleGroupSelection,
         onToggleExercise = viewModel::toggleExercise,
         onAddSelectedClick = {
             viewModel.addSelectedExercises(
@@ -29,4 +31,3 @@ fun ExercisePickerRoute(
         modifier = modifier,
     )
 }
-

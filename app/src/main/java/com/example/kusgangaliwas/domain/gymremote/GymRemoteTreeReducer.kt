@@ -390,10 +390,17 @@ class GymRemoteTreeReducer {
 
             is GymRemoteCursor.SetField -> {
                 GymRemoteTreeResult(
-                    nextCursor = cursor,
+                    nextCursor = GymRemoteCursor.MusicYield(
+                        exerciseLogId = cursor.exerciseLogId,
+                        setLogId = cursor.setLogId,
+                    ),
                     effects = listOf(
-                        GymRemoteEffect.Speak("Start set.")
-                    )
+                        GymRemoteEffect.Speak("Start set."),
+                        GymRemoteEffect.YieldMediaControl(
+                            exerciseLogId = cursor.exerciseLogId,
+                            setLogId = cursor.setLogId,
+                        ),
+                    ),
                 )
             }
 

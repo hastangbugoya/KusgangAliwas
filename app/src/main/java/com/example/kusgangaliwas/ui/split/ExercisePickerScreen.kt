@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.ui.common.KusgangTopBar
 import com.example.kusgangaliwas.ui.common.SectionHeader
 import com.example.kusgangaliwas.ui.common.SharpCard
-
+import com.example.kusgangaliwas.ui.common.MuscleGroupChipCard
 @Composable
 fun ExercisePickerScreen(
     uiState: ExercisePickerUiState,
@@ -32,6 +32,8 @@ fun ExercisePickerScreen(
     onToggleExercise: (Long) -> Unit,
     onAddSelectedClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onToggleMuscleGroup: (Long, Boolean) -> Unit,
+    onClearMuscleGroups: () -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
@@ -58,6 +60,16 @@ fun ExercisePickerScreen(
                 },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+            )
+
+            MuscleGroupChipCard(
+                muscleGroups = uiState.availableMuscleGroups,
+                selectedMuscleGroupIds = uiState.selectedMuscleGroupIds,
+                onToggleMuscleGroup = onToggleMuscleGroup,
+                title = "Filter muscle groups",
+                emptyText = "No muscle groups yet.",
+                allLabel = "All",
+                onClearSelection = onClearMuscleGroups,
             )
 
             OutlinedButton(

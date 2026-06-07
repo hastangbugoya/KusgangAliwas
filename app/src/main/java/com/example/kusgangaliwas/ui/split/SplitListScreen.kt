@@ -45,6 +45,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.kusgangaliwas.R
 import com.example.kusgangaliwas.ui.theme.KaPalette
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import com.example.kusgangaliwas.data.local.entity.SplitTemplateEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,13 +57,20 @@ fun SplitListScreen(
     onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
     onCreateSplit: (String) -> Unit,
+    onDeleteSplit: (Long) -> Unit,
+    onRestoreSplit: (Long) -> Unit,
     modifier: Modifier = Modifier,
     onSplitClick: (Long) -> Unit,
 ) {
     var newSplitName by remember { mutableStateOf("") }
     var localSearchQuery by remember { mutableStateOf("") }
     var showAddSplitSheet by remember { mutableStateOf(false) }
-
+    var splitPendingDelete by remember {
+        mutableStateOf<SplitTemplateEntity?>(null)
+    }
+    var showDeletedSplits by remember {
+        mutableStateOf(false)
+    }
     val filteredSplits = remember(uiState.splits, localSearchQuery) {
         val query = localSearchQuery.trim()
 
@@ -67,6 +78,19 @@ fun SplitListScreen(
             uiState.splits
         } else {
             uiState.splits.filter { split ->
+                split.name.contains(query, ignoreCase = true) ||
+                        split.notes?.contains(query, ignoreCase = true) == true
+            }
+        }
+    }
+
+    val filteredDeletedSplits = remember(uiState.deletedSplits, localSearchQuery) {
+        val query = localSearchQuery.trim()
+
+        if (query.isBlank()) {
+            uiState.deletedSplits
+        } else {
+            uiState.deletedSplits.filter { split ->
                 split.name.contains(query, ignoreCase = true) ||
                         split.notes?.contains(query, ignoreCase = true) == true
             }
@@ -102,6 +126,44 @@ fun SplitListScreen(
                 },
             )
         }
+    }
+
+    splitPendingDelete?.let { split ->
+        AlertDialog(
+            onDismissRequest = {
+                splitPendingDelete = null
+            },
+            title = {
+                Text("Delete split?")
+            },
+            text = {
+                Text(
+                    "This hides ${split.name} from your active split list. Existing logged sessions stay saved."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteSplit(split.id)
+                        splitPendingDelete = null
+                    },
+                ) {
+                    Text(
+                        text = "Delete",
+                        color = KaPalette.Danger,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        splitPendingDelete = null
+                    },
+                ) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 
     Scaffold(
@@ -170,13 +232,13 @@ fun SplitListScreen(
                 accentColor = KaPalette.Amber,
                 modifier = Modifier.weight(1f),
             ) {
-                if (uiState.splits.isEmpty()) {
+                if (uiState.splits.isEmpty() && uiState.deletedSplits.isEmpty()) {
                     EmptySplitState(
                         onAddClick = {
                             showAddSplitSheet = true
                         },
                     )
-                } else if (filteredSplits.isEmpty()) {
+                } else if (filteredSplits.isEmpty() && filteredDeletedSplits.isEmpty()) {
                     Text(
                         text = "No splits match your search.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -195,10 +257,59 @@ fun SplitListScreen(
                             SplitRowCard(
                                 name = split.name,
                                 notes = split.notes,
+                                actionText = "Delete",
+                                actionColor = KaPalette.Danger,
+                                onActionClick = {
+                                    splitPendingDelete = split
+                                },
                                 onClick = {
                                     onSplitClick(split.id)
                                 },
                             )
+                        }
+
+                        if (uiState.deletedSplits.isNotEmpty()) {
+                            item {
+                                Column(
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                                    Text(
+                                        text = "Deleted splits",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+
+                            if (filteredDeletedSplits.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "No deleted splits match your search.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else {
+                                items(
+                                    items = filteredDeletedSplits,
+                                    key = { "deleted-${it.id}" },
+                                ) { split ->
+                                    SplitRowCard(
+                                        name = split.name,
+                                        notes = split.notes,
+                                        actionText = "Restore",
+                                        actionColor = KaPalette.Success,
+                                        onActionClick = {
+                                            onRestoreSplit(split.id)
+                                        },
+                                        onClick = null,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -270,13 +381,22 @@ private fun KaRootSectionCard(
 private fun SplitRowCard(
     name: String,
     notes: String?,
-    onClick: () -> Unit,
+    actionText: String? = null,
+    actionColor: Color = MaterialTheme.colorScheme.primary,
+    onActionClick: (() -> Unit)? = null,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier
+    val cardModifier = if (onClick == null) {
+        modifier.fillMaxWidth()
+    } else {
+        modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+    }
+
+    Card(
+        modifier = cardModifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -287,22 +407,39 @@ private fun SplitRowCard(
         ),
         shape = RoundedCornerShape(16.dp),
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-
-            if (!notes.isNullOrBlank()) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(
-                    text = notes,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                 )
+
+                if (!notes.isNullOrBlank()) {
+                    Text(
+                        text = notes,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (actionText != null && onActionClick != null) {
+                OutlinedButton(
+                    onClick = onActionClick,
+                ) {
+                    Text(
+                        text = actionText,
+                        color = actionColor,
+                    )
+                }
             }
         }
     }

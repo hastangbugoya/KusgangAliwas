@@ -43,6 +43,11 @@ import android.content.Context
 import android.content.Intent
 import com.example.kusgangaliwas.widget.GymSessionWidgetProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.kusgangaliwas.data.local.entity.ExercisePaceProfileEntity
+import com.example.kusgangaliwas.domain.repository.ExercisePaceProfileRepository
+import com.example.kusgangaliwas.domain.repository.SplitTemplateRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 data class SessionDetailUiState(
     val session: ActualSessionEntity? = null,
@@ -106,11 +111,16 @@ private data class ExerciseLogWithSets(
     val sets: List<ActualExerciseSetLogEntity>,
 )
 
+private data class PaceCueSetKey(
+    val exerciseLogId: Long,
+    val setLogId: Long,
+)
+
 @HiltViewModel
 class SessionDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val sessionRepository: SessionRepository,
-    exerciseRepository: ExerciseRepository,
+    private val exerciseRepository: ExerciseRepository,
     private val addExerciseLogToSessionUseCase: AddExerciseLogToSessionUseCase,
     private val gymRemoteInputBus: GymRemoteInputBus,
     private val gymVoiceBus: GymVoiceBus,
@@ -119,6 +129,8 @@ class SessionDetailViewModel @Inject constructor(
     private val updateSplitTemplateFromActualSessionUseCase: UpdateSplitTemplateFromActualSessionUseCase,
     @ApplicationContext
     private val applicationContext: Context,
+    private val exercisePaceProfileRepository: ExercisePaceProfileRepository,
+    private val splitTemplateRepository: SplitTemplateRepository,
 ) : ViewModel() {
 
     val actualSessionId: Long = checkNotNull(
@@ -132,6 +144,20 @@ class SessionDetailViewModel @Inject constructor(
     private var gymRemoteCursor: GymRemoteCursor = GymRemoteCursor.SessionRoot
 
     private val focusedExerciseLogId = MutableStateFlow<Long?>(null)
+
+    private var paceCueJob: Job? = null
+    private var activePaceCueSetKey: PaceCueSetKey? = null
+
+
+    private enum class PaceCuePhase {
+        NONE,
+        PREP,
+        WORK,
+        REST,
+        WAITING_FOR_NEXT_SET_DECISION,
+    }
+
+    private var paceCuePhase: PaceCuePhase = PaceCuePhase.NONE
 
     private val exerciseLogsWithSets =
         sessionRepository.observeLogsForSession(actualSessionId)
@@ -246,6 +272,16 @@ class SessionDetailViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val currentUiState = uiState.value
+                // Only the post-rest decision reminder should stop from any remote action.
+                // Do not cancel PREP / WORK / REST, because some remotes emit extra key events.
+                if (paceCuePhase == PaceCuePhase.WAITING_FOR_NEXT_SET_DECISION) {
+                    activePaceCueSetKey?.let { cueKey ->
+                        gymRemoteCursor = GymRemoteCursor.AddSetPrompt(
+                            exerciseLogId = cueKey.exerciseLogId,
+                        )
+                    }
+                    stopPaceCueLoop()
+                }
                 val tree = currentUiState.toGymRemoteSessionTree()
                 val previousCursor = gymRemoteCursor
 
@@ -266,15 +302,45 @@ class SessionDetailViewModel @Inject constructor(
                     "TREE AFTER: ${result.nextCursor}",
                 )
 
-                val spokeFromEffect = result.effects.any {
-                    it is GymRemoteEffect.Speak
-                }
+                val paceStartEffect = result.effects
+                    .filterIsInstance<GymRemoteEffect.YieldMediaControl>()
+                    .firstOrNull()
+
+                val shouldLetPaceOwnStartSpeech =
+                    paceStartEffect?.let { effect ->
+                        hasPaceProfileForExerciseLog(
+                            exerciseLogId = effect.exerciseLogId,
+                            currentUiState = currentUiState,
+                        )
+                    } == true
+
+                val spokeFromEffect =
+                    result.effects.any { effect ->
+                        effect is GymRemoteEffect.Speak &&
+                                !shouldSuppressReducerStartSetSpeech(
+                                    effect = effect,
+                                    shouldLetPaceOwnStartSpeech = shouldLetPaceOwnStartSpeech,
+                                )
+                    } || shouldLetPaceOwnStartSpeech
 
                 result.effects.forEach { effect ->
-                    applyGymRemoteEffect(
-                        effect = effect,
-                        currentUiState = currentUiState,
-                    )
+                    if (
+                        effect is GymRemoteEffect.Speak &&
+                        shouldSuppressReducerStartSetSpeech(
+                            effect = effect,
+                            shouldLetPaceOwnStartSpeech = shouldLetPaceOwnStartSpeech,
+                        )
+                    ) {
+                        Log.d(
+                            GYM_REMOTE_LOG_TAG,
+                            "Suppressing reducer Start set. Pace cue will own it.",
+                        )
+                    } else {
+                        applyGymRemoteEffect(
+                            effect = effect,
+                            currentUiState = currentUiState,
+                        )
+                    }
                 }
 
                 val handledFieldEdit = handleGymRemoteFieldEditIfNeeded(
@@ -311,10 +377,16 @@ class SessionDetailViewModel @Inject constructor(
             }
 
             is GymRemoteEffect.SelectRemoteExercise -> {
+                if (effect.exerciseLogId != focusedExerciseLogId.value) {
+                    stopPaceCueLoop()
+                }
+
                 focusedExerciseLogId.value = effect.exerciseLogId
             }
 
             is GymRemoteEffect.AddSetToExercise -> {
+                stopPaceCueLoop()
+
                 addSetFromGymRemote(
                     actualExerciseLogId = effect.exerciseLogId,
                     currentUiState = currentUiState,
@@ -326,8 +398,15 @@ class SessionDetailViewModel @Inject constructor(
                     GYM_REMOTE_LOG_TAG,
                     "Yielding media control for exerciseLogId=${effect.exerciseLogId}, setLogId=${effect.setLogId}",
                 )
+
                 gymRemoteMediaControlBus.emit(
                     GymRemoteMediaControlCommand.YieldToExternalMedia
+                )
+
+                startPaceCueLoop(
+                    exerciseLogId = effect.exerciseLogId,
+                    setLogId = effect.setLogId,
+                    currentUiState = currentUiState,
                 )
             }
 
@@ -357,6 +436,236 @@ class SessionDetailViewModel @Inject constructor(
                     GYM_REMOTE_LOG_TAG,
                     "Ignoring legacy DuplicateSet effect in tree remote mode.",
                 )
+            }
+        }
+    }
+
+    private fun stopPaceCueLoop() {
+        paceCueJob?.cancel()
+        paceCueJob = null
+        activePaceCueSetKey = null
+        paceCuePhase = PaceCuePhase.NONE
+    }
+
+    private suspend fun startPaceCueLoop(
+        exerciseLogId: Long,
+        setLogId: Long,
+        currentUiState: SessionDetailUiState,
+    ) {
+        stopPaceCueLoop()
+
+        val exercise = currentUiState.exerciseLogs
+            .firstOrNull { it.log.id == exerciseLogId }
+            ?: return
+
+        val profile = resolvePaceProfileForExerciseLog(
+            exercise = exercise,
+            session = currentUiState.session,
+        )?.takeIf { it.isEnabled }
+            ?: return
+
+        val cueKey = PaceCueSetKey(
+            exerciseLogId = exerciseLogId,
+            setLogId = setLogId,
+        )
+
+        activePaceCueSetKey = cueKey
+
+        paceCueJob = viewModelScope.launch {
+            val prepSeconds = profile.prepLeadSeconds.coerceAtLeast(0)
+            val workSeconds = profile.expectedWorkSeconds.coerceAtLeast(0)
+            val restSeconds = profile.expectedRestSeconds.coerceAtLeast(0)
+            val nextSetWarningSeconds = profile.nextSetWarningSeconds.coerceAtLeast(0)
+            val idleReminderSeconds = profile.idleReminderIntervalSeconds.coerceAtLeast(0)
+
+            Log.d(
+                GYM_REMOTE_LOG_TAG,
+                "Pace profile=${profile.name}, prep=$prepSeconds, work=$workSeconds, rest=$restSeconds, warning=$nextSetWarningSeconds, idleReminder=$idleReminderSeconds",
+            )
+
+            if (prepSeconds > 0) {
+                paceCuePhase = PaceCuePhase.PREP
+
+                gymVoiceBus.speak(
+                    "${exercise.exerciseName}. Prep ${formatSecondsForSpeech(prepSeconds)}."
+                )
+
+                delaySeconds(prepSeconds)
+
+                if (activePaceCueSetKey != cueKey) return@launch
+            }
+
+            paceCuePhase = PaceCuePhase.WORK
+            gymVoiceBus.speak("Start set.")
+
+            if (workSeconds > 0) {
+                delaySeconds(workSeconds)
+
+                if (activePaceCueSetKey != cueKey) return@launch
+            }
+
+            if (restSeconds > 0) {
+                paceCuePhase = PaceCuePhase.REST
+
+                gymVoiceBus.speak(
+                    "Set complete. Rest ${formatSecondsForSpeech(restSeconds)}."
+                )
+
+                if (
+                    nextSetWarningSeconds > 0 &&
+                    nextSetWarningSeconds < restSeconds
+                ) {
+                    delaySeconds(restSeconds - nextSetWarningSeconds)
+
+                    if (activePaceCueSetKey != cueKey) return@launch
+
+                    gymVoiceBus.speak(
+                        "${formatSecondsForSpeech(nextSetWarningSeconds)} left."
+                    )
+
+                    delaySeconds(nextSetWarningSeconds)
+                } else {
+                    delaySeconds(restSeconds)
+                }
+
+                if (activePaceCueSetKey != cueKey) return@launch
+            }
+
+            if (activePaceCueSetKey != cueKey) return@launch
+
+            gymRemoteCursor = GymRemoteCursor.AddSetPrompt(
+                exerciseLogId = exerciseLogId,
+            )
+
+            paceCuePhase = PaceCuePhase.WAITING_FOR_NEXT_SET_DECISION
+
+            val readySpeech = buildReadyForNextSetSpeech(profile)
+
+            gymVoiceBus.speak(readySpeech)
+
+            if (profile.idleReminderEnabled && idleReminderSeconds > 0) {
+                while (activePaceCueSetKey == cueKey) {
+                    delaySeconds(idleReminderSeconds)
+
+                    if (activePaceCueSetKey == cueKey) {
+                        gymVoiceBus.speak(readySpeech)
+                    }
+                }
+            }
+
+        }
+    }
+
+    private suspend fun hasPaceProfileForExerciseLog(
+        exerciseLogId: Long,
+        currentUiState: SessionDetailUiState,
+    ): Boolean {
+        val exercise = currentUiState.exerciseLogs
+            .firstOrNull { it.log.id == exerciseLogId }
+            ?: return false
+
+        return resolvePaceProfileForExerciseLog(
+            exercise = exercise,
+            session = currentUiState.session,
+        )?.isEnabled == true
+    }
+
+    private suspend fun resolvePaceProfileForExerciseLog(
+        exercise: SessionExerciseLogUiState,
+        session: ActualSessionEntity?,
+    ): ExercisePaceProfileEntity? {
+        val exerciseId = exercise.log.exerciseId ?: return null
+
+        val splitProfileId = session?.splitTemplateId
+            ?.let { splitTemplateId ->
+                val splitExercises = splitTemplateRepository
+                    .getExercisesForSplit(splitTemplateId)
+
+                val expectedSuggestedOrder = exercise.log.logOrder - 1
+
+                val matchedSplitExercise =
+                    splitExercises.firstOrNull { splitExercise ->
+                        splitExercise.exerciseId == exerciseId &&
+                                splitExercise.suggestedOrder == expectedSuggestedOrder
+                    } ?: splitExercises.firstOrNull { splitExercise ->
+                        splitExercise.exerciseId == exerciseId
+                    }
+
+                matchedSplitExercise?.paceProfileId
+            }
+
+        val splitProfile = splitProfileId
+            ?.let { profileId ->
+                exercisePaceProfileRepository.getProfileById(profileId)
+            }
+            ?.takeIf { profile ->
+                profile.exerciseId == exerciseId && profile.isEnabled
+            }
+
+        if (splitProfile != null) {
+            return splitProfile
+        }
+
+        return exercisePaceProfileRepository
+            .getDefaultProfileForExercise(exerciseId)
+            ?.takeIf { it.isEnabled }
+    }
+
+    private fun shouldSuppressReducerStartSetSpeech(
+        effect: GymRemoteEffect.Speak,
+        shouldLetPaceOwnStartSpeech: Boolean,
+    ): Boolean {
+        return shouldLetPaceOwnStartSpeech &&
+                effect.text.trim().equals(
+                    other = "Start set.",
+                    ignoreCase = true,
+                )
+    }
+
+    private fun buildReadyForNextSetSpeech(
+        profile: ExercisePaceProfileEntity,
+    ): String {
+        return if (profile.etiquetteReminderEnabled) {
+            "Ready. Add another set, or choose another exercise. Clear the station if you are done."
+        } else {
+            "Ready. Add another set, or choose another exercise."
+        }
+    }
+
+    private suspend fun delaySeconds(
+        seconds: Int,
+    ) {
+        if (seconds <= 0) return
+
+        delay(seconds * 1_000L)
+    }
+
+    private fun formatSecondsForSpeech(
+        seconds: Int,
+    ): String {
+        val safeSeconds = seconds.coerceAtLeast(0)
+        val minutes = safeSeconds / 60
+        val remainingSeconds = safeSeconds % 60
+
+        return when {
+            safeSeconds == 1 -> "1 second"
+
+            minutes == 0 -> "$safeSeconds seconds"
+
+            remainingSeconds == 0 -> {
+                if (minutes == 1) {
+                    "1 minute"
+                } else {
+                    "$minutes minutes"
+                }
+            }
+
+            minutes == 1 -> {
+                "1 minute $remainingSeconds seconds"
+            }
+
+            else -> {
+                "$minutes minutes $remainingSeconds seconds"
             }
         }
     }
@@ -606,6 +915,7 @@ class SessionDetailViewModel @Inject constructor(
     fun toggleRemoteFocus(
         actualExerciseLogId: Long,
     ) {
+        stopPaceCueLoop()
         focusedExerciseLogId.value =
             if (focusedExerciseLogId.value == actualExerciseLogId) {
                 gymRemoteCursor = GymRemoteCursor.SessionRoot
@@ -619,6 +929,7 @@ class SessionDetailViewModel @Inject constructor(
     }
 
     fun addSet(actualExerciseLogId: Long) {
+        stopPaceCueLoop()
         viewModelScope.launch {
             runCatching {
                 val existingSets = sessionRepository.getSetsForExercise(actualExerciseLogId)
@@ -947,6 +1258,7 @@ class SessionDetailViewModel @Inject constructor(
     }
 
     fun deleteSet(setId: Long) {
+        stopPaceCueLoop()
         viewModelScope.launch {
             runCatching {
                 sessionRepository.deleteSet(setId)
@@ -955,6 +1267,7 @@ class SessionDetailViewModel @Inject constructor(
     }
 
     fun duplicateSet(set: ActualExerciseSetLogEntity) {
+        stopPaceCueLoop()
         viewModelScope.launch {
             runCatching {
                 val existing = sessionRepository.getSetsForExercise(set.actualExerciseLogId)
@@ -991,6 +1304,7 @@ class SessionDetailViewModel @Inject constructor(
     fun deleteExerciseLogIfEmpty(
         actualExerciseLogId: Long,
     ) {
+        stopPaceCueLoop()
         viewModelScope.launch {
             runCatching {
                 val sets = sessionRepository.getSetsForExercise(actualExerciseLogId)
@@ -1134,6 +1448,10 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    override fun onCleared() {
+        stopPaceCueLoop()
+        super.onCleared()
+    }
     private companion object {
         const val GYM_REMOTE_LOG_TAG = "KA_GYM_REMOTE_REAL"
         const val WEIGHT_STEP = 2.5

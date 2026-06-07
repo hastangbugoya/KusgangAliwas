@@ -113,4 +113,17 @@ interface SplitTemplateDao {
         splitId: Long,
         updatedAtEpochMillis: Long,
     )
+
+    @Query(
+        """
+    UPDATE split_template
+    SET isActive = 1,
+        updatedAtEpochMillis = :updatedAtEpochMillis
+    WHERE id = :splitId
+    """
+    )
+    suspend fun restoreSplit(
+        splitId: Long,
+        updatedAtEpochMillis: Long,
+    )
 }
